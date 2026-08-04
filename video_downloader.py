@@ -16,6 +16,27 @@ APP_ICON_CANDIDATES = ("app_icon.ico", "app_icon.png", "app_icon.svg")
 
 _PLAYWRIGHT_BROWSER_MODULE_CACHE = None
 
+# ============ 画质修复功能已移除的兼容占位（防止历史 UI 代码崩溃） ============
+def get_realesrgan_runtime_capabilities(*args, **kwargs):
+    return {}
+
+def ensure_realesrgan_runtime_dirs(*args, **kwargs):
+    return None
+
+def get_realesrgan_missing_dependencies(*args, **kwargs):
+    return []
+
+def get_realesrgan_missing_download_resources(*args, **kwargs):
+    return []
+
+def get_realesrgan_execution_plan(*args, **kwargs):
+    return {"capability": {}}
+
+def download_realesrgan_models(*args, **kwargs):
+    return []
+
+
+
 
 def _load_playwright_browser_module():
     """从源码文件加载 playwright_browser，确保开发态/打包态使用同一逻辑。"""
@@ -7872,113 +7893,6 @@ class DownloadThread(QThread):
             self.progress_signal.emit(f"单一格式下载时发生错误: {str(e)}")
             self.finished_signal.emit(False, f"单一格式下载时发生错误: {str(e)}")
     
-    def _parse_size(self, size_str):
-        """解析大小字符串为字节数"""
-        try:
-            
-            self.progress_signal.emit(f"正在使用最佳格式重试: {' '.join(cmd)}")
-            
-            # 执行命令 - 使用UTF-8编码处理输入输出
-            self.process = subprocess.Popen(
-                final_cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,  # 使用text=True替代universal_newlines=True
-                encoding='utf-8',  # 显式指定UTF-8编码，避免使用系统默认的GBK编码
-                errors='replace',  # 添加错误处理策略，遇到无法解码的字符时替换而不是报错
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
-            
-            # 读取输出并处理编码
-            error_output = ""
-            # 用于解析下载进度的正则表达式
-            progress_pattern = re.compile(r'(\d+\.\d+)%')
-            downloaded_pattern = re.compile(r'下载中: ([\d.]+[KMG]?i?B)/([\d.]+[KMG]?i?B)')
-            
-            while True:
-                line = self.process.stdout.readline()
-                if not line:
-                    break
-                try:
-                    # 尝试使用UTF-8解码
-                    decoded_line = line.decode('utf-8').strip()
-                except UnicodeDecodeError:
-                    try:
-                        # 如果UTF-8失败，尝试使用系统默认编码
-                        decoded_line = line.decode('ansi').strip()
-                    except UnicodeDecodeError:
-                        # 如果仍然失败，使用latin-1（它可以解码任何字节序列）
-                        decoded_line = line.decode('latin-1').strip()
-                
-                if decoded_line:
-                    self.progress_signal.emit(decoded_line)
-                    
-                    # 解析下载进度
-                    progress_match = progress_pattern.search(decoded_line)
-                    if progress_match:
-                        try:
-                            percent = float(progress_match.group(1))
-                            self.progress_percent_signal.emit(percent)
-                        except (ValueError, IndexError):
-                            pass
-                    
-                    # 解析已下载/总大小信息
-                    downloaded_match = downloaded_pattern.search(decoded_line)
-                    if downloaded_match and not progress_match:
-                        try:
-                            # 尝试从下载信息中估算进度
-                            downloaded = downloaded_match.group(1)
-                            total = downloaded_match.group(2)
-                            
-                            # 简单处理单位转换
-                            downloaded_value = self._parse_size(downloaded)
-                            total_value = self._parse_size(total)
-                            
-                            if total_value > 0:
-                                percent = (downloaded_value / total_value) * 100
-                                self.progress_percent_signal.emit(percent)
-                        except (ValueError, IndexError):
-                            pass
-                    
-                    # 收集错误信息
-                    if "ERROR" in decoded_line or "Error" in decoded_line or "error" in decoded_line:
-                        error_output += decoded_line + "\n"
-            
-            # 等待进程完成
-            self.process.wait()
-            
-            # 在转码完成时发送平滑的进度信号，确保从当前进度平滑过渡到100%
-            self.progress_signal.emit("转码完成，开始发送平滑过渡到100%的进度信号")
-            # 获取当前进度值
-            current_progress = last_percent
-            # 如果当前进度小于100%，则平滑过渡到100%
-            if current_progress < 100:
-                # 计算需要增加的进度步数（每次增加1%）
-                steps = int((100 - current_progress) / 1) + 1
-                # 计算每步之间的延迟时间（总共不超过1秒）
-                delay = min(1.0 / steps, 0.1)  # 最大延迟100毫秒
-                # 逐步增加进度
-                for i in range(steps):
-                    next_progress = min(100, current_progress + 1 + i)
-                    self.progress_percent_signal.emit(next_progress)
-                    # 短暂延迟，创造平滑效果
-                    time.sleep(delay)
-            # 最后确保发送100%的进度信号
-            self.progress_percent_signal.emit(100.0)
-            # 强制更新UI，确保进度条显示完成状态
-            QApplication.processEvents()
-            
-            if self.process.returncode == 0:
-                self.finished_signal.emit(True, "使用最佳格式下载完成！")
-            else:
-                self.finished_signal.emit(False, f"使用最佳格式下载仍然失败，返回码：{self.process.returncode}\n{error_output}")
-                
-        except Exception as e:
-            import traceback
-            error_details = traceback.format_exc()
-            self.progress_signal.emit(f"详细错误信息: {error_details}")
-            self.finished_signal.emit(False, f"重试下载时发生错误: {str(e)}")
-    
     def _check_aria2c_available_in_thread(self):
         """在下载线程中检查aria2c是否可用"""
         try:
@@ -10977,121 +10891,6 @@ class TranscodeThread(QThread):
         except Exception as e:
             self.progress_signal.emit(f"单一格式下载时发生错误: {str(e)}")
             self.finished_signal.emit(False, f"单一格式下载时发生错误: {str(e)}")
-    
-    def _parse_size(self, size_str):
-        """解析大小字符串为字节数"""
-        try:
-            
-            self.progress_signal.emit(f"正在使用最佳格式重试: {' '.join(cmd)}")
-            
-            # 执行命令 - 使用UTF-8编码处理输入输出
-            self.process = subprocess.Popen(
-                final_cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,  # 使用text=True替代universal_newlines=True
-                encoding='utf-8',  # 显式指定UTF-8编码，避免使用系统默认的GBK编码
-                errors='replace',  # 添加错误处理策略，遇到无法解码的字符时替换而不是报错
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
-            
-            # 读取输出并处理编码
-            error_output = ""
-            # 用于解析下载进度的正则表达式
-            progress_pattern = re.compile(r'(\d+\.\d+)%')
-            downloaded_pattern = re.compile(r'下载中: ([\d.]+[KMG]?i?B)/([\d.]+[KMG]?i?B)')
-            
-            while True:
-                line = self.process.stdout.readline()
-                if not line:
-                    break
-                try:
-                    # 尝试使用UTF-8解码
-                    decoded_line = line.decode('utf-8').strip()
-                except UnicodeDecodeError:
-                    try:
-                        # 如果UTF-8失败，尝试使用系统默认编码
-                        decoded_line = line.decode('ansi').strip()
-                    except UnicodeDecodeError:
-                        # 如果仍然失败，使用latin-1（它可以解码任何字节序列）
-                        decoded_line = line.decode('latin-1').strip()
-                
-                if decoded_line:
-                    self.progress_signal.emit(decoded_line)
-                    
-                    # 解析下载进度
-                    progress_match = progress_pattern.search(decoded_line)
-                    if progress_match:
-                        try:
-                            percent = float(progress_match.group(1))
-                            self.progress_percent_signal.emit(percent)
-                        except (ValueError, IndexError):
-                            pass
-                    
-                    # 解析已下载/总大小信息
-                    downloaded_match = downloaded_pattern.search(decoded_line)
-                    if downloaded_match and not progress_match:
-                        try:
-                            # 尝试从下载信息中估算进度
-                            downloaded = downloaded_match.group(1)
-                            total = downloaded_match.group(2)
-                            
-                            # 简单处理单位转换
-                            downloaded_value = self._parse_size(downloaded)
-                            total_value = self._parse_size(total)
-                            
-                            if total_value > 0:
-                                percent = (downloaded_value / total_value) * 100
-                                self.progress_percent_signal.emit(percent)
-                        except (ValueError, IndexError):
-                            pass
-                    
-                    # 收集错误信息
-                    if "ERROR" in decoded_line or "Error" in decoded_line or "error" in decoded_line:
-                        error_output += decoded_line + "\n"
-            
-            # 等待进程完成
-            self.process.wait()
-            
-            # 检查下载是否真的成功，只有成功时才显示100%
-            if self.process.returncode == 0:
-                # 先验证下载是否真的成功
-                download_success = self._verify_download_success()
-                if download_success:
-                    # 只有真正成功时才平滑过渡到100%
-                    self.progress_signal.emit("下载成功，开始发送平滑过渡到100%的进度信号")
-                    # 获取当前进度值
-                    current_progress = last_percent
-                    # 如果当前进度小于100%，则平滑过渡到100%
-                    if current_progress < 100:
-                        # 计算需要增加的进度步数（每次增加1%）
-                        steps = int((100 - current_progress) / 1) + 1
-                        # 计算每步之间的延迟时间（总共不超过1秒）
-                        delay = min(1.0 / steps, 0.1)  # 最大延迟100毫秒
-                        # 逐步增加进度
-                        for i in range(steps):
-                            next_progress = min(100, current_progress + 1 + i)
-                            self.progress_percent_signal.emit(next_progress)
-                            # 短暂延迟，创造平滑效果
-                            time.sleep(delay)
-                    # 最后确保发送100%的进度信号
-                    self.progress_percent_signal.emit(100.0)
-                    # 强制更新UI，确保进度条显示完成状态
-                    QApplication.processEvents()
-                else:
-                    # 下载失败时，保持当前进度不变，不要显示100%
-                    self.progress_signal.emit(f"下载失败，进度保持在{last_percent:.1f}%")
-            
-            if self.process.returncode == 0:
-                self.finished_signal.emit(True, "使用最佳格式下载完成！")
-            else:
-                self.finished_signal.emit(False, f"使用最佳格式下载仍然失败，返回码：{self.process.returncode}\n{error_output}")
-                
-        except Exception as e:
-            import traceback
-            error_details = traceback.format_exc()
-            self.progress_signal.emit(f"详细错误信息: {error_details}")
-            self.finished_signal.emit(False, f"重试下载时发生错误: {str(e)}")
     
     def stop(self):
         """安全地停止进程"""
@@ -19102,6 +18901,7 @@ class VideoDownloaderApp(QMainWindow):
                 QMessageBox.information(self, "成功", f"已设置播放列表范围: {selected_range}")
     
     def get_additional_options(self):
+        is_proxy_enabled = False  # 初始化（后续代理设置段会重新赋值）
         # 获取附加选项
         options = []
         preview_langs = getattr(self, "_last_preview_subtitle_langs", [])
