@@ -58,8 +58,15 @@ def _load_playwright_browser_module():
 
 
 def _set_windows_app_user_model_id():
-    """为 Windows 任务栏设置稳定的应用标识，避免显示为默认通用图标。"""
+    """为 Windows 任务栏设置稳定的应用标识，避免显示为默认通用图标。
+
+    仅打包版（frozen）设置：开发模式下 python.exe 没有对应图标资源，
+    设置 AppUserModelID 反而会导致任务栏图标显示为空白/通用图标，
+    此时应依赖窗口图标（QIcon(app_icon)）正常显示。
+    """
     if sys.platform != 'win32':
+        return
+    if not getattr(sys, 'frozen', False):
         return
     try:
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(WINDOWS_APP_USER_MODEL_ID)

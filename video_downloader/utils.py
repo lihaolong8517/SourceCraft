@@ -81,7 +81,10 @@ def _iter_app_icon_paths():
             os.path.join(RUNTIME_APP_DIR, "_internal"),
         ])
     else:
-        search_roots.append(os.path.dirname(os.path.abspath(__file__)))
+        # 开发模式：utils.py 位于 video_downloader/ 包内，图标等资源在项目根目录
+        pkg_dir = os.path.dirname(os.path.abspath(__file__))
+        search_roots.append(pkg_dir)
+        search_roots.append(os.path.dirname(pkg_dir))  # 项目根目录
 
     seen = set()
     for root in search_roots:
