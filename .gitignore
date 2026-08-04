@@ -1,0 +1,113 @@
+# ==========================================
+# 敏感配置文件（含密钥，切勿提交！）
+# ==========================================
+.build_release_config.json
+license_generator_config.json
+release_settings.json
+secure_config.py
+.env
+.env.*
+trial_register_service.env
+trial_register_service.env.*
+!.env.example
+!.env.template
+
+# ==========================================
+# Python
+# ==========================================
+__pycache__/
+*.pyc
+*.pyo
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.manifest
+*.spec
+*.so
+
+# ==========================================
+# Virtual Environment
+# ==========================================
+venv/
+.venv/
+env/
+.env/
+
+# ==========================================
+# IDE / Editor
+# ==========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ==========================================
+# Project Specific (Large Files & Temp Data)
+# ==========================================
+*.exe
+*.exe.backup
+_internal/
+browser_data/
+playwright_data/
+playwright_browsers/
+cookies/
+.dev_data/
+.pyinstaller_user_base/
+.realesrgan_tmp/
+realesrgan_runtime/
+gfpgan/
+*.log
+browser_history.json
+browser_bookmarks.json
+download_history.json
+tmp_*
+激活码_*.txt
+app_settings.json
+release_settings.json
+
+# ==========================================
+# Claude / AI assistant files
+# ==========================================
+.claude/
+.hermes/
+
+.dev_license_bypass
+
+
+# ==========================================
+# 商业敏感：激活码生成器 / 服务端代码（勿提交）
+# ==========================================
+shou quan ma .py
+trial_register_service.py
+remote_trial_register_service.py
+admin_trial_register.py
+trial_db_backends.py
+migrate_add_client_ip.py
+oss_migration_tool.py
+init_rds_mysql.sql
+deploy_website.py
+deploy_website.bat
+deploy_website_nginx.sh
+deploy_security.sh
+
+# ==========================================
+# 大素材 / 调试残留
+# ==========================================
+/*.mp4
+/*.jpg
+/*.png
+*.bak
+*.bak_*
+debug*.txt
+title_raw.bin
+browser_debug.log
+
+# 独立发布的嵌套仓库（不作为子模块提交）
+GitHub_Public_Release/
