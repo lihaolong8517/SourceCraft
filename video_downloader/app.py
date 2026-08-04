@@ -1,3 +1,4 @@
+from realesrgan_runner import RealEsrganProcessThread, get_realesrgan_execution_plan
 """主应用窗口 - VideoDownloaderApp (SourceCraft 核心 GUI)"""
 import sys
 import os
@@ -36,6 +37,15 @@ from PyQt5.QtSvg import QSvgRenderer
 from .constants import RUNTIME_APP_DIR, APP_DISPLAY_NAME, APP_ORGANIZATION_NAME, WINDOWS_APP_USER_MODEL_ID, APP_ICON_CANDIDATES
 from . import utils
 from . import utils_update
+from .utils import (
+    cleanup_download_title, choose_better_download_title, is_generated_download_title,
+    sanitize_output_title_component, build_subtitle_lang_pattern, decode_subprocess_bytes,
+    _is_x_platform_url, _load_app_icon, is_supported_realesrgan_media,
+    can_run_with_current_or_external_runtime,
+)
+from .utils_update import (
+    DEFAULT_APP_WEBSITE_URL, DEFAULT_APP_UPDATE_METADATA_URL, get_app_version,
+)
 from .dialogs.x_video_selection import XVideoSelectionDialog
 from .widgets.limited_height_combo import LimitedHeightComboBox
 from .dialogs.playlist_range import PlaylistRangeDialog
@@ -57,6 +67,29 @@ from image_processor import ImageProcessThread, ImageProcessor, check_pillow
 from download_sections_utils import (
     split_time_range_tokens, parse_time_token_to_seconds, validate_download_section
 )
+from realesrgan_runner import RealEsrganProcessThread
+
+
+
+
+# ============ 画质修复功能已移除的兼容占位 ============
+# 功能实现已从当前版本移除（main.py --realesrgan-job 直接退出），
+# 但历史 UI 代码仍引用这些函数名，提供安全默认值防止崩溃。
+def get_realesrgan_runtime_capabilities(*args, **kwargs):
+    return {}
+
+def ensure_realesrgan_runtime_dirs(*args, **kwargs):
+    return None
+
+def get_realesrgan_missing_dependencies(*args, **kwargs):
+    return []
+
+def get_realesrgan_missing_download_resources(*args, **kwargs):
+    return []
+
+def download_realesrgan_models(*args, **kwargs):
+    return []
+
 
 # Playwright browser (loaded dynamically from package)
 from video_downloader import _load_playwright_browser_module
@@ -6886,6 +6919,8 @@ class VideoDownloaderApp(QMainWindow):
                 QMessageBox.information(self, "成功", f"已设置播放列表范围: {selected_range}")
     
     def get_additional_options(self):
+        is_proxy_enabled = False  # 初始化（后续代理设置段会重新赋值）
+
         # 获取附加选项
         options = []
         preview_langs = getattr(self, "_last_preview_subtitle_langs", [])
@@ -12789,6 +12824,5 @@ class VideoDownloaderApp(QMainWindow):
             event.acceptProposedAction()
         else:
             event.ignore()
-
 
 

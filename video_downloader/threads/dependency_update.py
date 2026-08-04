@@ -1,3 +1,4 @@
+from ..utils_update import _open_url_with_fallback
 """依赖更新线程 - yt-dlp/FFmpeg/Deno 更新"""
 import sys
 import os

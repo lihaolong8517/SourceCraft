@@ -1,3 +1,5 @@
+import socket
+from ..utils_update import _open_url_with_fallback, compare_version_text
 """应用更新线程"""
 import sys
 import os

@@ -1,4 +1,5 @@
 """视频下载器工具函数"""
+import locale
 import sys
 import os
 import re

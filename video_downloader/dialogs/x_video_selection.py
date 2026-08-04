@@ -1,3 +1,4 @@
+from PyQt5.QtWidgets import QFrame, QMessageBox
 """X平台视频选择对话框"""
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QCheckBox, QScrollArea, QWidget)

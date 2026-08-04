@@ -1,3 +1,10 @@
+import sys
+import os
+import multiprocessing
+import playwright_fix
+from .main import main
+from . import _load_playwright_browser_module
+
 # 必须在任何其他代码之前执行，确保 stdin/stdout/stderr 有效
 if __name__ == '__main__':
     is_frozen = getattr(sys, 'frozen', False)

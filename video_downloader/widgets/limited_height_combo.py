@@ -1,3 +1,4 @@
+from PyQt5.QtWidgets import QAbstractItemView, QFrame
 """限高下拉框控件"""
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtCore import Qt

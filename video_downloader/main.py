@@ -1,6 +1,7 @@
 """应用入口点"""
 import sys
 import os
+import time
 import subprocess
 import json
 import re
@@ -8,10 +9,14 @@ import ctypes
 import multiprocessing
 import runpy
 import io
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QMessageBox
 
-from .constants import RUNTIME_APP_DIR, WINDOWS_APP_USER_MODEL_ID
+from .constants import RUNTIME_APP_DIR, WINDOWS_APP_USER_MODEL_ID, APP_ORGANIZATION_NAME, APP_DISPLAY_NAME
 from . import utils
+from .utils import _load_app_icon
+from .app import VideoDownloaderApp
+from . import _set_windows_app_user_model_id
 
 
 def check_dependencies():

@@ -1,3 +1,4 @@
+from PyQt5.QtWidgets import QListWidget, QAbstractItemView, QListWidgetItem
 """播放列表范围选择对话框"""
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QLineEdit, QMessageBox, QSizePolicy)

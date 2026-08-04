@@ -1,3 +1,4 @@
+from PyQt5.QtWidgets import QFrame
 """失败视频列表对话框"""
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QTableWidget, QTableWidgetItem, 

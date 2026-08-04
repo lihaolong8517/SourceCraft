@@ -1,3 +1,7 @@
+import json
+import subprocess
+import auth_utils
+from PyQt5.QtCore import QUrl
 """字幕预览线程"""
 import os
 import sys
