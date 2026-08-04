@@ -300,6 +300,12 @@ class DownloadThread(QThread):
             except Exception:
                 continue
 
+        # 国内平台（B站等）无匹配 cookies 时不回退到其他平台 cookies：
+        # 携带无关 cookies 可能触发平台风控（如 B 站 CDN 限流）；免费视频无需登录。
+        no_fallback_hosts = ('bilibili.com', 'b23.tv', 'acg.tv', 'bilivideo.com', 'bilivideo.cn')
+        if any(d in host for d in no_fallback_hosts):
+            return None, "none", host, candidates
+
         fallback = self._find_latest_internal_cookie()
         if fallback and os.path.exists(fallback):
             return fallback, "fallback", host, candidates
@@ -1642,7 +1648,8 @@ class DownloadThread(QThread):
                     # 高性能网络配置 - 基于官方文档优化
                     "--buffer-size", "1024K",  # 增大缓冲区，提高下载效率
                     "--http-chunk-size", "10M",  # 增大HTTP块大小，提高传输效率
-                    "--concurrent-fragments", "6",  # 增加并发数，提高下载速度
+                    # B站 CDN 对高并发分片易限流，降为 3；其余平台保持 6
+                    "--concurrent-fragments", ("3" if any(d in self.url.lower() for d in ['bilibili.com', 'b23.tv', 'acg.tv']) else "6"),  # 增加并发数，提高下载速度
                     
                     # 网络超时优化 - 基于官方推荐，减少超时时间
                     "--socket-timeout", "30",  # 减少超时时间，加快失败检测
