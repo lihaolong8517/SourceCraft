@@ -2549,11 +2549,12 @@ class DownloadThread(QThread):
                 continue
             _seen.add(_b)
             filter_conditions.append(_b)
-        if filter_conditions:
-            conditions_str = "".join(filter_conditions)
-        else:
-            conditions_str = "[height<=1080]"
+        if not filter_conditions:
+            # 无筛选条件：保持用户原格式链（最佳质量 + 默认音频语言），
+            # 不注入单流限制——避免把最佳质量误限制为 1080P。
+            return original
 
+        conditions_str = "".join(filter_conditions)
         single_stream_pref = (
             f"best{conditions_str}[ext=mp4][vcodec^=avc][acodec^=mp4a]/"
             f"best{conditions_str}[ext=mp4][vcodec*=h264][acodec*=mp4a]/"
