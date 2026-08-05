@@ -819,11 +819,35 @@ class DownloadThread(QThread):
         if not looks_split_stream:
             return original
 
+        # 提取用户的筛选条件（分辨率上限/音频语言/音轨排除），注入单流选择器，
+        # 保证时间片段模式下用户的筛选依然生效；无筛选时使用默认 1080P 上限。
+        # 仅提取"过滤型"条件（改变可选集合），忽略格式偏好型（ext=、vcodec^= 等）。
+        # 注意：语言条件可能内嵌字符类（如 [language~='(?i)^ja(?:[-_].*)?$']），
+        # 必须用引号包裹整体匹配，避免在内部 ] 处截断。
+        filter_conditions = []
+        _seen = set()
+        _filter_re = re.compile(
+            r'\[[^\]]*height<=[^\]]*\]'
+            r'|\[language~=[\'"][^\'"]*[\'"]\]'
+            r'|\[language~=[^\[\]]*\]'
+            r'|\[[^\]]*(?:acodec|vcodec)!=+[^\]]*\]'
+        )
+        for _block in _filter_re.findall(original):
+            _b = _block.strip()
+            if _b in _seen:
+                continue
+            _seen.add(_b)
+            filter_conditions.append(_b)
+        if filter_conditions:
+            conditions_str = "".join(filter_conditions)
+        else:
+            conditions_str = "[height<=1080]"
+
         single_stream_pref = (
-            "best[height<=1080][ext=mp4][vcodec^=avc][acodec^=mp4a]/"
-            "best[height<=1080][ext=mp4][vcodec*=h264][acodec*=mp4a]/"
-            "best[height<=1080][ext=mp4]/"
-            "best[height<=1080]"
+            f"best{conditions_str}[ext=mp4][vcodec^=avc][acodec^=mp4a]/"
+            f"best{conditions_str}[ext=mp4][vcodec*=h264][acodec*=mp4a]/"
+            f"best{conditions_str}[ext=mp4]/"
+            f"best{conditions_str}"
         )
         if original.startswith(single_stream_pref):
             return original
