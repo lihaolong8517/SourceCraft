@@ -2,8 +2,10 @@ import sys
 import os
 import multiprocessing
 import playwright_fix
-from .main import main
-from . import _load_playwright_browser_module
+# 注意：PyInstaller 将 __main__.py 作为顶层脚本执行（无父包），
+# 必须使用绝对导入；开发模式（python -m video_downloader）同样兼容。
+from video_downloader.main import main
+from video_downloader import _load_playwright_browser_module
 
 # 必须在任何其他代码之前执行，确保 stdin/stdout/stderr 有效
 if __name__ == '__main__':
