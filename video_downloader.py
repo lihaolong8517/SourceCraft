@@ -1669,6 +1669,12 @@ class SubtitlePreviewThread(QThread):
             except Exception:
                 continue
 
+        # 国内平台（B站等）无匹配 cookies 时不回退到其他平台 cookies：
+        # 携带无关 cookies 可能触发平台风控（如 B 站 CDN 限流）；免费视频无需登录。
+        no_fallback_hosts = ('bilibili.com', 'b23.tv', 'acg.tv', 'bilivideo.com', 'bilivideo.cn')
+        if any(d in host for d in no_fallback_hosts):
+            return None, "none", host, candidates
+
         fallback = self._find_latest_internal_cookie()
         if fallback and os.path.exists(fallback):
             return fallback, "fallback", host, candidates
@@ -2004,6 +2010,12 @@ class DownloadThread(QThread):
                     return cf, "direct", host, candidates
             except Exception:
                 continue
+
+        # 国内平台（B站等）无匹配 cookies 时不回退到其他平台 cookies：
+        # 携带无关 cookies 可能触发平台风控（如 B 站 CDN 限流）；免费视频无需登录。
+        no_fallback_hosts = ('bilibili.com', 'b23.tv', 'acg.tv', 'bilivideo.com', 'bilivideo.cn')
+        if any(d in host for d in no_fallback_hosts):
+            return None, "none", host, candidates
 
         fallback = self._find_latest_internal_cookie()
         if fallback and os.path.exists(fallback):
@@ -3347,7 +3359,8 @@ class DownloadThread(QThread):
                     # 高性能网络配置 - 基于官方文档优化
                     "--buffer-size", "1024K",  # 增大缓冲区，提高下载效率
                     "--http-chunk-size", "10M",  # 增大HTTP块大小，提高传输效率
-                    "--concurrent-fragments", "6",  # 增加并发数，提高下载速度
+                    # B站 CDN 对高并发分片易限流，降为 3；其余平台保持 6
+                    "--concurrent-fragments", ("3" if any(d in self.url.lower() for d in ['bilibili.com', 'b23.tv', 'acg.tv']) else "6"),  # 增加并发数，提高下载速度
                     
                     # 网络超时优化 - 基于官方推荐，减少超时时间
                     "--socket-timeout", "30",  # 减少超时时间，加快失败检测
@@ -4046,7 +4059,7 @@ class DownloadThread(QThread):
                 # 检测错误和跳过的视频
                 # 注意：排除章节处理相关的正常消息（如 SponsorBlock、章节跳过等）
                 error_keywords = [
-                    "ERROR:", "Error:", "error:",
+                    "ERROR:", "Error:",
                     "unavailable", "Unavailable",
                     "Private video", "private video",
                     "Video unavailable", "video unavailable",
@@ -4075,7 +4088,9 @@ class DownloadThread(QThread):
                 
                 # 只有当包含错误关键词，且不是章节处理消息时，才认为是错误
                 is_error = (any(keyword in stripped_line for keyword in error_keywords) and
-                           not any(chapter_keyword in stripped_line for chapter_keyword in chapter_processing_keywords))
+                           not any(chapter_keyword in stripped_line for chapter_keyword in chapter_processing_keywords) and
+                           # 重试中/等待中的瞬时网络消息不算最终失败（避免误报"记录失败视频"）
+                           "Retrying" not in stripped_line and "Sleeping" not in stripped_line)
                 
                 # 【关键修复】即使没有current_video_title，也要尝试记录失败（可能是限制等原因）
                 if is_error:
@@ -4105,7 +4120,8 @@ class DownloadThread(QThread):
                     elif "ERROR" in stripped_line:
                         # 尝试从ERROR消息中提取更具体的原因
                         if ":" in stripped_line:
-                            error_reason = stripped_line.split(":", 1)[1].strip()[:100]  # 限制长度
+                            reason_extract = stripped_line.split(":", 1)[1].strip()[:100]  # 限制长度
+                            error_reason = reason_extract if reason_extract else "未知错误"
                     
                     # 记录失败的视频（如果确实是错误）
                     if is_error:
