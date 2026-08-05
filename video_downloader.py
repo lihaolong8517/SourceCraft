@@ -2563,7 +2563,9 @@ class DownloadThread(QThread):
         )
         if original.startswith(single_stream_pref):
             return original
-        return f"{single_stream_pref}/{original}"
+        # 单流仅作兜底（放在用户格式链之后）：保证用户的筛选与最佳质量优先，
+        # 避免单流（HLS 最高 1080P）抢占导致画质被限制。
+        return f"{original}/{single_stream_pref}"
     
     def _get_current_video_index(self):
         """获取当前正在处理的视频索引"""
@@ -3172,7 +3174,7 @@ class DownloadThread(QThread):
                             new_format = self._build_time_section_friendly_format(old_format)
                             if new_format and new_format != old_format:
                                 cmd[f_index + 1] = new_format
-                                self.progress_signal.emit("✓ 时间片段模式：优先单流格式（中段下载更快）")
+                                self.progress_signal.emit("✓ 时间片段模式：单流格式兜底（用户格式优先，画质不受限）")
                     except Exception:
                         pass
             
