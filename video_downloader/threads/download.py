@@ -2348,7 +2348,7 @@ class DownloadThread(QThread):
                 # 检测错误和跳过的视频
                 # 注意：排除章节处理相关的正常消息（如 SponsorBlock、章节跳过等）
                 error_keywords = [
-                    "ERROR:", "Error:", "error:",
+                    "ERROR:", "Error:",
                     "unavailable", "Unavailable",
                     "Private video", "private video",
                     "Video unavailable", "video unavailable",
@@ -2377,7 +2377,9 @@ class DownloadThread(QThread):
                 
                 # 只有当包含错误关键词，且不是章节处理消息时，才认为是错误
                 is_error = (any(keyword in stripped_line for keyword in error_keywords) and
-                           not any(chapter_keyword in stripped_line for chapter_keyword in chapter_processing_keywords))
+                           not any(chapter_keyword in stripped_line for chapter_keyword in chapter_processing_keywords) and
+                           # 重试中/等待中的瞬时网络消息不算最终失败（避免误报"记录失败视频"）
+                           "Retrying" not in stripped_line and "Sleeping" not in stripped_line)
                 
                 # 【关键修复】即使没有current_video_title，也要尝试记录失败（可能是限制等原因）
                 if is_error:
@@ -2407,7 +2409,8 @@ class DownloadThread(QThread):
                     elif "ERROR" in stripped_line:
                         # 尝试从ERROR消息中提取更具体的原因
                         if ":" in stripped_line:
-                            error_reason = stripped_line.split(":", 1)[1].strip()[:100]  # 限制长度
+                            reason_extract = stripped_line.split(":", 1)[1].strip()[:100]  # 限制长度
+                            error_reason = reason_extract if reason_extract else "未知错误"
                     
                     # 记录失败的视频（如果确实是错误）
                     if is_error:
