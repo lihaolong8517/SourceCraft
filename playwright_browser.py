@@ -8,6 +8,7 @@ Date: 2025-12-06
 """
 
 import sys
+from i18n import t, t_format
 import os
 import json
 import re
@@ -1722,7 +1723,7 @@ class ModernConfirmDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(12)
         
-        self.btn_cancel = QPushButton("取消")
+        self.btn_cancel = QPushButton(t("取消"))
         self.btn_cancel.setCursor(Qt.PointingHandCursor)
         self.btn_cancel.setStyleSheet("""
             QPushButton {
@@ -1737,7 +1738,7 @@ class ModernConfirmDialog(QDialog):
         """)
         self.btn_cancel.clicked.connect(self.reject)
         
-        self.btn_confirm = QPushButton("确定清除")
+        self.btn_confirm = QPushButton(t("确定清除"))
         self.btn_confirm.setCursor(Qt.PointingHandCursor)
         self.btn_confirm.setStyleSheet("""
             QPushButton {
@@ -2144,7 +2145,7 @@ class AnimatedComboBox(QPushButton):
     def clear(self):
         self.items = []
         self.current_index = -1
-        self.setText("选择分辨率")
+        self.setText(t("选择分辨率"))
         while self.popup_layout.count():
             item = self.popup_layout.takeAt(0)
             if item.widget():
@@ -2349,7 +2350,7 @@ class MediaCard(QFrame):
         
         # 播放状态标签
         if self.media_info.get('is_playing'):
-            self.playing_tag = QLabel("▶ 播放中")
+            self.playing_tag = QLabel(t("▶ 播放中"))
             self.playing_tag.setStyleSheet("""
                 background: #e8f5e9; color: #2e7d32; padding: 1px 6px; 
                 border-radius: 3px; font-size: 10px; border: 1px solid #c8e6c9;
@@ -2359,8 +2360,8 @@ class MediaCard(QFrame):
         
         # 预加载标签
         if self.media_info.get('is_preload'):
-            self.preload_tag = QLabel("预加载")
-            self.preload_tag.setToolTip("此视频是预加载的，可能不是当前正在观看的视频")
+            self.preload_tag = QLabel(t("预加载"))
+            self.preload_tag.setToolTip(t("此视频是预加载的，可能不是当前正在观看的视频"))
             self.preload_tag.setStyleSheet("""
                 background: #fce4ec; color: #c2185b; padding: 1px 6px; 
                 border-radius: 3px; font-size: 10px; border: 1px solid #f8bbd9;
@@ -2370,7 +2371,7 @@ class MediaCard(QFrame):
         # DRM 警告标签
         if self.media_info.get('has_drm'):
             self.drm_tag = QLabel("🔒 DRM")
-            self.drm_tag.setToolTip("此内容可能受 DRM 保护，下载可能受限")
+            self.drm_tag.setToolTip(t("此内容可能受 DRM 保护，下载可能受限"))
             self.drm_tag.setStyleSheet("""
                 background: #fff3e0; color: #e65100; padding: 1px 6px; 
                 border-radius: 3px; font-size: 10px; border: 1px solid #ffe0b2;
@@ -2394,7 +2395,7 @@ class MediaCard(QFrame):
         self.res_combo.setEnabled(False)
         actions_layout.addWidget(self.res_combo)
 
-        self.download_btn = QPushButton("⬇️ 稳定中(3s)")
+        self.download_btn = QPushButton(t("⬇️ 稳定中(3s)"))
         self.download_btn.setCursor(Qt.PointingHandCursor)
         self.download_btn.setEnabled(False)
         self.download_btn.setStyleSheet("""
@@ -2415,7 +2416,7 @@ class MediaCard(QFrame):
         
         # 复制链接按钮
         self.copy_btn = QPushButton("📋")
-        self.copy_btn.setToolTip("复制媒体链接")
+        self.copy_btn.setToolTip(t("复制媒体链接"))
         self.copy_btn.setCursor(Qt.PointingHandCursor)
         self.copy_btn.setFixedSize(28, 28)
         self.copy_btn.setStyleSheet("""
@@ -2451,7 +2452,7 @@ class MediaCard(QFrame):
             self._stabilize_timer.stop()
             self._stabilize_timer = None
             self.download_btn.setEnabled(True)
-            self.download_btn.setText("⬇️ 下载")
+            self.download_btn.setText(t("⬇️ 下载"))
         else:
             self.download_btn.setText(f"⬇️ 稳定中({self._stabilize_remaining}s)")
 
@@ -2719,7 +2720,7 @@ class MediaCaptureWindow(QMainWindow):
         # 使用独立顶层窗口，避免跟随主窗口最小化。
         super().__init__(None)
         self._controller = controller
-        self.setWindowTitle("媒体捕获")
+        self.setWindowTitle(t("媒体捕获"))
         self.setMinimumSize(400, 500)
         self.resize(450, 600)
         self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
@@ -2774,18 +2775,18 @@ class MediaCaptureWindow(QMainWindow):
         title_icon.setStyleSheet("font-size: 18px;")
         header_layout.addWidget(title_icon)
         
-        title = QLabel("媒体捕获")
+        title = QLabel(t("媒体捕获"))
         title.setStyleSheet("font-size: 14px; font-weight: 600; color: #333;")
         header_layout.addWidget(title)
         
         header_layout.addStretch()
         
-        self.count_label = QLabel("0 个媒体")
+        self.count_label = QLabel(t("0 个媒体"))
         self.count_label.setStyleSheet("font-size: 12px; color: #888;")
         header_layout.addWidget(self.count_label)
         
         # 清空按钮
-        clear_btn = QPushButton("清空")
+        clear_btn = QPushButton(t("清空"))
         clear_btn.setObjectName("clearBtn")
         clear_btn.setCursor(Qt.PointingHandCursor)
         clear_btn.clicked.connect(self._clear_media)
@@ -2827,7 +2828,7 @@ class MediaCaptureWindow(QMainWindow):
         layout.addWidget(scroll)
         
         # 空状态提示
-        self.empty_label = QLabel("浏览网页时，检测到的媒体将显示在这里\n\n提示：如果开启后没有看到媒体，请尝试刷新网页 🔄")
+        self.empty_label = QLabel(t("浏览网页时，检测到的媒体将显示在这里\n\n提示：如果开启后没有看到媒体，请尝试刷新网页 🔄"))
         self.empty_label.setObjectName("emptyLabel")
         self.empty_label.setAlignment(Qt.AlignCenter)
         self.empty_label.setWordWrap(True)
@@ -3000,7 +3001,7 @@ class MediaCaptureWindow(QMainWindow):
                     widget.cleanup()
                     widget.deleteLater()
         
-        self.count_label.setText("0 个媒体")
+        self.count_label.setText(t("0 个媒体"))
         self.empty_label.show()
 
         # 通知子进程清空去重集合
@@ -5971,7 +5972,7 @@ class PlaywrightBrowserController(QMainWindow):
     def __init__(self, parent=None, initial_url=""):
         super().__init__(parent)
         self.setAttribute(Qt.WA_QuitOnClose, False)
-        self.setWindowTitle("浏览器")
+        self.setWindowTitle(t("浏览器"))
         self.setMinimumSize(500, 450)  # 降低最小尺寸限制，配合自适应滚动条更加灵活
         self.resize(850, 650)
         
@@ -6384,10 +6385,10 @@ class PlaywrightBrowserController(QMainWindow):
         # === 顶部：状态行 ===
         status_row = QHBoxLayout()
 
-        self.status_label = QLabel("● 就绪")
+        self.status_label = QLabel(t("● 就绪"))
         status_row.addWidget(self.status_label)
 
-        self.btn_toggle_prefs = QPushButton("气泡设置")
+        self.btn_toggle_prefs = QPushButton(t("气泡设置"))
         self.btn_toggle_prefs.setObjectName("prefsToggleBtn")
         self.btn_toggle_prefs.setCursor(Qt.PointingHandCursor)
         self.btn_toggle_prefs.clicked.connect(self._toggle_preferences_panel)
@@ -6396,7 +6397,7 @@ class PlaywrightBrowserController(QMainWindow):
         status_row.addStretch()
         
         # 媒体捕获开关按钮
-        self.btn_media_capture = QPushButton("📡 媒体捕获: 关")
+        self.btn_media_capture = QPushButton(t("📡 媒体捕获: 关"))
         self.btn_media_capture.setCheckable(True)
         self.btn_media_capture.setObjectName("mediaCaptureBtn")
         self.btn_media_capture.setCursor(Qt.PointingHandCursor)
@@ -6437,13 +6438,13 @@ class PlaywrightBrowserController(QMainWindow):
         action_layout.setContentsMargins(20, 24, 20, 24)
         action_layout.setSpacing(16)
         
-        self.btn_launch = QPushButton("启动浏览器")
+        self.btn_launch = QPushButton(t("启动浏览器"))
         self.btn_launch.setObjectName("primaryBtn")
         self.btn_launch.setCursor(Qt.PointingHandCursor)
         self.btn_launch.clicked.connect(self._toggle_browser)
         action_layout.addWidget(self.btn_launch)
         
-        self.btn_extract = QPushButton("提取 Cookie")
+        self.btn_extract = QPushButton(t("提取 Cookie"))
         self.btn_extract.setObjectName("secondaryBtn")
         self.btn_extract.setCursor(Qt.PointingHandCursor)
         self.btn_extract.clicked.connect(self._extract_cookies)
@@ -6454,7 +6455,7 @@ class PlaywrightBrowserController(QMainWindow):
         cookie_row = QHBoxLayout()
         cookie_row.setSpacing(10)
         
-        self.btn_clear_cookies = QPushButton("✕  清除 Cookie")
+        self.btn_clear_cookies = QPushButton(t("✕  清除 Cookie"))
         self.btn_clear_cookies.setObjectName("dangerBtn")
         self.btn_clear_cookies.setCursor(Qt.PointingHandCursor)
         self.btn_clear_cookies.clicked.connect(self._clear_cookies)
@@ -6489,7 +6490,7 @@ class PlaywrightBrowserController(QMainWindow):
         quick_layout.setSpacing(8)
         self.quick_sites_layout = quick_layout
         
-        self.btn_edit_quick_sites = QPushButton("编辑快捷网址")
+        self.btn_edit_quick_sites = QPushButton(t("编辑快捷网址"))
         self.btn_edit_quick_sites.setObjectName("prefsToggleBtn")
         self.btn_edit_quick_sites.setCursor(Qt.PointingHandCursor)
         self.btn_edit_quick_sites.clicked.connect(self._edit_quick_sites)
@@ -6511,7 +6512,7 @@ class PlaywrightBrowserController(QMainWindow):
         guide_layout.setContentsMargins(16, 16, 16, 16)
         guide_layout.setSpacing(8)
         
-        guide_title = QLabel("💡 网页视频嗅探与登录助手")
+        guide_title = QLabel(t("💡 网页视频嗅探与登录助手"))
         guide_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #1c5293;")
         guide_layout.addWidget(guide_title)
         
@@ -6739,7 +6740,7 @@ class PlaywrightBrowserController(QMainWindow):
 
     def _toggle_preferences_panel(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle("气泡与回收设置")
+        dialog.setWindowTitle(t("气泡与回收设置"))
         dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         dialog.setModal(True)
         dialog.resize(360, 240)
@@ -6748,23 +6749,23 @@ class PlaywrightBrowserController(QMainWindow):
         layout.setContentsMargins(18, 16, 18, 16)
         layout.setSpacing(12)
 
-        title = QLabel("气泡与回收设置")
+        title = QLabel(t("气泡与回收设置"))
         title.setStyleSheet("color: #55657d; font-size: 13px; font-weight: 600;")
         layout.addWidget(title)
 
-        chk_auto_hide = QCheckBox("浏览器运行后自动收回为气泡")
+        chk_auto_hide = QCheckBox(t("浏览器运行后自动收回为气泡"))
         chk_auto_hide.setChecked(bool(self._browser_settings.get("auto_hide_when_running", True)))
         layout.addWidget(chk_auto_hide)
 
-        chk_focus_minimize = QCheckBox("面板失去焦点时自动收回")
+        chk_focus_minimize = QCheckBox(t("面板失去焦点时自动收回"))
         chk_focus_minimize.setChecked(bool(self._browser_settings.get("auto_minimize_on_focus_loss", True)))
         layout.addWidget(chk_focus_minimize)
 
-        chk_bubble_animation = QCheckBox("启用气泡动画")
+        chk_bubble_animation = QCheckBox(t("启用气泡动画"))
         chk_bubble_animation.setChecked(bool(self._browser_settings.get("bubble_animations_enabled", True)))
         layout.addWidget(chk_bubble_animation)
 
-        chk_bubble_lock = QCheckBox("记住气泡位置并保持原位")
+        chk_bubble_lock = QCheckBox(t("记住气泡位置并保持原位"))
         chk_bubble_lock.setChecked(bool(self._browser_settings.get("bubble_lock_position", False)))
         layout.addWidget(chk_bubble_lock)
 
@@ -6773,11 +6774,11 @@ class PlaywrightBrowserController(QMainWindow):
         button_row = QHBoxLayout()
         button_row.addStretch()
 
-        btn_cancel = QPushButton("取消")
+        btn_cancel = QPushButton(t("取消"))
         btn_cancel.clicked.connect(dialog.reject)
         button_row.addWidget(btn_cancel)
 
-        btn_ok = QPushButton("确定")
+        btn_ok = QPushButton(t("确定"))
         btn_ok.setObjectName("primaryBtn")
         btn_ok.clicked.connect(dialog.accept)
         button_row.addWidget(btn_ok)
@@ -6913,7 +6914,7 @@ class PlaywrightBrowserController(QMainWindow):
 
     def _edit_quick_sites(self):
         dialog = QDialog(self)
-        dialog.setWindowTitle("编辑快捷网址")
+        dialog.setWindowTitle(t("编辑快捷网址"))
         dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         dialog.setModal(True)
         dialog.resize(700, 460)
@@ -6922,11 +6923,11 @@ class PlaywrightBrowserController(QMainWindow):
         layout.setContentsMargins(18, 16, 18, 16)
         layout.setSpacing(12)
 
-        title = QLabel("自定义底部快速网址导航")
+        title = QLabel(t("自定义底部快速网址导航"))
         title.setStyleSheet("color: #55657d; font-size: 13px; font-weight: 600;")
         layout.addWidget(title)
 
-        tip = QLabel("这里只编辑名称和网址。颜色和删除请在主界面快捷按钮上右键设置。")
+        tip = QLabel(t("这里只编辑名称和网址。颜色和删除请在主界面快捷按钮上右键设置。"))
         tip.setStyleSheet("color: #7a8798; font-size: 12px;")
         layout.addWidget(tip)
 
@@ -6972,15 +6973,15 @@ class PlaywrightBrowserController(QMainWindow):
         layout.addWidget(scroll, 1)
 
         button_row = QHBoxLayout()
-        btn_reset = QPushButton("恢复默认")
+        btn_reset = QPushButton(t("恢复默认"))
         button_row.addWidget(btn_reset)
         button_row.addStretch()
 
-        btn_cancel = QPushButton("取消")
+        btn_cancel = QPushButton(t("取消"))
         btn_cancel.clicked.connect(dialog.reject)
         button_row.addWidget(btn_cancel)
 
-        btn_ok = QPushButton("保存")
+        btn_ok = QPushButton(t("保存"))
         btn_ok.setObjectName("primaryBtn")
         btn_ok.clicked.connect(dialog.accept)
         button_row.addWidget(btn_ok)
@@ -7246,7 +7247,7 @@ class PlaywrightBrowserController(QMainWindow):
                         if not hasattr(self, '_browser_running') or not self._browser_running:
                             # READY 信号可能延迟或丢失，直接更新状态
                             self._browser_running = True
-                            self.btn_launch.setText("关闭浏览器")
+                            self.btn_launch.setText(t("关闭浏览器"))
                             self.btn_launch.setEnabled(True)
                             self.btn_extract.setEnabled(True)
                             self.btn_clear_cookies.setEnabled(True)
@@ -7400,7 +7401,7 @@ class PlaywrightBrowserController(QMainWindow):
             if hasattr(self, '_browser_running') and self._browser_running:
                 return
             self._browser_running = True
-            self.btn_launch.setText("关闭浏览器")
+            self.btn_launch.setText(t("关闭浏览器"))
             self.btn_launch.setEnabled(True)
             self.btn_extract.setEnabled(True)
             self.btn_clear_cookies.setEnabled(True)
@@ -7419,13 +7420,13 @@ class PlaywrightBrowserController(QMainWindow):
             self._process_watchdog.stop()
             self._browser_running = False
             self._browser_process = None
-            self.btn_launch.setText("启动浏览器")
+            self.btn_launch.setText(t("启动浏览器"))
             self.btn_launch.setEnabled(True)
             self.btn_extract.setEnabled(False)
             self.btn_clear_cookies.setEnabled(False)
             self.btn_media_capture.setEnabled(False)
             self.btn_media_capture.setChecked(False)
-            self.btn_media_capture.setText("📡 媒体捕获: 关")
+            self.btn_media_capture.setText(t("📡 媒体捕获: 关"))
             self._media_window.hide()
             self._apply_status_visual("idle")
             self.browser_selector.setEnabled(True)
@@ -7463,7 +7464,7 @@ class PlaywrightBrowserController(QMainWindow):
                 print("[GUI] 收到'已打开页面'消息，自动更新状态为运行中")
                 self._startup_ready = True
                 self._browser_running = True
-                self.btn_launch.setText("关闭浏览器")
+                self.btn_launch.setText(t("关闭浏览器"))
                 self.btn_launch.setEnabled(True)
                 self.btn_extract.setEnabled(True)
                 self.btn_clear_cookies.setEnabled(True)
@@ -7553,7 +7554,7 @@ class PlaywrightBrowserController(QMainWindow):
     def _toggle_media_capture(self, checked):
         """切换媒体捕获状态"""
         if checked:
-            self.btn_media_capture.setText("📡 媒体捕获: 开")
+            self.btn_media_capture.setText(t("📡 媒体捕获: 开"))
             self._apply_status_visual("capture")
             self._media_window.showNormal()
             self._media_window.show()
@@ -7565,7 +7566,7 @@ class PlaywrightBrowserController(QMainWindow):
             self._send_command("PING")  # 验证连接
             ModernToast.show_message("媒体捕获已开启，正在监听网络请求... 📡", self)
         else:
-            self.btn_media_capture.setText("📡 媒体捕获: 关")
+            self.btn_media_capture.setText(t("📡 媒体捕获: 关"))
             self._apply_status_visual("running" if self._browser_running else "idle")
             self._media_window.hide()
             self._send_command("DISABLE_CAPTURE")
@@ -7575,7 +7576,7 @@ class PlaywrightBrowserController(QMainWindow):
         """当媒体捕获窗口被手动关闭时"""
         if self.btn_media_capture.isChecked():
             self.btn_media_capture.setChecked(False)
-            self.btn_media_capture.setText("📡 媒体捕获: 关")
+            self.btn_media_capture.setText(t("📡 媒体捕获: 关"))
             self._send_command("DISABLE_CAPTURE")
             self._apply_status_visual("running" if self._browser_running else "idle")
             ModernToast.show_message("媒体捕获已关闭 🛑", self)
