@@ -1452,7 +1452,7 @@ class DownloadThread(QThread):
                 explicit_format_id = False
                 try:
                     if self.main_app and hasattr(self.main_app, 'format_combo'):
-                        explicit_format_id = (self.main_app.format_combo.currentText() == "指定格式ID")
+                        explicit_format_id = (self.main_app.format_combo.currentText() == t("指定格式ID"))
                 except Exception:
                     explicit_format_id = False
 

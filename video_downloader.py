@@ -1095,7 +1095,7 @@ class FailedVideosDialog(QDialog):
             self.table = QTableWidget()
             self.table.setColumnCount(3)
             # 【简化】表头只显示失败视频信息
-            self.table.setHorizontalHeaderLabels(["#", t("视频标题"), "失败原因"])
+            self.table.setHorizontalHeaderLabels(["#", t("视频标题"), t("失败原因")])
             self.table.setRowCount(len(self.failed_videos))
             
             # 设置表格样式
@@ -3160,7 +3160,7 @@ class DownloadThread(QThread):
                 explicit_format_id = False
                 try:
                     if self.main_app and hasattr(self.main_app, 'format_combo'):
-                        explicit_format_id = (self.main_app.format_combo.currentText() == "指定格式ID")
+                        explicit_format_id = (self.main_app.format_combo.currentText() == t("指定格式ID"))
                 except Exception:
                     explicit_format_id = False
 
@@ -14541,7 +14541,7 @@ class VideoDownloaderApp(QMainWindow):
         ip_version_layout = QHBoxLayout()
         ip_version_layout.addWidget(QLabel(t("IP版本:")))
         self.ip_version_combo = QComboBox()
-        self.ip_version_combo.addItems([t("自动"), "仅IPv4", "仅IPv6"])
+        self.ip_version_combo.addItems([t("自动"), t("仅IPv4"), t("仅IPv6")])
         self.ip_version_combo.setCurrentText(t("仅IPv4"))
         self.ip_version_combo.setToolTip(
             t("选择使用的IP协议版本\n") + t("• 仅IPv4: 强制使用IPv4，避免IPv6问题（推荐）\n") + t("• 仅IPv6: 强制使用IPv6\n") + t("• 自动: 由系统自动选择")
@@ -15123,7 +15123,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 转码速度预设
         self.speed_preset = QComboBox()
-        self.speed_preset.addItems([t("快速"), "正常", "高质量"])
+        self.speed_preset.addItems([t("快速"), t("正常"), t("高质量")])
         self.speed_preset.setCurrentText(t("正常"))  # 默认正常预设
         self.speed_preset.setToolTip(t("转码速度预设：快速转码快但质量一般，正常平衡速度和质量，高质量转码慢但质量最佳"))
         transcode_options_layout.addRow(t("转码速度:"), self.speed_preset)
@@ -15384,7 +15384,7 @@ class VideoDownloaderApp(QMainWindow):
         # 尺寸调整
         resize_layout = QHBoxLayout()
         self.resize_mode_combo = QComboBox()
-        self.resize_mode_combo.addItems([t("不调整"), "按百分比", "固定尺寸", "最大边长"])
+        self.resize_mode_combo.addItems([t("不调整"), t("按百分比"), t("固定尺寸"), t("最大边长")])
         self.resize_mode_combo.setToolTip(t("选择尺寸调整模式"))
         self.resize_mode_combo.currentTextChanged.connect(self.on_resize_mode_changed)
         resize_layout.addWidget(self.resize_mode_combo)
@@ -15439,7 +15439,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 采样方式
         self.resample_combo = QComboBox()
-        self.resample_combo.addItems([t("Lanczos (最佳质量)"), "双三次", "双线性", "最近邻 (最快)"])
+        self.resample_combo.addItems([t("Lanczos (最佳质量)"), t("双三次"), t("双线性"), t("最近邻 (最快)")])
         self.resample_combo.setToolTip(t("图片缩放时的采样算法"))
         image_options_layout.addRow(t("采样方式:"), self.resample_combo)
         
@@ -15897,7 +15897,7 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_process_thread = None
         self.realesrgan_file_list = []
         for tab_index in range(self.tabs.count()):
-            if self.tabs.tabText(tab_index) == "画质修复":
+            if self.tabs.tabText(tab_index) == t("画质修复"):
                 self.tabs.removeTab(tab_index)
                 break
         
@@ -15967,7 +15967,7 @@ class VideoDownloaderApp(QMainWindow):
         # 历史记录表格
         self.history_table = QTableWidget()
         self.history_table.setColumnCount(6)
-        self.history_table.setHorizontalHeaderLabels([t("类型"), "标题", "时间", "文件大小", "格式/选项", "操作"])
+        self.history_table.setHorizontalHeaderLabels([t("类型"), t("标题"), t("时间"), t("文件大小"), t("格式/选项"), t("操作")])
         
         # 设置表格属性
         self.history_table.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -16718,7 +16718,7 @@ class VideoDownloaderApp(QMainWindow):
                 # 使用最近文件对话框目录，不覆盖统一保存路径
                 current_dir = self._get_dialog_start_dir()
                 
-            file, _ = QFileDialog.getOpenFileName(self, t("选择视频文件"), current_dir, "视频文件 (*.mp4 *.mkv *.avi *.mov *.webm *.flv);;所有文件 (*)")
+            file, _ = QFileDialog.getOpenFileName(self, t("选择视频文件"), current_dir, t("视频文件 (*.mp4 *.mkv *.avi *.mov *.webm *.flv);;所有文件 (*)"))
             if file:
                 # 确保路径使用正确的编码
                 file = os.path.normpath(os.path.abspath(file))
@@ -16765,7 +16765,7 @@ class VideoDownloaderApp(QMainWindow):
         # 选择输出文件
         # 使用保存的路径作为初始目录
         saved_path = self._get_dialog_start_dir()
-        file, _ = QFileDialog.getSaveFileName(self, t("保存文件"), saved_path, "视频文件 (*.mp4 *.mkv *.avi *.mov *.webm);;音频文件 (*.mp3 *.m4a *.flac);;所有文件 (*)")
+        file, _ = QFileDialog.getSaveFileName(self, t("保存文件"), saved_path, t("视频文件 (*.mp4 *.mkv *.avi *.mov *.webm);;音频文件 (*.mp3 *.m4a *.flac);;所有文件 (*)"))
         if file:
             self.output_file.setText(file)
             self._remember_dialog_dir(file)
@@ -16774,7 +16774,7 @@ class VideoDownloaderApp(QMainWindow):
         # 选择Cookie文件
         # 使用最近文件对话框目录作为初始目录
         saved_path = self._get_dialog_start_dir()
-        file, _ = QFileDialog.getOpenFileName(self, t("选择Cookie文件"), saved_path, "Cookie文件 (*.txt);;所有文件 (*)")
+        file, _ = QFileDialog.getOpenFileName(self, t("选择Cookie文件"), saved_path, t("Cookie文件 (*.txt);;所有文件 (*)"))
         if file:
             self.cookie_file.setText(file)
             self._remember_dialog_dir(file)
@@ -16783,7 +16783,7 @@ class VideoDownloaderApp(QMainWindow):
         """选择客户端证书文件"""
         # 使用最近文件对话框目录作为初始目录
         saved_path = self._get_dialog_start_dir()
-        file, _ = QFileDialog.getOpenFileName(self, t("选择客户端证书文件"), saved_path, "证书文件 (*.pem *.crt *.p12 *.pfx);;所有文件 (*)")
+        file, _ = QFileDialog.getOpenFileName(self, t("选择客户端证书文件"), saved_path, t("证书文件 (*.pem *.crt *.p12 *.pfx);;所有文件 (*)"))
         if file:
             self.client_cert_file.setText(file)
             self._remember_dialog_dir(file)
@@ -16792,7 +16792,7 @@ class VideoDownloaderApp(QMainWindow):
         """选择客户端证书密钥文件"""
         # 使用最近文件对话框目录作为初始目录
         saved_path = self._get_dialog_start_dir()
-        file, _ = QFileDialog.getOpenFileName(self, t("选择客户端证书密钥文件"), saved_path, "密钥文件 (*.key *.pem);;所有文件 (*)")
+        file, _ = QFileDialog.getOpenFileName(self, t("选择客户端证书密钥文件"), saved_path, t("密钥文件 (*.key *.pem);;所有文件 (*)"))
         if file:
             self.client_cert_key.setText(file)
             self._remember_dialog_dir(file)
@@ -17219,7 +17219,7 @@ class VideoDownloaderApp(QMainWindow):
             self.update_status(t("🔄 正在检查网站上的软件版本..."), "info")
         self._set_settings_app_update_card_state(
             state="checking",
-            message="正在连接官网检查版本信息...",
+            message=t("正在连接官网检查版本信息..."),
         )
 
         self.app_update_thread = AppUpdateCheckThread(DEFAULT_APP_UPDATE_METADATA_URL)
@@ -17359,7 +17359,7 @@ class VideoDownloaderApp(QMainWindow):
     ):
         """同步设置页软件更新卡片状态。"""
         current_version = str(current_version or get_app_version()).strip()
-        latest_version = str(latest_version or "未检查").strip()
+        latest_version = str(latest_version or t("未检查")).strip()
         website_url = str(website_url or DEFAULT_APP_WEBSITE_URL).strip()
         download_url = str(download_url or "").strip()
         checked_at = str(
@@ -17420,11 +17420,11 @@ class VideoDownloaderApp(QMainWindow):
 
         if hasattr(self, "settings_app_update_badge") and self.settings_app_update_badge is not None:
             badge_text = {
-                "idle": "官网更新",
-                "checking": "检查中",
-                "update_available": "发现新版本",
-                "current": "已是最新",
-                "error": "检查失败",
+                "idle": t("官网更新"),
+                "checking": t("检查中"),
+                "update_available": t("发现新版本"),
+                "current": t("已是最新"),
+                "error": t("检查失败"),
             }.get(state, t("官网更新"))
             self.settings_app_update_badge.setText(badge_text)
             self.settings_app_update_badge.setStyleSheet(
@@ -17455,7 +17455,7 @@ class VideoDownloaderApp(QMainWindow):
 
         if hasattr(self, "settings_check_app_update_btn") and self.settings_check_app_update_btn is not None:
             self.settings_check_app_update_btn.setEnabled(state != "checking")
-            self.settings_check_app_update_btn.setText("检查中..." if state == "checking" else "检查软件更新")
+            self.settings_check_app_update_btn.setText(t("检查中...") if state == "checking" else t("检查软件更新"))
 
         if hasattr(self, "settings_open_website_btn") and self.settings_open_website_btn is not None:
             self.settings_open_website_btn.setEnabled(True)
@@ -17853,7 +17853,7 @@ class VideoDownloaderApp(QMainWindow):
                 t_format("发现新版本 v{}，可从官网下载最新安装包。", getattr(self, '_last_app_update_payload', {}).get('version', ''))
                 if self.settings.value("last_app_update_has_update", False, type=bool)
                 and getattr(self, "_last_app_update_payload", {})
-                else "点击下方按钮检查官网新版本"
+                else t("点击下方按钮检查官网新版本")
             ),
             current_version=get_app_version(),
             latest_version=(
@@ -19607,7 +19607,7 @@ class VideoDownloaderApp(QMainWindow):
         # 开始下载
         url_text = self.url_input.text().strip()
         if not url_text:
-            self._show_browser_safe_message(QMessageBox.Warning, t("错误"), "请输入视频URL")
+            self._show_browser_safe_message(QMessageBox.Warning, t("错误"), t("请输入视频URL"))
             return
             
         # 从输入文本中提取URL
@@ -19674,10 +19674,10 @@ class VideoDownloaderApp(QMainWindow):
 
         # 如果用户选择了指定格式ID但没有先获取可用格式列表
         # 注意：如果格式 ID 是从媒体捕获窗口传入的，则跳过此检查
-        format_id_from_capture = self.format_id_combo.currentText().strip() if self.format_combo.currentText() == "指定格式ID" else ""
+        format_id_from_capture = self.format_id_combo.currentText().strip() if self.format_combo.currentText() == t("指定格式ID") else ""
         skip_format_dialog = bool(format_id_from_capture) and format_id_from_capture not in ("", "选择格式ID")
         
-        if (not is_media_capture_download) and self.format_combo.currentText() == "指定格式ID" and not self.available_formats and not skip_format_dialog:
+        if (not is_media_capture_download) and self.format_combo.currentText() == t("指定格式ID") and not self.available_formats and not skip_format_dialog:
             handled = {"triggered": False}
 
             def _go_list_formats():
@@ -19823,7 +19823,7 @@ class VideoDownloaderApp(QMainWindow):
         # 创建表格显示字幕信息
         table = QTableWidget()
         table.setColumnCount(4)
-        table.setHorizontalHeaderLabels([t("语言代码"), "语言名称", t("格式"), "类型"])
+        table.setHorizontalHeaderLabels([t("语言代码"), t("语言名称"), t("格式"), t("类型")])
         
         # 设置表格样式
         table.horizontalHeader().setStretchLastSection(True)
@@ -24745,7 +24745,7 @@ class VideoDownloaderApp(QMainWindow):
                 self._update_image_count()
                 self.image_progress_text.append(t_format("✅ 已通过拖放添加 {} 张图片", added))
                 for i in range(self.tabs.count()):
-                    if self.tabs.tabText(i) == "图片处理":
+                    if self.tabs.tabText(i) == t("图片处理"):
                         self.tabs.setCurrentIndex(i)
                         break
                 return True

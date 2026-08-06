@@ -181,7 +181,7 @@ class FailedVideosDialog(QDialog):
             self.table = QTableWidget()
             self.table.setColumnCount(3)
             # 【简化】表头只显示失败视频信息
-            self.table.setHorizontalHeaderLabels(["#", t("视频标题"), "失败原因"])
+            self.table.setHorizontalHeaderLabels(["#", t("视频标题"), t("失败原因")])
             self.table.setRowCount(len(self.failed_videos))
             
             # 设置表格样式
