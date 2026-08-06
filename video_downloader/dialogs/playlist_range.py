@@ -16,7 +16,7 @@ class PlaylistRangeDialog(QDialog):
         self.init_ui()
         
     def init_ui(self):
-        self.setWindowTitle("播放列表范围选择")
+        self.setWindowTitle(t("播放列表范围选择"))
         self.setModal(True)
         self.resize(800, 600)
         
@@ -34,17 +34,17 @@ class PlaylistRangeDialog(QDialog):
         # 快速选择按钮
         button_layout = QHBoxLayout()
         
-        select_all_btn = QPushButton("全选")
+        select_all_btn = QPushButton(t("全选"))
         select_all_btn.setAutoDefault(False)  # 禁用自动默认
         select_all_btn.clicked.connect(self.select_all)
         button_layout.addWidget(select_all_btn)
         
-        select_none_btn = QPushButton("全不选")
+        select_none_btn = QPushButton(t("全不选"))
         select_none_btn.setAutoDefault(False)  # 禁用自动默认
         select_none_btn.clicked.connect(self.select_none)
         button_layout.addWidget(select_none_btn)
         
-        select_range_btn = QPushButton("选择范围")
+        select_range_btn = QPushButton(t("选择范围"))
         select_range_btn.setAutoDefault(False)  # 禁用自动默认
         select_range_btn.clicked.connect(self.select_range)
         button_layout.addWidget(select_range_btn)
@@ -58,7 +58,7 @@ class PlaylistRangeDialog(QDialog):
         
         # 添加调试信息
         if not entries:
-            debug_item = QListWidgetItem("没有找到视频条目，请检查播放列表URL")
+            debug_item = QListWidgetItem(t("没有找到视频条目，请检查播放列表URL"))
             debug_item.setData(Qt.UserRole, 0)
             self.video_list.addItem(debug_item)
         else:
@@ -87,13 +87,13 @@ class PlaylistRangeDialog(QDialog):
         
         # 范围输入
         range_layout = QHBoxLayout()
-        range_layout.addWidget(QLabel("手动输入范围:"))
+        range_layout.addWidget(QLabel(t("手动输入范围:")))
         self.range_input = QLineEdit()
-        self.range_input.setPlaceholderText("例如: 1-10,15,20-25")
+        self.range_input.setPlaceholderText(t("例如: 1-10,15,20-25"))
         self.range_input.returnPressed.connect(self.apply_range_input)  # 按回车键应用范围
         range_layout.addWidget(self.range_input)
         
-        apply_range_btn = QPushButton("应用范围")
+        apply_range_btn = QPushButton(t("应用范围"))
         apply_range_btn.setAutoDefault(False)  # 禁用自动默认
         apply_range_btn.clicked.connect(self.apply_range_input)
         range_layout.addWidget(apply_range_btn)
@@ -104,12 +104,12 @@ class PlaylistRangeDialog(QDialog):
         button_layout2 = QHBoxLayout()
         button_layout2.addStretch()
         
-        ok_btn = QPushButton("确定")
+        ok_btn = QPushButton(t("确定"))
         ok_btn.setDefault(True)  # 设置为默认按钮
         ok_btn.clicked.connect(self.accept)
         button_layout2.addWidget(ok_btn)
         
-        cancel_btn = QPushButton("取消")
+        cancel_btn = QPushButton(t("取消"))
         cancel_btn.setAutoDefault(False)  # 禁用自动默认
         cancel_btn.clicked.connect(self.reject)
         button_layout2.addWidget(cancel_btn)
@@ -129,8 +129,8 @@ class PlaylistRangeDialog(QDialog):
         """选择范围对话框"""
         from PyQt5.QtWidgets import QInputDialog
         
-        text, ok = QInputDialog.getText(self, '选择范围', 
-                                       '请输入范围 (例如: 1-10,15,20-25):')
+        text, ok = QInputDialog.getText(self, t('选择范围'), 
+                                       t('请输入范围 (例如: 1-10,15,20-25):'))
         if ok and text:
             self.range_input.setText(text)
             self.apply_range_input()

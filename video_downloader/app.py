@@ -1058,33 +1058,33 @@ class VideoDownloaderApp(QMainWindow):
         # 创建主题选择菜单
         theme_menu = QMenu(self)
         # ... (主题菜单项保持不变)
-        action_light = theme_menu.addAction("默认明亮", lambda: self.apply_theme("light"))
+        action_light = theme_menu.addAction(t("默认明亮"), lambda: self.apply_theme("light"))
         action_light.setIcon(self._make_color_icon("#f0f0f0"))
-        action_dark = theme_menu.addAction("经典暗黑", lambda: self.apply_theme("dark"))
+        action_dark = theme_menu.addAction(t("经典暗黑"), lambda: self.apply_theme("dark"))
         action_dark.setIcon(self._make_color_icon("#2d2d2d"))
         theme_menu.addSeparator()
-        action_business_blue = theme_menu.addAction("商务蓝", lambda: self.apply_theme("business_blue"))
+        action_business_blue = theme_menu.addAction(t("商务蓝"), lambda: self.apply_theme("business_blue"))
         action_business_blue.setIcon(self._make_color_icon("#396ab1"))
-        action_corporate_gray = theme_menu.addAction("企业灰", lambda: self.apply_theme("corporate_gray"))
+        action_corporate_gray = theme_menu.addAction(t("企业灰"), lambda: self.apply_theme("corporate_gray"))
         action_corporate_gray.setIcon(self._make_color_icon("#8a95a5"))
-        action_finance_green = theme_menu.addAction("金融绿", lambda: self.apply_theme("finance_green"))
+        action_finance_green = theme_menu.addAction(t("金融绿"), lambda: self.apply_theme("finance_green"))
         action_finance_green.setIcon(self._make_color_icon("#277a5a"))
-        action_slate_dark = theme_menu.addAction("石墨深色", lambda: self.apply_theme("slate_dark"))
+        action_slate_dark = theme_menu.addAction(t("石墨深色"), lambda: self.apply_theme("slate_dark"))
         action_slate_dark.setIcon(self._make_color_icon("#323a47"))
         theme_menu.addSeparator()
-        action_blue = theme_menu.addAction("淡雅蓝", lambda: self.apply_theme("pastel_blue"))
+        action_blue = theme_menu.addAction(t("淡雅蓝"), lambda: self.apply_theme("pastel_blue"))
         action_blue.setIcon(self._make_color_icon("#add8e6"))
-        action_green = theme_menu.addAction("淡雅绿", lambda: self.apply_theme("pastel_green"))
+        action_green = theme_menu.addAction(t("淡雅绿"), lambda: self.apply_theme("pastel_green"))
         action_green.setIcon(self._make_color_icon("#98fb98"))
-        action_pink = theme_menu.addAction("淡雅粉", lambda: self.apply_theme("pastel_pink"))
+        action_pink = theme_menu.addAction(t("淡雅粉"), lambda: self.apply_theme("pastel_pink"))
         action_pink.setIcon(self._make_color_icon("#ffb6c1"))
-        action_purple = theme_menu.addAction("淡雅紫", lambda: self.apply_theme("pastel_purple"))
+        action_purple = theme_menu.addAction(t("淡雅紫"), lambda: self.apply_theme("pastel_purple"))
         action_purple.setIcon(self._make_color_icon("#dda0dd"))
-        action_red = theme_menu.addAction("淡雅红", lambda: self.apply_theme("pastel_red"))
+        action_red = theme_menu.addAction(t("淡雅红"), lambda: self.apply_theme("pastel_red"))
         action_red.setIcon(self._make_color_icon("#ffc0c0"))
-        action_orange = theme_menu.addAction("淡雅橙", lambda: self.apply_theme("pastel_orange"))
+        action_orange = theme_menu.addAction(t("淡雅橙"), lambda: self.apply_theme("pastel_orange"))
         action_orange.setIcon(self._make_color_icon("#ffdab9"))
-        action_teal = theme_menu.addAction("淡雅青", lambda: self.apply_theme("pastel_teal"))
+        action_teal = theme_menu.addAction(t("淡雅青"), lambda: self.apply_theme("pastel_teal"))
         action_teal.setIcon(self._make_color_icon("#afeeee"))
         
         self.theme_button.setMenu(theme_menu)
@@ -1099,10 +1099,8 @@ class VideoDownloaderApp(QMainWindow):
         self.help_button.setStyleSheet(self.common_btn_style)
         self.help_button.clicked.connect(lambda: QMessageBox.information(
             self, 
-            "联系开发者", 
-            "如有问题或建议，请联系开发者：\n\n"
-            "📱 QQ：3789522776\n\n"
-            "感谢您的使用与支持！"
+            t("联系开发者"), 
+            t("如有问题或建议，请联系开发者：\n\n") + t("📱 QQ：3789522776\n\n") + t("感谢您的使用与支持！")
         ))
         toolbar_layout.addWidget(self.help_button)
         
@@ -1145,7 +1143,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 下载选项卡
         download_tab = QWidget()
-        self.tabs.addTab(download_tab, "下载")
+        self.tabs.addTab(download_tab, t("下载"))
         download_layout = QVBoxLayout(download_tab)
         
         # URL输入区域
@@ -1183,17 +1181,17 @@ class VideoDownloaderApp(QMainWindow):
         format_layout = QHBoxLayout()
         self.format_combo = QComboBox()
         self.format_combo.addItems([
-            "最佳质量", 
+            t("最佳质量"), 
             "4K",
             "2K",
             "1080p",
             "720p", 
             "480p", 
-            "仅音频 (mp3)", 
-            "仅音频 (m4a)",
-            "仅缩略图",
-            "自定义",
-            "指定格式ID"
+            t("仅音频 (mp3)"), 
+            t("仅音频 (m4a)"),
+            t("仅缩略图"),
+            t("自定义"),
+            t("指定格式ID")
         ])
         # 添加工具提示，说明格式选择
         self.format_combo.setToolTip(t("选择下载格式。'最佳质量'选项会自动选择最佳视频和音频质量。'仅缩略图'选项只下载视频封面图片，不下载视频文件。"))
@@ -1206,13 +1204,13 @@ class VideoDownloaderApp(QMainWindow):
         self.advanced_format_button.clicked.connect(self.open_advanced_format_dialog)
         format_layout.addWidget(self.advanced_format_button)
         
-        options_layout.addRow("格式:", format_layout)
+        options_layout.addRow(t("格式:"), format_layout)
         
         # 自定义格式
         self.custom_format = QLineEdit()
         self.custom_format.setPlaceholderText(t("例如: bestvideo[height<=1080]+bestaudio[acodec!=opus]/best[acodec!=opus]"))
         self.custom_format.setEnabled(False)
-        options_layout.addRow("自定义格式:", self.custom_format)
+        options_layout.addRow(t("自定义格式:"), self.custom_format)
         
         # 格式ID选择
         self.format_id_combo = QComboBox()
@@ -1230,28 +1228,28 @@ class VideoDownloaderApp(QMainWindow):
                 selection-background-color: #3daee9;
             }
         """)
-        options_layout.addRow("格式ID:", self.format_id_combo)
+        options_layout.addRow(t("格式ID:"), self.format_id_combo)
         
         # 音频语言选择
         audio_lang_layout = QHBoxLayout()
         self.audio_lang_combo = QComboBox()
         self.audio_lang_combo.addItems([
-            "自动选择 (推荐)",
-            "英语 (en)", 
-            "中文 (zh)",
-            "日语 (ja)",
-            "韩语 (ko)",
-            "法语 (fr)",
-            "德语 (de)",
-            "西班牙语 (es)",
-            "俄语 (ru)",
-            "意大利语 (it)",
-            "葡萄牙语 (pt)",
-            "阿拉伯语 (ar)",
-            "印地语 (hi)",
-            "泰语 (th)",
-            "越南语 (vi)",
-            "自定义语言代码"
+            t("自动选择 (推荐)"),
+            t("英语 (en)"), 
+            t("中文 (zh)"),
+            t("日语 (ja)"),
+            t("韩语 (ko)"),
+            t("法语 (fr)"),
+            t("德语 (de)"),
+            t("西班牙语 (es)"),
+            t("俄语 (ru)"),
+            t("意大利语 (it)"),
+            t("葡萄牙语 (pt)"),
+            t("阿拉伯语 (ar)"),
+            t("印地语 (hi)"),
+            t("泰语 (th)"),
+            t("越南语 (vi)"),
+            t("自定义语言代码")
         ])
         self.audio_lang_combo.setToolTip(t("选择音频语言。'自动选择'会优先选择英语或视频的默认语言。"))
         audio_lang_layout.addWidget(self.audio_lang_combo)
@@ -1266,7 +1264,7 @@ class VideoDownloaderApp(QMainWindow):
         # 连接信号
         self.audio_lang_combo.currentIndexChanged.connect(self.update_audio_lang_options)
         
-        options_layout.addRow("音频语言:", audio_lang_layout)
+        options_layout.addRow(t("音频语言:"), audio_lang_layout)
         
         # 输出路径
         self.output_path = QLineEdit()
@@ -1276,7 +1274,7 @@ class VideoDownloaderApp(QMainWindow):
         output_layout = QHBoxLayout()
         output_layout.addWidget(self.output_path)
         output_layout.addWidget(browse_button)
-        options_layout.addRow("保存位置:", output_layout)
+        options_layout.addRow(t("保存位置:"), output_layout)
         
         # 创建高级选项的可折叠区域
         self.advanced_group = QGroupBox(t("高级选项"))
@@ -1302,7 +1300,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 字幕选项卡
         subtitle_tab = QWidget()
-        advanced_tabs.addTab(subtitle_tab, "字幕")
+        advanced_tabs.addTab(subtitle_tab, t("字幕"))
         
         # 创建滚动区域以容纳字幕选项
         subtitle_scroll = QScrollArea(subtitle_tab)
@@ -1321,12 +1319,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加字幕功能使用说明
         subtitle_usage_label = QLabel(
-            "<b>🎬 字幕功能使用说明：</b><br>"
-            "• <b>基础字幕下载：</b>勾选'下载手动字幕'获取视频原始字幕文件<br>"
-            "• <b>自动字幕：</b>勾选'下载自动生成字幕'获取平台AI生成的字幕<br>"
-            "• <b>语言选择：</b>选择需要的字幕语言，支持中文、英文等多种语言<br>"
-            "• <b>格式转换：</b>推荐使用SRT格式，兼容性最好<br>"
-            "• <b>编码转换：</b>勾选'转换字幕为SRT+UTF-8'确保中文字符正常显示"
+            t("<b>🎬 字幕功能使用说明：</b><br>") + t("• <b>基础字幕下载：</b>勾选'下载手动字幕'获取视频原始字幕文件<br>") + t("• <b>自动字幕：</b>勾选'下载自动生成字幕'获取平台AI生成的字幕<br>") + t("• <b>语言选择：</b>选择需要的字幕语言，支持中文、英文等多种语言<br>") + t("• <b>格式转换：</b>推荐使用SRT格式，兼容性最好<br>") + t("• <b>编码转换：</b>勾选'转换字幕为SRT+UTF-8'确保中文字符正常显示")
         )
         subtitle_usage_label.setWordWrap(True)
         subtitle_usage_label.setStyleSheet(
@@ -1404,60 +1397,60 @@ class VideoDownloaderApp(QMainWindow):
         lang_label.setStyleSheet("QLabel { font-weight: bold; }")
         subtitle_lang_layout.addWidget(lang_label)
         self.subtitle_lang = LimitedHeightComboBox(max_visible_items=12)
-        self.subtitle_lang.addItem("全部语言", "all")
+        self.subtitle_lang.addItem(t("全部语言"), "all")
         # 东亚语言
-        self.subtitle_lang.addItem("中文简体 (zh-CN)", "zh-CN")
-        self.subtitle_lang.addItem("中文繁体 (zh-TW)", "zh-TW")
-        self.subtitle_lang.addItem("中文香港 (zh-HK)", "zh-HK")
-        self.subtitle_lang.addItem("日语 (ja)", "ja")
-        self.subtitle_lang.addItem("韩语 (ko)", "ko")
+        self.subtitle_lang.addItem(t("中文简体 (zh-CN)"), "zh-CN")
+        self.subtitle_lang.addItem(t("中文繁体 (zh-TW)"), "zh-TW")
+        self.subtitle_lang.addItem(t("中文香港 (zh-HK)"), "zh-HK")
+        self.subtitle_lang.addItem(t("日语 (ja)"), "ja")
+        self.subtitle_lang.addItem(t("韩语 (ko)"), "ko")
         # 英语变体
-        self.subtitle_lang.addItem("英语 (en)", "en")
-        self.subtitle_lang.addItem("英语美式 (en-US)", "en-US")
-        self.subtitle_lang.addItem("英语英式 (en-GB)", "en-GB")
+        self.subtitle_lang.addItem(t("英语 (en)"), "en")
+        self.subtitle_lang.addItem(t("英语美式 (en-US)"), "en-US")
+        self.subtitle_lang.addItem(t("英语英式 (en-GB)"), "en-GB")
         # 东南亚语言
-        self.subtitle_lang.addItem("印度尼西亚语 (id)", "id")
-        self.subtitle_lang.addItem("马来语 (ms)", "ms")
-        self.subtitle_lang.addItem("泰语 (th)", "th")
-        self.subtitle_lang.addItem("越南语 (vi)", "vi")
-        self.subtitle_lang.addItem("菲律宾语 (fil)", "fil")
-        self.subtitle_lang.addItem("缅甸语 (my)", "my")
+        self.subtitle_lang.addItem(t("印度尼西亚语 (id)"), "id")
+        self.subtitle_lang.addItem(t("马来语 (ms)"), "ms")
+        self.subtitle_lang.addItem(t("泰语 (th)"), "th")
+        self.subtitle_lang.addItem(t("越南语 (vi)"), "vi")
+        self.subtitle_lang.addItem(t("菲律宾语 (fil)"), "fil")
+        self.subtitle_lang.addItem(t("缅甸语 (my)"), "my")
         # 南亚语言
-        self.subtitle_lang.addItem("印地语 (hi)", "hi")
-        self.subtitle_lang.addItem("孟加拉语 (bn)", "bn")
-        self.subtitle_lang.addItem("泰米尔语 (ta)", "ta")
-        self.subtitle_lang.addItem("泰卢固语 (te)", "te")
-        self.subtitle_lang.addItem("乌尔都语 (ur)", "ur")
+        self.subtitle_lang.addItem(t("印地语 (hi)"), "hi")
+        self.subtitle_lang.addItem(t("孟加拉语 (bn)"), "bn")
+        self.subtitle_lang.addItem(t("泰米尔语 (ta)"), "ta")
+        self.subtitle_lang.addItem(t("泰卢固语 (te)"), "te")
+        self.subtitle_lang.addItem(t("乌尔都语 (ur)"), "ur")
         # 西欧语言
-        self.subtitle_lang.addItem("法语 (fr)", "fr")
-        self.subtitle_lang.addItem("德语 (de)", "de")
-        self.subtitle_lang.addItem("西班牙语 (es)", "es")
-        self.subtitle_lang.addItem("葡萄牙语 (pt)", "pt")
-        self.subtitle_lang.addItem("葡萄牙语巴西 (pt-BR)", "pt-BR")
-        self.subtitle_lang.addItem("意大利语 (it)", "it")
-        self.subtitle_lang.addItem("荷兰语 (nl)", "nl")
+        self.subtitle_lang.addItem(t("法语 (fr)"), "fr")
+        self.subtitle_lang.addItem(t("德语 (de)"), "de")
+        self.subtitle_lang.addItem(t("西班牙语 (es)"), "es")
+        self.subtitle_lang.addItem(t("葡萄牙语 (pt)"), "pt")
+        self.subtitle_lang.addItem(t("葡萄牙语巴西 (pt-BR)"), "pt-BR")
+        self.subtitle_lang.addItem(t("意大利语 (it)"), "it")
+        self.subtitle_lang.addItem(t("荷兰语 (nl)"), "nl")
         # 北欧语言
-        self.subtitle_lang.addItem("瑞典语 (sv)", "sv")
-        self.subtitle_lang.addItem("挪威语 (no)", "no")
-        self.subtitle_lang.addItem("丹麦语 (da)", "da")
-        self.subtitle_lang.addItem("芬兰语 (fi)", "fi")
+        self.subtitle_lang.addItem(t("瑞典语 (sv)"), "sv")
+        self.subtitle_lang.addItem(t("挪威语 (no)"), "no")
+        self.subtitle_lang.addItem(t("丹麦语 (da)"), "da")
+        self.subtitle_lang.addItem(t("芬兰语 (fi)"), "fi")
         # 东欧语言
-        self.subtitle_lang.addItem("俄语 (ru)", "ru")
-        self.subtitle_lang.addItem("波兰语 (pl)", "pl")
-        self.subtitle_lang.addItem("乌克兰语 (uk)", "uk")
-        self.subtitle_lang.addItem("捷克语 (cs)", "cs")
-        self.subtitle_lang.addItem("匈牙利语 (hu)", "hu")
-        self.subtitle_lang.addItem("罗马尼亚语 (ro)", "ro")
+        self.subtitle_lang.addItem(t("俄语 (ru)"), "ru")
+        self.subtitle_lang.addItem(t("波兰语 (pl)"), "pl")
+        self.subtitle_lang.addItem(t("乌克兰语 (uk)"), "uk")
+        self.subtitle_lang.addItem(t("捷克语 (cs)"), "cs")
+        self.subtitle_lang.addItem(t("匈牙利语 (hu)"), "hu")
+        self.subtitle_lang.addItem(t("罗马尼亚语 (ro)"), "ro")
         # 其他欧洲语言
-        self.subtitle_lang.addItem("土耳其语 (tr)", "tr")
-        self.subtitle_lang.addItem("希腊语 (el)", "el")
+        self.subtitle_lang.addItem(t("土耳其语 (tr)"), "tr")
+        self.subtitle_lang.addItem(t("希腊语 (el)"), "el")
         # 中东语言
-        self.subtitle_lang.addItem("阿拉伯语 (ar)", "ar")
-        self.subtitle_lang.addItem("希伯来语 (he)", "he")
-        self.subtitle_lang.addItem("波斯语 (fa)", "fa")
+        self.subtitle_lang.addItem(t("阿拉伯语 (ar)"), "ar")
+        self.subtitle_lang.addItem(t("希伯来语 (he)"), "he")
+        self.subtitle_lang.addItem(t("波斯语 (fa)"), "fa")
         # 非洲语言
-        self.subtitle_lang.addItem("斯瓦希里语 (sw)", "sw")
-        self.subtitle_lang.addItem("阿姆哈拉语 (am)", "am")
+        self.subtitle_lang.addItem(t("斯瓦希里语 (sw)"), "sw")
+        self.subtitle_lang.addItem(t("阿姆哈拉语 (am)"), "am")
         self.subtitle_lang.setEnabled(False)
         self.subtitle_lang.setToolTip(t("选择要下载的字幕语言，'全部语言'将下载所有可用语言的字幕"))
         subtitle_lang_layout.addWidget(self.subtitle_lang)
@@ -1471,13 +1464,13 @@ class VideoDownloaderApp(QMainWindow):
         format_label.setStyleSheet("QLabel { font-weight: bold; }")
         subtitle_format_layout.addWidget(format_label)
         self.subtitle_format = QComboBox()
-        self.subtitle_format.addItem("SRT (推荐)", "srt")
-        self.subtitle_format.addItem("ASS (高级字幕)", "ass")
+        self.subtitle_format.addItem(t("SRT (推荐)"), "srt")
+        self.subtitle_format.addItem(t("ASS (高级字幕)"), "ass")
         self.subtitle_format.addItem("VTT (WebVTT)", "vtt")
         self.subtitle_format.addItem("TTML", "ttml")
-        self.subtitle_format.addItem("最佳格式", "best")
-        self.subtitle_format.addItem("格式优先级 (srt/ass/vtt/best)", "srt/ass/vtt/best")
-        self.subtitle_format.addItem("格式优先级 (ass/srt/best)", "ass/srt/best")
+        self.subtitle_format.addItem(t("最佳格式"), "best")
+        self.subtitle_format.addItem(t("格式优先级 (srt/ass/vtt/best)"), "srt/ass/vtt/best")
+        self.subtitle_format.addItem(t("格式优先级 (ass/srt/best)"), "ass/srt/best")
         self.subtitle_format.setEnabled(False)
         self.subtitle_format.setToolTip(t("选择字幕文件格式。支持格式优先级，如'srt/ass/vtt/best'会按优先级选择可用格式"))
         subtitle_format_layout.addWidget(self.subtitle_format)
@@ -1539,7 +1532,7 @@ class VideoDownloaderApp(QMainWindow):
         self.subtitle_delay_spin = QSpinBox()
         self.subtitle_delay_spin.setRange(0, 60)
         self.subtitle_delay_spin.setValue(0)
-        self.subtitle_delay_spin.setSuffix(" 秒")
+        self.subtitle_delay_spin.setSuffix(t(" 秒"))
         self.subtitle_delay_spin.setToolTip(t("设置字幕下载之间的延迟时间，避免频繁请求被限制"))
         self.subtitle_delay_spin.setEnabled(False)
         subtitle_delay_layout.addWidget(self.subtitle_delay_spin)
@@ -1654,7 +1647,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 基本选项选项卡（移除字幕选项后）
         basic_tab = QWidget()
-        advanced_tabs.addTab(basic_tab, "基本选项")
+        advanced_tabs.addTab(basic_tab, t("基本选项"))
         
         # 创建滚动区域以容纳基本选项
         basic_scroll = QScrollArea(basic_tab)
@@ -1840,11 +1833,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加功能组说明
         scenario_info_label = QLabel(
-            "<b>💡 使用场景说明：</b><br>"
-            "• <b>直播录制：</b>从头录制正在直播的视频<br>"
-            "• <b>预约下载：</b>自动等待预约直播或定时发布的视频<br>"
-            "• <b>容错处理：</b>批量下载时遇错不停，继续下载其他视频<br>"
-            "• <b>片段处理：</b>处理分段视频的下载和保留方式"
+            t("<b>💡 使用场景说明：</b><br>") + t("• <b>直播录制：</b>从头录制正在直播的视频<br>") + t("• <b>预约下载：</b>自动等待预约直播或定时发布的视频<br>") + t("• <b>容错处理：</b>批量下载时遇错不停，继续下载其他视频<br>") + t("• <b>片段处理：</b>处理分段视频的下载和保留方式")
         )
         scenario_info_label.setWordWrap(True)
         scenario_info_label.setStyleSheet(
@@ -1898,7 +1887,7 @@ class VideoDownloaderApp(QMainWindow):
         self.wait_for_video_time = QSpinBox()
         self.wait_for_video_time.setRange(10, 3600)
         self.wait_for_video_time.setValue(300)
-        self.wait_for_video_time.setSuffix(" 秒")
+        self.wait_for_video_time.setSuffix(t(" 秒"))
         self.wait_for_video_time.setEnabled(False)
         self.wait_for_video_time.setToolTip(t("设置等待重试的最小间隔（10-3600秒）"))
         wait_video_layout.addWidget(self.wait_for_video_time)
@@ -1911,7 +1900,7 @@ class VideoDownloaderApp(QMainWindow):
         self.wait_for_video_max_time = QSpinBox()
         self.wait_for_video_max_time.setRange(10, 7200)
         self.wait_for_video_max_time.setValue(600)
-        self.wait_for_video_max_time.setSuffix(" 秒")
+        self.wait_for_video_max_time.setSuffix(t(" 秒"))
         self.wait_for_video_max_time.setEnabled(False)
         self.wait_for_video_max_time.setToolTip(t("设置等待重试的最大间隔（需大于等于最小间隔）"))
         wait_video_layout.addWidget(self.wait_for_video_max_time)
@@ -2061,7 +2050,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 播放列表选项
         playlist_tab = QWidget()
-        advanced_tabs.addTab(playlist_tab, "播放列表")
+        advanced_tabs.addTab(playlist_tab, t("播放列表"))
         
         # 创建滚动区域
         playlist_scroll = QScrollArea(playlist_tab)
@@ -2080,12 +2069,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加播放列表功能使用说明
         usage_label = QLabel(
-            "<b>播放列表功能使用说明：</b><br>"
-            "1. <b>单个视频：</b>直接输入视频URL，无需勾选播放列表选项<br>"
-            "2. <b>播放列表/频道：</b>输入播放列表URL或博主主页URL，勾选'下载播放列表'<br>"
-            "3. <b>获取信息：</b>点击'获取播放列表信息'按钮查看视频列表<br>"
-            "4. <b>选择范围：</b>使用'智能选择范围'或手动输入范围（如：1-10,15,20-25）<br>"
-            "5. <b>开始下载：</b>设置好范围后点击'开始下载'按钮"
+            t("<b>播放列表功能使用说明：</b><br>") + t("1. <b>单个视频：</b>直接输入视频URL，无需勾选播放列表选项<br>") + t("2. <b>播放列表/频道：</b>输入播放列表URL或博主主页URL，勾选'下载播放列表'<br>") + t("3. <b>获取信息：</b>点击'获取播放列表信息'按钮查看视频列表<br>") + t("4. <b>选择范围：</b>使用'智能选择范围'或手动输入范围（如：1-10,15,20-25）<br>") + t("5. <b>开始下载：</b>设置好范围后点击'开始下载'按钮")
         )
         usage_label.setWordWrap(True)
         usage_label.setStyleSheet(
@@ -2149,16 +2133,12 @@ class VideoDownloaderApp(QMainWindow):
         
         # 元数据选项
         metadata_tab = QWidget()
-        advanced_tabs.addTab(metadata_tab, "元数据")
+        advanced_tabs.addTab(metadata_tab, t("元数据"))
         metadata_layout = QVBoxLayout(metadata_tab)
         
         # 添加元数据功能说明
         metadata_info_label = QLabel(
-            "<b>元数据功能说明</b><br>"
-            "• <b>下载选项</b>: 将元数据保存为独立文件<br>"
-            "• <b>嵌入选项</b>: 将元数据直接嵌入到视频文件中<br>"
-            "• <b>解析修改</b>: 自定义元数据字段的解析和替换规则<br>"
-            "• <b>扩展属性</b>: 使用系统扩展属性存储元数据"
+            t("<b>元数据功能说明</b><br>") + t("• <b>下载选项</b>: 将元数据保存为独立文件<br>") + t("• <b>嵌入选项</b>: 将元数据直接嵌入到视频文件中<br>") + t("• <b>解析修改</b>: 自定义元数据字段的解析和替换规则<br>") + t("• <b>扩展属性</b>: 使用系统扩展属性存储元数据")
         )
         metadata_info_label.setWordWrap(True)
         metadata_info_label.setStyleSheet(
@@ -2371,7 +2351,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # === 网络选项标签页（独立） ===
         network_tab = QWidget()
-        advanced_tabs.addTab(network_tab, "🌐 网络")
+        advanced_tabs.addTab(network_tab, t("🌐 网络"))
         
         # 创建滚动区域
         network_scroll = QScrollArea()
@@ -2390,11 +2370,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加网络功能说明
         network_info_label = QLabel(
-            "<b>🌐 网络选项说明</b><br>"
-            "• <b>代理设置</b>: 配置HTTP/HTTPS/SOCKS5代理，适用于需要代理访问的环境<br>"
-            "• <b>网络参数</b>: 调整超时时间、IP版本等网络连接参数<br>"
-            "• <b>代理模式</b>: 启用代理后，工具会自动应用保守的网络优化策略<br>"
-            "• <b>测试功能</b>: 使用'测试'按钮可验证代理连接是否正常"
+            t("<b>🌐 网络选项说明</b><br>") + t("• <b>代理设置</b>: 配置HTTP/HTTPS/SOCKS5代理，适用于需要代理访问的环境<br>") + t("• <b>网络参数</b>: 调整超时时间、IP版本等网络连接参数<br>") + t("• <b>代理模式</b>: 启用代理后，工具会自动应用保守的网络优化策略<br>") + t("• <b>测试功能</b>: 使用'测试'按钮可验证代理连接是否正常")
         )
         network_info_label.setWordWrap(True)
         network_info_label.setStyleSheet(
@@ -2447,11 +2423,7 @@ class VideoDownloaderApp(QMainWindow):
         self.proxy_input.setPlaceholderText(t("例如: socks5://127.0.0.1:1080 或 http://proxy.com:8080"))
         self.proxy_input.setEnabled(False)
         self.proxy_input.setToolTip(
-            "支持的格式:\n"
-            "• HTTP代理: http://127.0.0.1:7890\n"
-            "• HTTPS代理: https://proxy.com:8080\n"
-            "• SOCKS5代理: socks5://127.0.0.1:1080\n"
-            "• 带认证: http://user:pass@proxy.com:8080"
+            t("支持的格式:\n") + t("• HTTP代理: http://127.0.0.1:7890\n") + t("• HTTPS代理: https://proxy.com:8080\n") + t("• SOCKS5代理: socks5://127.0.0.1:1080\n") + t("• 带认证: http://user:pass@proxy.com:8080")
         )
         # 设置初始蓝色边框样式
         self.proxy_input.setStyleSheet(
@@ -2499,13 +2471,13 @@ class VideoDownloaderApp(QMainWindow):
         proxy_preset_layout.addWidget(QLabel(t("常用模板:")))
         self.proxy_preset_combo = QComboBox()
         self.proxy_preset_combo.addItems([
-            "选择模板...",
-            "本地Clash (HTTP): http://127.0.0.1:7890",
-            "本地Clash (Socks5): socks5://127.0.0.1:7891",
-            "本地V2Ray (HTTP): http://127.0.0.1:10809",
-            "本地V2Ray (Socks5): socks5://127.0.0.1:10808",
-            "本地SSR (Socks5): socks5://127.0.0.1:1080",
-            "本地Shadowsocks: socks5://127.0.0.1:1086"
+            t("选择模板..."),
+            t("本地Clash (HTTP): http://127.0.0.1:7890"),
+            t("本地Clash (Socks5): socks5://127.0.0.1:7891"),
+            t("本地V2Ray (HTTP): http://127.0.0.1:10809"),
+            t("本地V2Ray (Socks5): socks5://127.0.0.1:10808"),
+            t("本地SSR (Socks5): socks5://127.0.0.1:1080"),
+            t("本地Shadowsocks: socks5://127.0.0.1:1086")
         ])
         self.proxy_preset_combo.setEnabled(False)
         self.proxy_preset_combo.setToolTip(t("快速选择常用代理配置"))
@@ -2551,12 +2523,9 @@ class VideoDownloaderApp(QMainWindow):
         self.timeout_setting = QSpinBox()
         self.timeout_setting.setRange(10, 300)
         self.timeout_setting.setValue(30)
-        self.timeout_setting.setSuffix(" 秒")
+        self.timeout_setting.setSuffix(t(" 秒"))
         self.timeout_setting.setToolTip(
-            "设置网络请求的超时时间\n"
-            "• 正常网络: 30秒\n"
-            "• 代理网络: 建议60-120秒\n"
-            "• 不稳定网络: 建议90-180秒"
+            t("设置网络请求的超时时间\n") + t("• 正常网络: 30秒\n") + t("• 代理网络: 建议60-120秒\n") + t("• 不稳定网络: 建议90-180秒")
         )
         self.timeout_setting.setMinimumWidth(120)
         timeout_layout.addWidget(self.timeout_setting)
@@ -2567,13 +2536,10 @@ class VideoDownloaderApp(QMainWindow):
         ip_version_layout = QHBoxLayout()
         ip_version_layout.addWidget(QLabel(t("IP版本:")))
         self.ip_version_combo = QComboBox()
-        self.ip_version_combo.addItems(["自动", "仅IPv4", "仅IPv6"])
-        self.ip_version_combo.setCurrentText("仅IPv4")
+        self.ip_version_combo.addItems([t("自动"), "仅IPv4", "仅IPv6"])
+        self.ip_version_combo.setCurrentText(t("仅IPv4"))
         self.ip_version_combo.setToolTip(
-            "选择使用的IP协议版本\n"
-            "• 仅IPv4: 强制使用IPv4，避免IPv6问题（推荐）\n"
-            "• 仅IPv6: 强制使用IPv6\n"
-            "• 自动: 由系统自动选择"
+            t("选择使用的IP协议版本\n") + t("• 仅IPv4: 强制使用IPv4，避免IPv6问题（推荐）\n") + t("• 仅IPv6: 强制使用IPv6\n") + t("• 自动: 由系统自动选择")
         )
         self.ip_version_combo.setMinimumWidth(120)
         ip_version_layout.addWidget(self.ip_version_combo)
@@ -2624,10 +2590,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加优化策略说明
         optimization_info_label = QLabel(
-            "<b>📊 优化策略说明：</b><br>"
-            "• <b>正常模式</b>: 并发片段8、HTTP块10MB、aria2c 16线程，优先速度<br>"
-            "• <b>代理模式</b>: 并发片段3、HTTP块5MB、重试10次、禁用aria2c，优先稳定性<br>"
-            "• 启用代理后，工具会自动应用保守的网络优化策略，提高下载成功率"
+            t("<b>📊 优化策略说明：</b><br>") + t("• <b>正常模式</b>: 并发片段8、HTTP块10MB、aria2c 16线程，优先速度<br>") + t("• <b>代理模式</b>: 并发片段3、HTTP块5MB、重试10次、禁用aria2c，优先稳定性<br>") + t("• 启用代理后，工具会自动应用保守的网络优化策略，提高下载成功率")
         )
         optimization_info_label.setWordWrap(True)
         optimization_info_label.setStyleSheet(
@@ -2647,7 +2610,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # === 时间片段下载标签页（独立） ===
         time_section_tab = QWidget()
-        advanced_tabs.addTab(time_section_tab, "⏱️ 时间片段")
+        advanced_tabs.addTab(time_section_tab, t("⏱️ 时间片段"))
         
         # 创建滚动区域
         time_section_scroll = QScrollArea()
@@ -2666,12 +2629,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加时间片段功能说明（包含重要提示）
         time_section_info_label = QLabel(
-            "<b>⏱️ 时间片段下载</b><br>"
-            "只下载视频的指定时间段，不下载完整视频。支持多个时间段。<br><br>"
-            "<b>⚠️ 重要提示：</b>下载外网视频（如YouTube、Twitter/X）使用此功能时，"
-            "若目标站点在当前网络环境下不可直连，"
-            "<b style='color:#d32f2f;'>建议启用工具中的网络代理功能</b>；"
-            "可直连时无需代理。国内视频（如B站）通常无需代理。"
+            t("<b>⏱️ 时间片段下载</b><br>") + t("只下载视频的指定时间段，不下载完整视频。支持多个时间段。<br><br>") + t("<b>⚠️ 重要提示：</b>下载外网视频（如YouTube、Twitter/X）使用此功能时，") + t("若目标站点在当前网络环境下不可直连，") + t("<b style='color:#d32f2f;'>建议启用工具中的网络代理功能</b>；") + t("可直连时无需代理。国内视频（如B站）通常无需代理。")
         )
         time_section_info_label.setWordWrap(True)
         time_section_info_label.setStyleSheet(
@@ -2749,19 +2707,19 @@ class VideoDownloaderApp(QMainWindow):
         time_input_layout.addWidget(QLabel(t("开始时间:")), 0, 0)
         self.start_hour = QSpinBox()
         self.start_hour.setRange(0, 99)
-        self.start_hour.setSuffix(" 时")
+        self.start_hour.setSuffix(t(" 时"))
         self.start_hour.setToolTip(t("开始时间-小时"))
         time_input_layout.addWidget(self.start_hour, 0, 1)
         
         self.start_minute = QSpinBox()
         self.start_minute.setRange(0, 59)
-        self.start_minute.setSuffix(" 分")
+        self.start_minute.setSuffix(t(" 分"))
         self.start_minute.setToolTip(t("开始时间-分钟"))
         time_input_layout.addWidget(self.start_minute, 0, 2)
         
         self.start_second = QSpinBox()
         self.start_second.setRange(0, 59)
-        self.start_second.setSuffix(" 秒")
+        self.start_second.setSuffix(t(" 秒"))
         self.start_second.setToolTip(t("开始时间-秒"))
         time_input_layout.addWidget(self.start_second, 0, 3)
         
@@ -2769,19 +2727,19 @@ class VideoDownloaderApp(QMainWindow):
         time_input_layout.addWidget(QLabel(t("结束时间:")), 1, 0)
         self.end_hour = QSpinBox()
         self.end_hour.setRange(0, 99)
-        self.end_hour.setSuffix(" 时")
+        self.end_hour.setSuffix(t(" 时"))
         self.end_hour.setToolTip(t("结束时间-小时（填0表示到视频结束）"))
         time_input_layout.addWidget(self.end_hour, 1, 1)
         
         self.end_minute = QSpinBox()
         self.end_minute.setRange(0, 59)
-        self.end_minute.setSuffix(" 分")
+        self.end_minute.setSuffix(t(" 分"))
         self.end_minute.setToolTip(t("结束时间-分钟（填0表示到视频结束）"))
         time_input_layout.addWidget(self.end_minute, 1, 2)
         
         self.end_second = QSpinBox()
         self.end_second.setRange(0, 59)
-        self.end_second.setSuffix(" 秒")
+        self.end_second.setSuffix(t(" 秒"))
         self.end_second.setToolTip(t("结束时间-秒（填0表示到视频结束）"))
         time_input_layout.addWidget(self.end_second, 1, 3)
         
@@ -2807,10 +2765,7 @@ class VideoDownloaderApp(QMainWindow):
         self.custom_section_input = QLineEdit()
         self.custom_section_input.setPlaceholderText(t("例如: *10:15-inf 或 *-60-inf 或 intro|opening"))
         self.custom_section_input.setToolTip(
-            "支持 yt-dlp --download-sections 语法：\n"
-            "• 时间段: *START-END（支持负时间和 inf）\n"
-            "• URL时间: *from-url\n"
-            "• 章节正则: intro|opening"
+            t("支持 yt-dlp --download-sections 语法：\n") + t("• 时间段: *START-END（支持负时间和 inf）\n") + t("• URL时间: *from-url\n") + t("• 章节正则: intro|opening")
         )
         self.custom_section_input.returnPressed.connect(lambda: self.add_download_section(self.custom_section_input.text()))
         custom_section_layout.addWidget(self.custom_section_input)
@@ -2861,8 +2816,7 @@ class VideoDownloaderApp(QMainWindow):
         # 按章节分割视频
         self.split_chapters_check = QCheckBox(t("按章节分割视频"))
         self.split_chapters_check.setToolTip(
-            "将视频按内置章节分割成多个文件\n"
-            "适用于包含章节信息的视频（如YouTube长视频）"
+            t("将视频按内置章节分割成多个文件\n") + t("适用于包含章节信息的视频（如YouTube长视频）")
         )
         self.split_chapters_check.toggled.connect(self.on_chapter_master_toggled)
         chapter_group_layout.addWidget(self.split_chapters_check)
@@ -2920,8 +2874,7 @@ class VideoDownloaderApp(QMainWindow):
         # 切割处强制关键帧
         self.force_keyframes_check = QCheckBox(t("切割处强制关键帧"))
         self.force_keyframes_check.setToolTip(
-            "在切割点强制生成关键帧，减少切割处的视觉伪影\n"
-            "注意: 需要重新编码，处理速度会较慢"
+            t("在切割点强制生成关键帧，减少切割处的视觉伪影\n") + t("注意: 需要重新编码，处理速度会较慢")
         )
         chapter_group_layout.addWidget(self.force_keyframes_check)
         
@@ -3014,7 +2967,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 转码选项卡 - 使用支持拖放的自定义Widget
         transcode_tab = TranscodeDropWidget()
-        self.tabs.addTab(transcode_tab, "视频转码")
+        self.tabs.addTab(transcode_tab, t("视频转码"))
         transcode_layout = QVBoxLayout(transcode_tab)
         
         # 连接拖放信号 - 将在后面定义处理方法
@@ -3061,17 +3014,17 @@ class VideoDownloaderApp(QMainWindow):
         # 输出格式
         self.output_format = QComboBox()
         self.output_format.addItems(["mp4", "mkv", "avi", "mov", "webm", "mp3", "m4a", "flac"])
-        transcode_options_layout.addRow("输出格式:", self.output_format)
+        transcode_options_layout.addRow(t("输出格式:"), self.output_format)
         
         # 视频编码器
         self.video_codec = QComboBox()
-        self.video_codec.addItems(["h264", "h265", "vp9", "av1", "复制原始编码"])
-        transcode_options_layout.addRow("视频编码器:", self.video_codec)
+        self.video_codec.addItems(["h264", "h265", "vp9", "av1", t("复制原始编码")])
+        transcode_options_layout.addRow(t("视频编码器:"), self.video_codec)
         
         # 音频编码器
         self.audio_codec = QComboBox()
-        self.audio_codec.addItems(["aac", "mp3", "opus", "flac", "复制原始编码"])
-        transcode_options_layout.addRow("音频编码器:", self.audio_codec)
+        self.audio_codec.addItems(["aac", "mp3", "opus", "flac", t("复制原始编码")])
+        transcode_options_layout.addRow(t("音频编码器:"), self.audio_codec)
         
         # 视频质量
         quality_layout = QHBoxLayout()
@@ -3161,24 +3114,24 @@ class VideoDownloaderApp(QMainWindow):
         except Exception:
             pass
         
-        transcode_options_layout.addRow("视频质量 (CRF):", quality_layout)
+        transcode_options_layout.addRow(t("视频质量 (CRF):"), quality_layout)
         
         # 转码速度预设
         self.speed_preset = QComboBox()
-        self.speed_preset.addItems(["快速", "正常", "高质量"])
-        self.speed_preset.setCurrentText("正常")  # 默认正常预设
+        self.speed_preset.addItems([t("快速"), "正常", "高质量"])
+        self.speed_preset.setCurrentText(t("正常"))  # 默认正常预设
         self.speed_preset.setToolTip(t("转码速度预设：快速转码快但质量一般，正常平衡速度和质量，高质量转码慢但质量最佳"))
-        transcode_options_layout.addRow("转码速度:", self.speed_preset)
+        transcode_options_layout.addRow(t("转码速度:"), self.speed_preset)
         
         # 线程数控制
         threads_layout = QHBoxLayout()
         self.threads_spinbox = QSpinBox()
         self.threads_spinbox.setRange(0, 32)
         self.threads_spinbox.setValue(0)  # 默认0表示自动
-        self.threads_spinbox.setSpecialValueText("自动")
+        self.threads_spinbox.setSpecialValueText(t("自动"))
         threads_layout.addWidget(self.threads_spinbox)
         threads_layout.addWidget(QLabel(t("(0表示自动)")))
-        transcode_options_layout.addRow("线程数:", threads_layout)
+        transcode_options_layout.addRow(t("线程数:"), threads_layout)
         
         # GPU加速选项
         gpu_layout = QHBoxLayout()
@@ -3187,13 +3140,13 @@ class VideoDownloaderApp(QMainWindow):
         gpu_layout.addWidget(self.gpu_checkbox)
         
         self.gpu_type_combo = QComboBox()
-        self.gpu_type_combo.addItems(["自动检测", "NVIDIA (NVENC)", "AMD (AMF)"])
+        self.gpu_type_combo.addItems([t("自动检测"), "NVIDIA (NVENC)", "AMD (AMF)"])
         self.gpu_type_combo.setCurrentIndex(0)
         self.gpu_type_combo.setEnabled(False)  # 默认禁用，只有选中复选框才启用
         self.gpu_checkbox.toggled.connect(self.gpu_type_combo.setEnabled)  # 连接信号
         gpu_layout.addWidget(self.gpu_type_combo)
         
-        transcode_options_layout.addRow("硬件加速:", gpu_layout)
+        transcode_options_layout.addRow(t("硬件加速:"), gpu_layout)
         
         # 输出文件
         output_file_layout = QHBoxLayout()
@@ -3205,7 +3158,7 @@ class VideoDownloaderApp(QMainWindow):
         browse_output_button.clicked.connect(self.browse_output_file)
         output_file_layout.addWidget(browse_output_button)
         
-        transcode_options_layout.addRow("输出文件:", output_file_layout)
+        transcode_options_layout.addRow(t("输出文件:"), output_file_layout)
         
         transcode_layout.addWidget(transcode_options_group)
         
@@ -3279,7 +3232,7 @@ class VideoDownloaderApp(QMainWindow):
         # ========== 图片处理选项卡 ==========
         image_tab = QWidget()
         image_tab.setAcceptDrops(True)  # 启用整个标签页的拖放
-        self.tabs.addTab(image_tab, "图片处理")
+        self.tabs.addTab(image_tab, t("图片处理"))
         image_layout = QVBoxLayout(image_tab)
         
         # 图片文件选择区域
@@ -3353,7 +3306,7 @@ class VideoDownloaderApp(QMainWindow):
         self.image_format_combo.addItems(["JPEG", "PNG", "WebP", "BMP", "GIF", "TIFF", "ICO"])
         self.image_format_combo.setToolTip(t("选择输出图片格式"))
         self.image_format_combo.currentTextChanged.connect(self.on_image_format_changed)
-        image_options_layout.addRow("输出格式:", self.image_format_combo)
+        image_options_layout.addRow(t("输出格式:"), self.image_format_combo)
         
         # 质量/压缩设置（根据格式动态显示）
         self.quality_row_widget = QWidget()
@@ -3426,7 +3379,7 @@ class VideoDownloaderApp(QMainWindow):
         # 尺寸调整
         resize_layout = QHBoxLayout()
         self.resize_mode_combo = QComboBox()
-        self.resize_mode_combo.addItems(["不调整", "按百分比", "固定尺寸", "最大边长"])
+        self.resize_mode_combo.addItems([t("不调整"), "按百分比", "固定尺寸", "最大边长"])
         self.resize_mode_combo.setToolTip(t("选择尺寸调整模式"))
         self.resize_mode_combo.currentTextChanged.connect(self.on_resize_mode_changed)
         resize_layout.addWidget(self.resize_mode_combo)
@@ -3477,13 +3430,13 @@ class VideoDownloaderApp(QMainWindow):
         self.resize_maxside_widget.hide()
         resize_layout.addWidget(self.resize_maxside_widget)
         
-        image_options_layout.addRow("尺寸调整:", resize_layout)
+        image_options_layout.addRow(t("尺寸调整:"), resize_layout)
         
         # 采样方式
         self.resample_combo = QComboBox()
-        self.resample_combo.addItems(["Lanczos (最佳质量)", "双三次", "双线性", "最近邻 (最快)"])
+        self.resample_combo.addItems([t("Lanczos (最佳质量)"), "双三次", "双线性", "最近邻 (最快)"])
         self.resample_combo.setToolTip(t("图片缩放时的采样算法"))
-        image_options_layout.addRow("采样方式:", self.resample_combo)
+        image_options_layout.addRow(t("采样方式:"), self.resample_combo)
         
         # 输出目录
         output_dir_layout = QHBoxLayout()
@@ -3493,13 +3446,13 @@ class VideoDownloaderApp(QMainWindow):
         browse_output_dir_btn = QPushButton(t("浏览..."))
         browse_output_dir_btn.clicked.connect(self.browse_image_output_dir)
         output_dir_layout.addWidget(browse_output_dir_btn)
-        image_options_layout.addRow("输出目录:", output_dir_layout)
+        image_options_layout.addRow(t("输出目录:"), output_dir_layout)
         
         # 文件名后缀
         self.image_suffix_input = QLineEdit()
         self.image_suffix_input.setPlaceholderText(t("例如: _compressed"))
         self.image_suffix_input.setToolTip(t("添加到输出文件名的后缀，留空则使用原文件名"))
-        image_options_layout.addRow("文件名后缀:", self.image_suffix_input)
+        image_options_layout.addRow(t("文件名后缀:"), self.image_suffix_input)
         
         # 覆盖选项
         self.image_overwrite_check = QCheckBox(t("覆盖已存在的文件"))
@@ -3583,7 +3536,7 @@ class VideoDownloaderApp(QMainWindow):
         # ========== 画质修复 选项卡 ==========
         realesrgan_tab = QWidget()
         realesrgan_tab.setAcceptDrops(True)
-        self.tabs.addTab(realesrgan_tab, "画质修复")
+        self.tabs.addTab(realesrgan_tab, t("画质修复"))
         realesrgan_layout = QVBoxLayout(realesrgan_tab)
 
         realesrgan_file_group = QGroupBox(t("文件选择"))
@@ -3645,12 +3598,12 @@ class VideoDownloaderApp(QMainWindow):
         realesrgan_options_group.setLayout(realesrgan_options_layout)
 
         self.realesrgan_preset_combo = QComboBox()
-        self.realesrgan_preset_combo.addItem("通用修复", "general")
-        self.realesrgan_preset_combo.addItem("人像修复", "portrait")
-        self.realesrgan_preset_combo.addItem("老照片修复", "old_photo")
-        self.realesrgan_preset_combo.addItem("动漫图片修复", "anime_image")
-        self.realesrgan_preset_combo.addItem("动漫视频修复", "anime_video")
-        self.realesrgan_preset_combo.addItem("低清图片强修复", "strong_photo")
+        self.realesrgan_preset_combo.addItem(t("通用修复"), "general")
+        self.realesrgan_preset_combo.addItem(t("人像修复"), "portrait")
+        self.realesrgan_preset_combo.addItem(t("老照片修复"), "old_photo")
+        self.realesrgan_preset_combo.addItem(t("动漫图片修复"), "anime_image")
+        self.realesrgan_preset_combo.addItem(t("动漫视频修复"), "anime_video")
+        self.realesrgan_preset_combo.addItem(t("低清图片强修复"), "strong_photo")
         self._realesrgan_preset_map = {
             "general": (
                 "适合普通照片、截图、商品图和大多数日常视频画面。",
@@ -3707,20 +3660,20 @@ class VideoDownloaderApp(QMainWindow):
             self.realesrgan_preset_combo.setItemData(preset_index, preset_desc, Qt.ToolTipRole)
         self.realesrgan_preset_combo.setToolTip(t("按内容类型选择修复方案。真人和实拍优先选通用修复，动漫内容选动漫方案。"))
         self.realesrgan_preset_combo.currentIndexChanged.connect(self.on_realesrgan_preset_changed)
-        realesrgan_options_layout.addRow("修复场景:", self.realesrgan_preset_combo)
+        realesrgan_options_layout.addRow(t("修复场景:"), self.realesrgan_preset_combo)
 
         self.realesrgan_scale_combo = QComboBox()
-        self.realesrgan_scale_combo.addItem("2 倍（更快，适合日常）", 2.0)
-        self.realesrgan_scale_combo.addItem("4 倍（更清晰，更慢）", 4.0)
+        self.realesrgan_scale_combo.addItem(t("2 倍（更快，适合日常）"), 2.0)
+        self.realesrgan_scale_combo.addItem(t("4 倍（更清晰，更慢）"), 4.0)
         self.realesrgan_scale_combo.setCurrentIndex(1)
         self.realesrgan_scale_combo.setToolTip(t("决定输出放大倍率。2 倍更快更稳，4 倍更清晰但更耗时。"))
-        realesrgan_options_layout.addRow("放大倍率:", self.realesrgan_scale_combo)
+        realesrgan_options_layout.addRow(t("放大倍率:"), self.realesrgan_scale_combo)
 
         self.realesrgan_runtime_hint = QLabel("")
         self.realesrgan_runtime_hint.setWordWrap(True)
         self.realesrgan_runtime_hint.setStyleSheet("color: #666;")
         self.realesrgan_runtime_hint.setToolTip(t("显示当前修复引擎、模型和可用状态。"))
-        realesrgan_options_layout.addRow("状态:", self.realesrgan_runtime_hint)
+        realesrgan_options_layout.addRow(t("状态:"), self.realesrgan_runtime_hint)
 
         self.realesrgan_proxy_notice = QLabel(t("💡 第一次使用需下载所需模型 必须开启代理"))
         self.realesrgan_proxy_notice.setWordWrap(True)
@@ -3729,13 +3682,13 @@ class VideoDownloaderApp(QMainWindow):
             "padding: 0px; font-weight: bold;"
         )
         self.realesrgan_proxy_notice.setToolTip(t("画质修复由于包体积精简，首次使用特定模型时会自动从云端高速补全。"))
-        realesrgan_options_layout.addRow("提示:", self.realesrgan_proxy_notice)
+        realesrgan_options_layout.addRow(t("提示:"), self.realesrgan_proxy_notice)
 
         self.realesrgan_speed_hint = QLabel(t("速度信息会在处理开始后显示"))
         self.realesrgan_speed_hint.setWordWrap(True)
         self.realesrgan_speed_hint.setStyleSheet("color: #666;")
         self.realesrgan_speed_hint.setToolTip(t("处理过程中会显示实时速度和预计剩余时间。"))
-        realesrgan_options_layout.addRow("速度:", self.realesrgan_speed_hint)
+        realesrgan_options_layout.addRow(t("速度:"), self.realesrgan_speed_hint)
 
         self.realesrgan_advanced_group = QGroupBox(t("高级设置（通常不需要改）"))
         self.realesrgan_advanced_group.setCheckable(True)
@@ -3769,21 +3722,21 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_advanced_group.setLayout(realesrgan_advanced_layout)
 
         self.realesrgan_device_combo = QComboBox()
-        self.realesrgan_device_combo.addItem("自动检测硬件（推荐）", "auto")
-        self.realesrgan_device_combo.addItem("仅用 CPU", "cpu")
+        self.realesrgan_device_combo.addItem(t("自动检测硬件（推荐）"), "auto")
+        self.realesrgan_device_combo.addItem(t("仅用 CPU"), "cpu")
         self.realesrgan_device_combo.setToolTip(t("默认自动检测即可。程序会按当前机器和模型自动选择更快的视频后端，并缓存上次测得的更优路径；异常时会自动切换到更稳的后备方案。"))
         self.realesrgan_device_combo.currentIndexChanged.connect(lambda _=0: self.check_realesrgan_runtime(silent=True))
-        realesrgan_advanced_layout.addRow("运算设备:", self.realesrgan_device_combo)
+        realesrgan_advanced_layout.addRow(t("运算设备:"), self.realesrgan_device_combo)
 
         self.realesrgan_force_model_check = QCheckBox(t("手动指定底层模型"))
         self.realesrgan_force_model_check.setToolTip(t("默认会跟随修复场景自动选模型。只有需要精细控制时再手动指定。"))
         self.realesrgan_model_combo = QComboBox()
-        self.realesrgan_model_combo.addItem("通用小模型（realesr-general-x4v3）", "realesr-general-x4v3")
-        self.realesrgan_model_combo.addItem("通用强修复（RealESRGAN_x4plus）", "RealESRGAN_x4plus")
-        self.realesrgan_model_combo.addItem("通用 2 倍模型（RealESRGAN_x2plus）", "RealESRGAN_x2plus")
-        self.realesrgan_model_combo.addItem("通用平滑模型（RealESRNet_x4plus）", "RealESRNet_x4plus")
-        self.realesrgan_model_combo.addItem("动漫图片模型（RealESRGAN_x4plus_anime_6B）", "RealESRGAN_x4plus_anime_6B")
-        self.realesrgan_model_combo.addItem("动漫视频模型（realesr-animevideov3）", "realesr-animevideov3")
+        self.realesrgan_model_combo.addItem(t("通用小模型（realesr-general-x4v3）"), "realesr-general-x4v3")
+        self.realesrgan_model_combo.addItem(t("通用强修复（RealESRGAN_x4plus）"), "RealESRGAN_x4plus")
+        self.realesrgan_model_combo.addItem(t("通用 2 倍模型（RealESRGAN_x2plus）"), "RealESRGAN_x2plus")
+        self.realesrgan_model_combo.addItem(t("通用平滑模型（RealESRNet_x4plus）"), "RealESRNet_x4plus")
+        self.realesrgan_model_combo.addItem(t("动漫图片模型（RealESRGAN_x4plus_anime_6B）"), "RealESRGAN_x4plus_anime_6B")
+        self.realesrgan_model_combo.addItem(t("动漫视频模型（realesr-animevideov3）"), "realesr-animevideov3")
         self._realesrgan_model_tips = {
             "realesr-general-x4v3": "官方通用小模型，占用更低、速度更快，适合大多数日常图像场景。",
             "RealESRGAN_x4plus": "官方通用 X4 模型，修复更强，适合低清、压缩重或退化明显的图片。",
@@ -3808,7 +3761,7 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_model_row_layout.setSpacing(8)
         self.realesrgan_model_row_layout.addWidget(self.realesrgan_force_model_check)
         self.realesrgan_model_row_layout.addWidget(self.realesrgan_model_combo, 1)
-        realesrgan_advanced_layout.addRow("底层模型:", self.realesrgan_model_row)
+        realesrgan_advanced_layout.addRow(t("底层模型:"), self.realesrgan_model_row)
 
         self.realesrgan_custom_scale_check = QCheckBox(t("使用自定义倍率"))
         self.realesrgan_custom_scale_check.setToolTip(t("默认提供 2 倍和 4 倍。只有你需要更细的倍率时再开启。"))
@@ -3826,7 +3779,7 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_scale_override_layout.setSpacing(8)
         self.realesrgan_scale_override_layout.addWidget(self.realesrgan_custom_scale_check)
         self.realesrgan_scale_override_layout.addWidget(self.realesrgan_custom_scale_spin, 1)
-        realesrgan_advanced_layout.addRow("自定义倍率:", self.realesrgan_scale_override_row)
+        realesrgan_advanced_layout.addRow(t("自定义倍率:"), self.realesrgan_scale_override_row)
 
         self.realesrgan_denoise_spin = QDoubleSpinBox()
         self.realesrgan_denoise_spin.setRange(0.0, 1.0)
@@ -3834,7 +3787,7 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_denoise_spin.setDecimals(1)
         self.realesrgan_denoise_spin.setValue(0.5)
         self.realesrgan_denoise_spin.setToolTip(t("仅对通用小模型 realesr-general-x4v3 有效，用于平衡降噪和细节保留。"))
-        realesrgan_advanced_layout.addRow("降噪强度:", self.realesrgan_denoise_spin)
+        realesrgan_advanced_layout.addRow(t("降噪强度:"), self.realesrgan_denoise_spin)
 
         self.realesrgan_denoise_hint = QLabel("")
         self.realesrgan_denoise_hint.setWordWrap(True)
@@ -3842,11 +3795,11 @@ class VideoDownloaderApp(QMainWindow):
         realesrgan_advanced_layout.addRow("", self.realesrgan_denoise_hint)
 
         self.realesrgan_output_format_combo = QComboBox()
-        self.realesrgan_output_format_combo.addItem("自动保持原格式", "auto")
-        self.realesrgan_output_format_combo.addItem("PNG（更稳，体积更大）", "png")
-        self.realesrgan_output_format_combo.addItem("JPG（体积更小）", "jpg")
+        self.realesrgan_output_format_combo.addItem(t("自动保持原格式"), "auto")
+        self.realesrgan_output_format_combo.addItem(t("PNG（更稳，体积更大）"), "png")
+        self.realesrgan_output_format_combo.addItem(t("JPG（体积更小）"), "jpg")
         self.realesrgan_output_format_combo.setToolTip(t("默认保持原格式。只有明确需要统一输出格式时再修改。"))
-        realesrgan_advanced_layout.addRow("输出格式:", self.realesrgan_output_format_combo)
+        realesrgan_advanced_layout.addRow(t("输出格式:"), self.realesrgan_output_format_combo)
 
         self.realesrgan_memory_safe_check = QCheckBox(t("稳定模式（大图、长视频或报错时更稳，但更慢）"))
         self.realesrgan_memory_safe_check.setToolTip(t("遇到大图、长视频、报错或速度不稳定时可开启，处理会更稳但更慢。"))
@@ -3865,14 +3818,14 @@ class VideoDownloaderApp(QMainWindow):
         self.browse_realesrgan_output_btn.setToolTip(t("选择修复结果的保存目录。"))
         self.browse_realesrgan_output_btn.clicked.connect(self.browse_realesrgan_output_dir)
         realesrgan_output_dir_layout.addWidget(self.browse_realesrgan_output_btn)
-        realesrgan_advanced_layout.addRow("输出目录:", realesrgan_output_dir_layout)
+        realesrgan_advanced_layout.addRow(t("输出目录:"), realesrgan_output_dir_layout)
 
         self.realesrgan_runtime_python = QLineEdit()
         self.realesrgan_runtime_python.hide()
 
-        self.realesrgan_suffix_input = QLineEdit("_画质修复")
+        self.realesrgan_suffix_input = QLineEdit(t("_画质修复"))
         self.realesrgan_suffix_input.setToolTip(t("会追加到输出文件名后面，用来区分原文件和修复结果。"))
-        realesrgan_advanced_layout.addRow("文件名后缀:", self.realesrgan_suffix_input)
+        realesrgan_advanced_layout.addRow(t("文件名后缀:"), self.realesrgan_suffix_input)
 
         self.realesrgan_overwrite_check = QCheckBox(t("覆盖同名输出文件"))
         self.realesrgan_overwrite_check.setToolTip(t("勾选后，如果目标文件已存在，会直接覆盖旧结果。"))
@@ -3945,7 +3898,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 历史记录选项卡
         history_tab = QWidget()
-        self.tabs.addTab(history_tab, "历史记录")
+        self.tabs.addTab(history_tab, t("历史记录"))
         history_layout = QVBoxLayout(history_tab)
         
         # 历史记录工具栏
@@ -4009,7 +3962,7 @@ class VideoDownloaderApp(QMainWindow):
         # 历史记录表格
         self.history_table = QTableWidget()
         self.history_table.setColumnCount(6)
-        self.history_table.setHorizontalHeaderLabels(["类型", "标题", "时间", "文件大小", "格式/选项", "操作"])
+        self.history_table.setHorizontalHeaderLabels([t("类型"), "标题", "时间", "文件大小", "格式/选项", "操作"])
         
         # 设置表格属性
         self.history_table.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -4034,7 +3987,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 关于选项卡 - 极简解压风格
         about_tab = QWidget()
-        self.tabs.addTab(about_tab, "关于")
+        self.tabs.addTab(about_tab, t("关于"))
         about_main_layout = QVBoxLayout(about_tab)
         about_main_layout.setContentsMargins(0, 0, 0, 0)
         
@@ -4161,7 +4114,7 @@ class VideoDownloaderApp(QMainWindow):
         tip_frame = QFrame()
         tip_frame.setStyleSheet("background-color: #f8f9fa; border-radius: 8px; border: 1px solid #eee; padding: 12px;")
         tip_layout = QHBoxLayout(tip_frame)
-        tip_label = QLabel('💡 <b>使用建议：</b>推荐使用 <a href="https://www.videolan.org/vlc/" style="color:#1a73e8; text-decoration:none;">VLC 播放器</a> 获得最佳体验')
+        tip_label = QLabel(t('💡 <b>使用建议：</b>推荐使用 <a href="https://www.videolan.org/vlc/" style="color:#1a73e8; text-decoration:none;">VLC 播放器</a> 获得最佳体验'))
         tip_label.setOpenExternalLinks(True)
         tip_label.setAlignment(Qt.AlignCenter)
         tip_label.setStyleSheet("color: #666; font-size: 13px; border: none;")
@@ -4218,7 +4171,7 @@ class VideoDownloaderApp(QMainWindow):
                     return
                 
                 reply = QMessageBox.question(self, t("获取格式列表"), 
-                                          "使用'指定格式ID'需要先获取可用格式列表。\n\n是否现在获取？",
+                                          t("使用'指定格式ID'需要先获取可用格式列表。\n\n是否现在获取？"),
                                           QMessageBox.Yes | QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     self.list_available_formats()
@@ -4411,7 +4364,7 @@ class VideoDownloaderApp(QMainWindow):
             
             # 禁用测试按钮避免重复点击
             self.test_proxy_button.setEnabled(False)
-            self.test_proxy_button.setText("测试中...")
+            self.test_proxy_button.setText(t("测试中..."))
             QApplication.processEvents()
             
             # 简单的进度提示
@@ -4423,7 +4376,7 @@ class VideoDownloaderApp(QMainWindow):
             print(t_format("初始化代理测试时出错: {}", e))
             try:
                 self.test_proxy_button.setEnabled(True)
-                self.test_proxy_button.setText("🔍 测试连接")
+                self.test_proxy_button.setText(t("🔍 测试连接"))
             except:
                 pass
             return
@@ -4571,7 +4524,7 @@ class VideoDownloaderApp(QMainWindow):
                 if hasattr(self, 'test_proxy_button'):
                     try:
                         self.test_proxy_button.setEnabled(True)
-                        self.test_proxy_button.setText("🔍 测试连接")
+                        self.test_proxy_button.setText(t("🔍 测试连接"))
                     except:
                         pass
                 
@@ -4589,8 +4542,8 @@ class VideoDownloaderApp(QMainWindow):
                             proxy_addr = self.proxy_input.text().strip()
                             if proxy_addr:
                                 self.progress_text.append(t_format("代理地址: {}", proxy_addr))
-                        self.progress_text.append("代理服务器工作正常，可以用于下载")
-                        self.progress_text.append("✅ 边框已变为绿色，表示连接成功")
+                        self.progress_text.append(t("代理服务器工作正常，可以用于下载"))
+                        self.progress_text.append(t("✅ 边框已变为绿色，表示连接成功"))
                         self.progress_text.append("=" * 60)
                 else:
                     # 设置红色边框表示连接失败
@@ -4604,8 +4557,8 @@ class VideoDownloaderApp(QMainWindow):
                             proxy_addr = self.proxy_input.text().strip()
                             if proxy_addr:
                                 self.progress_text.append(t_format("代理地址: {}", proxy_addr))
-                        self.progress_text.append("请检查代理设置并重试")
-                        self.progress_text.append("❌ 边框已变为红色，表示连接失败")
+                        self.progress_text.append(t("请检查代理设置并重试"))
+                        self.progress_text.append(t("❌ 边框已变为红色，表示连接失败"))
                         self.progress_text.append("=" * 60)
                 
                 # 自动滚动
@@ -4626,7 +4579,7 @@ class VideoDownloaderApp(QMainWindow):
             try:
                 if hasattr(self, 'test_proxy_button'):
                     self.test_proxy_button.setEnabled(True)
-                    self.test_proxy_button.setText("🔍 测试连接")
+                    self.test_proxy_button.setText(t("🔍 测试连接"))
                 if hasattr(self, 'proxy_test_thread'):
                     self.proxy_test_thread = None
             except Exception as e:
@@ -4648,7 +4601,7 @@ class VideoDownloaderApp(QMainWindow):
                 QMessageBox.critical(self, t("错误"), 
                     t("启动测试失败\n\n") + t_format("错误信息: {}\n\n", str(e)) + t("请查看控制台获取详细信息"))
                 self.test_proxy_button.setEnabled(True)
-                self.test_proxy_button.setText("🔍 测试连接")
+                self.test_proxy_button.setText(t("🔍 测试连接"))
             except:
                 pass
     
@@ -4735,7 +4688,7 @@ class VideoDownloaderApp(QMainWindow):
         # 选择输出目录
         try:
             current_path = self.output_path.text() or os.path.expanduser("~/Downloads")
-            directory = QFileDialog.getExistingDirectory(self, "选择保存位置", current_path)
+            directory = QFileDialog.getExistingDirectory(self, t("选择保存位置"), current_path)
             if directory:
                 # 确保路径使用正确的编码
                 directory = os.path.abspath(directory)
@@ -4760,7 +4713,7 @@ class VideoDownloaderApp(QMainWindow):
                 # 使用最近文件对话框目录，不覆盖统一保存路径
                 current_dir = self._get_dialog_start_dir()
                 
-            file, _ = QFileDialog.getOpenFileName(self, "选择视频文件", current_dir, "视频文件 (*.mp4 *.mkv *.avi *.mov *.webm *.flv);;所有文件 (*)")
+            file, _ = QFileDialog.getOpenFileName(self, t("选择视频文件"), current_dir, "视频文件 (*.mp4 *.mkv *.avi *.mov *.webm *.flv);;所有文件 (*)")
             if file:
                 # 确保路径使用正确的编码
                 file = os.path.normpath(os.path.abspath(file))
@@ -4807,7 +4760,7 @@ class VideoDownloaderApp(QMainWindow):
         # 选择输出文件
         # 使用保存的路径作为初始目录
         saved_path = self._get_dialog_start_dir()
-        file, _ = QFileDialog.getSaveFileName(self, "保存文件", saved_path, "视频文件 (*.mp4 *.mkv *.avi *.mov *.webm);;音频文件 (*.mp3 *.m4a *.flac);;所有文件 (*)")
+        file, _ = QFileDialog.getSaveFileName(self, t("保存文件"), saved_path, "视频文件 (*.mp4 *.mkv *.avi *.mov *.webm);;音频文件 (*.mp3 *.m4a *.flac);;所有文件 (*)")
         if file:
             self.output_file.setText(file)
             self._remember_dialog_dir(file)
@@ -4816,7 +4769,7 @@ class VideoDownloaderApp(QMainWindow):
         # 选择Cookie文件
         # 使用最近文件对话框目录作为初始目录
         saved_path = self._get_dialog_start_dir()
-        file, _ = QFileDialog.getOpenFileName(self, "选择Cookie文件", saved_path, "Cookie文件 (*.txt);;所有文件 (*)")
+        file, _ = QFileDialog.getOpenFileName(self, t("选择Cookie文件"), saved_path, "Cookie文件 (*.txt);;所有文件 (*)")
         if file:
             self.cookie_file.setText(file)
             self._remember_dialog_dir(file)
@@ -4825,7 +4778,7 @@ class VideoDownloaderApp(QMainWindow):
         """选择客户端证书文件"""
         # 使用最近文件对话框目录作为初始目录
         saved_path = self._get_dialog_start_dir()
-        file, _ = QFileDialog.getOpenFileName(self, "选择客户端证书文件", saved_path, "证书文件 (*.pem *.crt *.p12 *.pfx);;所有文件 (*)")
+        file, _ = QFileDialog.getOpenFileName(self, t("选择客户端证书文件"), saved_path, "证书文件 (*.pem *.crt *.p12 *.pfx);;所有文件 (*)")
         if file:
             self.client_cert_file.setText(file)
             self._remember_dialog_dir(file)
@@ -4834,7 +4787,7 @@ class VideoDownloaderApp(QMainWindow):
         """选择客户端证书密钥文件"""
         # 使用最近文件对话框目录作为初始目录
         saved_path = self._get_dialog_start_dir()
-        file, _ = QFileDialog.getOpenFileName(self, "选择客户端证书密钥文件", saved_path, "密钥文件 (*.key *.pem);;所有文件 (*)")
+        file, _ = QFileDialog.getOpenFileName(self, t("选择客户端证书密钥文件"), saved_path, "密钥文件 (*.key *.pem);;所有文件 (*)")
         if file:
             self.client_cert_key.setText(file)
             self._remember_dialog_dir(file)
@@ -4842,9 +4795,8 @@ class VideoDownloaderApp(QMainWindow):
     def extract_browser_cookies(self):
         """从浏览器提取Cookie功能已移除"""
         QMessageBox.information(self, t("功能提示"), 
-            "浏览器Cookie提取功能已移除。\n\n"
-            "请使用简化的限制绕过功能。")
-        self.progress_text.append("Cookie提取功能已移除，请使用简化绕过功能")
+            t("浏览器Cookie提取功能已移除。\n\n") + t("请使用简化的限制绕过功能。"))
+        self.progress_text.append(t("Cookie提取功能已移除，请使用简化绕过功能"))
     
     def get_format_option(self):
         """获取格式选项 - 优化兼容性，明确指定H.264+AAC编码器"""
@@ -4984,10 +4936,10 @@ class VideoDownloaderApp(QMainWindow):
         
         # 设置按钮为检查中状态
         if hasattr(self, 'update_button'):
-            self.update_button.setToolTip("正在检查依赖更新...")
+            self.update_button.setToolTip(t("正在检查依赖更新..."))
         
         proxy_enabled = self._is_any_proxy_enabled()
-        self.update_status("🔄 正在检查所有依赖组件版本...", "info")
+        self.update_status(t("🔄 正在检查所有依赖组件版本..."), "info")
         
         # 创建并启动检查线程
         self.dep_update_thread = DependencyUpdateThread(perform_update=False, proxy_enabled=proxy_enabled)
@@ -5017,7 +4969,7 @@ class VideoDownloaderApp(QMainWindow):
         """依赖检查完成回调 - 静默自动更新，无弹窗"""
         # 重置按钮状态
         if hasattr(self, 'update_button'):
-            self.update_button.setToolTip("检查依赖更新")
+            self.update_button.setToolTip(t("检查依赖更新"))
         
         if not success:
             self.update_status(f"❌ {message}", "error")
@@ -5035,11 +4987,11 @@ class VideoDownloaderApp(QMainWindow):
         if hasattr(self, 'dep_update_thread') and self.dep_update_thread.isRunning():
             return
         
-        self.update_status("⬇️ 正在下载并更新所有组件...", "info")
+        self.update_status(t("⬇️ 正在下载并更新所有组件..."), "info")
         
         if hasattr(self, 'update_button'):
             self.update_button.setEnabled(False)
-            self.update_button.setToolTip("正在更新依赖...")
+            self.update_button.setToolTip(t("正在更新依赖..."))
         
         # 启动更新线程（执行实际更新）
         self.dep_update_thread = DependencyUpdateThread(perform_update=True, proxy_enabled=self._is_any_proxy_enabled())
@@ -5053,7 +5005,7 @@ class VideoDownloaderApp(QMainWindow):
         # 重置按钮状态
         if hasattr(self, 'update_button'):
             self.update_button.setEnabled(True)
-            self.update_button.setToolTip("检查依赖更新")
+            self.update_button.setToolTip(t("检查依赖更新"))
         
         if success:
             self.update_status(message, "success")
@@ -5083,7 +5035,7 @@ class VideoDownloaderApp(QMainWindow):
         if hasattr(self, 'update_button'):
             # 不再禁用按钮，防止产生视觉“差别感”
             # 保持只有图标的状态
-            self.update_button.setToolTip("正在检查yt-dlp更新...")
+            self.update_button.setToolTip(t("正在检查yt-dlp更新..."))
         
         # 启动更新检查线程
         self.update_thread = UpdateThread()
@@ -5092,14 +5044,14 @@ class VideoDownloaderApp(QMainWindow):
         self.update_thread.start()
         
         # 更新状态
-        self.update_status("🔄 正在连接GitHub官网检查yt-dlp版本...", "info")
+        self.update_status(t("🔄 正在连接GitHub官网检查yt-dlp版本..."), "info")
     
     def start_update_process(self):
         """开始更新过程"""
         reply = QMessageBox.question(
             self, 
-            "确认更新", 
-            "确定要更新yt-dlp到最新版本吗？\n\n更新过程中请不要关闭程序。",
+            t("确认更新"), 
+            t("确定要更新yt-dlp到最新版本吗？\n\n更新过程中请不要关闭程序。"),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes
         )
@@ -5108,7 +5060,7 @@ class VideoDownloaderApp(QMainWindow):
             # 设置按钮为更新中状态
             if hasattr(self, 'update_button'):
                 self.update_button.setEnabled(False)
-                self.update_button.setToolTip("正在更新yt-dlp...")
+                self.update_button.setToolTip(t("正在更新yt-dlp..."))
                 # 重置为默认样式，显示更新中状态
                 self.reset_update_button_icon()
                 self.stop_update_button_animation()
@@ -5119,12 +5071,12 @@ class VideoDownloaderApp(QMainWindow):
             self.actual_update_thread.finished_signal.connect(self.on_actual_update_finished)
             self.actual_update_thread.start()
             
-            self.update_status("🚀 正在更新yt-dlp...", "info")
+            self.update_status(t("🚀 正在更新yt-dlp..."), "info")
         else:
             # 用户点击“否”，回到初始状态
             self.reset_update_button_icon()
             self.stop_update_button_animation()
-            self.update_status("已取消更新", "normal")
+            self.update_status(t("已取消更新"), "normal")
     
     def periodic_license_check(self):
         """周期性检查授权状态"""
@@ -5225,7 +5177,7 @@ class VideoDownloaderApp(QMainWindow):
         if getattr(self, 'is_update_btn_green', False):
             payload = getattr(self, '_last_app_update_payload', {})
             download_url = payload.get("download_url") or payload.get("website_url") or DEFAULT_APP_WEBSITE_URL
-            latest_version = payload.get("version", "未知")
+            latest_version = payload.get("version", t("未知"))
             current_version = get_app_version()
             
             prompt = (
@@ -5234,7 +5186,7 @@ class VideoDownloaderApp(QMainWindow):
             )
             reply = QMessageBox.question(
                 self,
-                "软件更新",
+                t("软件更新"),
                 prompt,
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.Yes
@@ -5247,7 +5199,7 @@ class VideoDownloaderApp(QMainWindow):
 
         # 否则，手动触发网络检查
         if hasattr(self, 'update_button'):
-            self.update_button.setToolTip("正在检查软件更新...")
+            self.update_button.setToolTip(t("正在检查软件更新..."))
             # 保持原有的提示，不禁用按钮，让用户有反馈
         self.check_app_update_from_settings(manual=True)
 
@@ -5259,7 +5211,7 @@ class VideoDownloaderApp(QMainWindow):
         self.manual_app_update_check = manual
 
         if manual:
-            self.update_status("🔄 正在检查网站上的软件版本...", "info")
+            self.update_status(t("🔄 正在检查网站上的软件版本..."), "info")
         self._set_settings_app_update_card_state(
             state="checking",
             message="正在连接官网检查版本信息...",
@@ -5336,7 +5288,7 @@ class VideoDownloaderApp(QMainWindow):
         if not success:
             self.update_status(f"❌ {message}", "error")
             if hasattr(self, 'update_button'):
-                self.update_button.setToolTip("检查软件更新")
+                self.update_button.setToolTip(t("检查软件更新"))
             if getattr(self, "manual_app_update_check", False):
                 QMessageBox.warning(self, t("软件更新检查失败"), message)
                 self.manual_app_update_check = False
@@ -5355,7 +5307,7 @@ class VideoDownloaderApp(QMainWindow):
                     prompt += "\n是否现在打开下载页面？"
                     reply = QMessageBox.question(
                         self,
-                        "软件更新",
+                        t("软件更新"),
                         prompt,
                         QMessageBox.Yes | QMessageBox.No,
                         QMessageBox.Yes
@@ -5371,11 +5323,11 @@ class VideoDownloaderApp(QMainWindow):
         else:
             self.update_status(t_format("✅ 软件已是最新版本 v{}", current_version), "success")
             if hasattr(self, 'update_button'):
-                self.update_button.setToolTip("检查软件更新")
+                self.update_button.setToolTip(t("检查软件更新"))
             if getattr(self, "manual_app_update_check", False):
                 QMessageBox.information(
                     self,
-                    "软件更新",
+                    t("软件更新"),
                     t_format("当前已是最新版本。\n\n当前版本: v{}", current_version)
                 )
 
@@ -5468,7 +5420,7 @@ class VideoDownloaderApp(QMainWindow):
                 "update_available": "发现新版本",
                 "current": "已是最新",
                 "error": "检查失败",
-            }.get(state, "官网更新")
+            }.get(state, t("官网更新"))
             self.settings_app_update_badge.setText(badge_text)
             self.settings_app_update_badge.setStyleSheet(
                 f"background-color: transparent; border: none; color: {palette['badge_fg']}; font-size: 12px; font-weight: 700;"
@@ -5571,16 +5523,16 @@ class VideoDownloaderApp(QMainWindow):
                     self.update_status(t_format("✅ yt-dlp更新成功！{} → {}", old_version, new_version), "success")
                     QMessageBox.information(
                         self, 
-                        "更新成功", 
+                        t("更新成功"), 
                         t_format("yt-dlp已成功更新！\n\n原版本: {}\n新版本: {}\n\n建议重启程序以确保更新生效。", old_version, new_version)
 
                     )
                 else:
-                    self.update_status("✅ yt-dlp更新完成！", "success")
+                    self.update_status(t("✅ yt-dlp更新完成！"), "success")
                     QMessageBox.information(
                         self, 
-                        "更新完成", 
-                        "yt-dlp已成功更新到最新版本！\n\n建议重启程序以确保更新生效。"
+                        t("更新完成"), 
+                        t("yt-dlp已成功更新到最新版本！\n\n建议重启程序以确保更新生效。")
                     )
             else:
                 # 其他成功消息（如已是最新版本）
@@ -5594,7 +5546,7 @@ class VideoDownloaderApp(QMainWindow):
     def show_settings_dialog(self):
         """显示应用设置对话框"""
         dialog = QDialog(self)
-        dialog.setWindowTitle("应用设置")
+        dialog.setWindowTitle(t("应用设置"))
         # 移除右上角的"?"帮助按钮
         dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         dialog.setFixedWidth(560)
@@ -5984,7 +5936,7 @@ class VideoDownloaderApp(QMainWindow):
     def _browse_settings_path(self):
         """浏览选择保存目录"""
         current = self.settings_save_path.text() or os.path.expanduser("~/Downloads")
-        directory = QFileDialog.getExistingDirectory(self, "选择统一保存目录", current)
+        directory = QFileDialog.getExistingDirectory(self, t("选择统一保存目录"), current)
         if directory:
             self.settings_save_path.setText(directory)
     
@@ -6058,7 +6010,7 @@ class VideoDownloaderApp(QMainWindow):
             # 重置为默认图标
             self.update_button.setIcon(self._create_svg_icon(self.svg_upgrade, self._active_icon_color()))
             self.update_button.setStyleSheet(self.common_btn_style)
-            self.update_button.setToolTip("检查依赖更新")
+            self.update_button.setToolTip(t("检查依赖更新"))
     
     def set_update_button_green(self):
         """设置更新按钮为绿色，表示有新版本可用"""
@@ -6102,7 +6054,7 @@ class VideoDownloaderApp(QMainWindow):
                 }
             """)
             self.update_button.setIcon(self._create_svg_icon(self.svg_upgrade, "#FFFFFF"))
-            self.update_button.setToolTip("🎆 发现新版本！点击更新")
+            self.update_button.setToolTip(t("🎆 发现新版本！点击更新"))
     
     def on_update_progress(self, message):
         """处理更新进度消息"""
@@ -6113,7 +6065,7 @@ class VideoDownloaderApp(QMainWindow):
         # 重置按钮状态
         if hasattr(self, 'update_button'):
             # 恢复提示语
-            self.update_button.setToolTip("检查依赖更新")
+            self.update_button.setToolTip(t("检查依赖更新"))
             
         if success:
             # 解析消息
@@ -6131,7 +6083,7 @@ class VideoDownloaderApp(QMainWindow):
                     if hasattr(self, 'manual_check') and self.manual_check:
                         QMessageBox.information(
                             self, 
-                            "版本检查", 
+                            t("版本检查"), 
                             t_format("已是最新版本，无需更新\n\n当前版本: {}", current_version)
                         )
                         self.manual_check = False
@@ -6158,14 +6110,14 @@ class VideoDownloaderApp(QMainWindow):
     def show_update_choice_dialog(self, current_version, latest_version, changelog):
             """显示更新选择对话框"""
             dialog = QDialog(self)
-            dialog.setWindowTitle("发现新版本")
+            dialog.setWindowTitle(t("发现新版本"))
             dialog.setFixedSize(600, 500)
             dialog.setModal(True)
             
             layout = QVBoxLayout(dialog)
             
             # 标题
-            title_label = QLabel("🎆 发现 yt-dlp 新版本！")
+            title_label = QLabel(t("🎆 发现 yt-dlp 新版本！"))
             title_label.setStyleSheet("""
                 QLabel {
                     font-size: 18px;
@@ -6193,7 +6145,7 @@ class VideoDownloaderApp(QMainWindow):
             layout.addWidget(version_info)
             
             # 更新日志
-            changelog_label = QLabel("新版本功能介绍:")
+            changelog_label = QLabel(t("新版本功能介绍:"))
             changelog_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
             layout.addWidget(changelog_label)
             
@@ -6206,7 +6158,7 @@ class VideoDownloaderApp(QMainWindow):
                 formatted_changelog = self.format_changelog(changelog)
                 changelog_text.setHtml(formatted_changelog)
             else:
-                changelog_text.setPlainText("暂无详细更新信息")
+                changelog_text.setPlainText(t("暂无详细更新信息"))
             
             layout.addWidget(changelog_text)
             
@@ -6214,7 +6166,7 @@ class VideoDownloaderApp(QMainWindow):
             button_layout = QHBoxLayout()
             
             # 取消按钮
-            cancel_button = QPushButton("稍后更新")
+            cancel_button = QPushButton(t("稍后更新"))
             cancel_button.setStyleSheet("""
                 QPushButton {
                     padding: 8px 16px;
@@ -6233,7 +6185,7 @@ class VideoDownloaderApp(QMainWindow):
             button_layout.addStretch()
             
             # 更新按钮
-            update_button = QPushButton("🚀 立即更新")
+            update_button = QPushButton(t("🚀 立即更新"))
             update_button.setStyleSheet("""
                 QPushButton {
                     padding: 8px 16px;
@@ -6263,7 +6215,7 @@ class VideoDownloaderApp(QMainWindow):
                 self.start_actual_update(latest_version)
             else:
                 # 用户选择稍后更新，保持绿色按钮
-                self.update_status("用户选择稍后更新", "info")
+                self.update_status(t("用户选择稍后更新"), "info")
     
     def format_changelog(self, changelog):
         """格式化更新日志为HTML"""
@@ -6332,7 +6284,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 清空进度显示
         self.progress_text.clear()
-        self.progress_text.append("正在获取视频信息...")
+        self.progress_text.append(t("正在获取视频信息..."))
         
         # 创建并启动信息获取线程，传递播放列表设置
         playlist_enabled = self.playlist_check.isChecked()
@@ -6363,7 +6315,7 @@ class VideoDownloaderApp(QMainWindow):
         # 如果还没有获取格式列表，先获取
         if not hasattr(self, 'available_formats') or not self.available_formats:
             reply = QMessageBox.question(self, t("获取格式列表"), 
-                                      "需要先获取可用格式列表才能使用高级选择功能。\n\n是否现在获取？",
+                                      t("需要先获取可用格式列表才能使用高级选择功能。\n\n是否现在获取？"),
                                       QMessageBox.Yes | QMessageBox.No)
             if reply == QMessageBox.Yes:
                 # 先获取格式列表，然后在回调中打开高级对话框
@@ -6380,7 +6332,7 @@ class VideoDownloaderApp(QMainWindow):
                 selected_expression = dialog.get_selected_format()
                 if selected_expression:
                     # 将选择的表达式设置到自定义格式
-                    self.format_combo.setCurrentText("自定义")
+                    self.format_combo.setCurrentText(t("自定义"))
                     self.custom_format.setText(selected_expression)
                     self.progress_text.append(t_format("✅ 已选择高级格式表达式: {}", selected_expression))
                     
@@ -6391,7 +6343,7 @@ class VideoDownloaderApp(QMainWindow):
     
     def on_advanced_format_selected(self, format_expression):
         """处理高级格式选择结果"""
-        self.format_combo.setCurrentText("自定义")
+        self.format_combo.setCurrentText(t("自定义"))
         self.custom_format.setText(format_expression)
         self.progress_text.append(t_format("✅ 已应用高级格式表达式: {}", format_expression))
     
@@ -6440,7 +6392,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 清空进度显示
         self.progress_text.clear()
-        self.progress_text.append("正在获取可用格式列表...")
+        self.progress_text.append(t("正在获取可用格式列表..."))
         
         # 创建并启动格式列表获取线程
         self.download_thread = DownloadThread(url, None, None, [], list_formats=True)
@@ -6475,17 +6427,17 @@ class VideoDownloaderApp(QMainWindow):
                 'X平台自动选择' in formats[0].get('description', '')):
                 
                 # X平台自动选择，不显示对话框，直接设置最佳格式
-                self.progress_text.append("\n<b>X平台自动格式选择:</b>")
-                self.progress_text.append("✅ 已自动选择最佳格式，无需手动选择")
-                self.progress_text.append("ℹ️ 可直接开始下载，系统将使用最优格式")
+                self.progress_text.append(t("\n<b>X平台自动格式选择:</b>"))
+                self.progress_text.append(t("✅ 已自动选择最佳格式，无需手动选择"))
+                self.progress_text.append(t("ℹ️ 可直接开始下载，系统将使用最优格式"))
                 
                 # 自动设置为最佳质量选项
-                self.format_combo.setCurrentText("最佳质量")
+                self.format_combo.setCurrentText(t("最佳质量"))
                 return
             
             # 在进度文本框中显示格式信息
-            self.progress_text.append("\n<b>可用格式列表:</b>")
-            self.progress_text.append("格式ID | 扩展名 | 分辨率/音频质量 | 描述")
+            self.progress_text.append(t("\n<b>可用格式列表:</b>"))
+            self.progress_text.append(t("格式ID | 扩展名 | 分辨率/音频质量 | 描述"))
             self.progress_text.append("-" * 80)
             
             # 检查是否有待处理的高级对话框请求
@@ -6500,7 +6452,7 @@ class VideoDownloaderApp(QMainWindow):
                         selected_expression = dialog.get_selected_format()
                         if selected_expression:
                             # 将选择的表达式设置到自定义格式
-                            self.format_combo.setCurrentText("自定义")
+                            self.format_combo.setCurrentText(t("自定义"))
                             self.custom_format.setText(selected_expression)
                             self.progress_text.append(t_format("✅ 已选择高级格式表达式: {}", selected_expression))
                             
@@ -6519,14 +6471,14 @@ class VideoDownloaderApp(QMainWindow):
                     self.update_format_combo_with_selected(selected_format_id, formats)
             else:
                 # 用户取消了对话框，显示提示信息
-                self.progress_text.append("已取消格式选择")
+                self.progress_text.append(t("已取消格式选择"))
                 return
             
             # 显示提示信息
-            self.progress_text.append("\n<b>提示:</b> 已选择格式ID，可以开始下载。")
+            self.progress_text.append(t("\n<b>提示:</b> 已选择格式ID，可以开始下载。"))
         else:
-            self.progress_text.append("未找到可用格式，请尝试其他预设格式选项")
-            self.format_combo.setCurrentText("最佳质量")
+            self.progress_text.append(t("未找到可用格式，请尝试其他预设格式选项"))
+            self.format_combo.setCurrentText(t("最佳质量"))
             QMessageBox.warning(self, t("提示"), t("未找到可用格式，已自动切换到'最佳质量'选项。"))
     
     def _on_url_text_changed(self, _text):
@@ -6539,7 +6491,7 @@ class VideoDownloaderApp(QMainWindow):
             self._pending_download_title = ""
             self._pending_media_capture_download = False
             self._pending_media_capture_format_id = ""
-            self.progress_text.append("[日志] 检测到URL变更，已清空格式缓存")
+            self.progress_text.append(t("[日志] 检测到URL变更，已清空格式缓存"))
             if self.download_thread and self.download_thread.isRunning() and getattr(self.download_thread, 'list_formats', False):
                 try:
                     self._safe_disconnect_download_signals()
@@ -6557,7 +6509,7 @@ class VideoDownloaderApp(QMainWindow):
         self.format_id_combo.clear()
         
         # 添加"自动选择最佳质量"选项
-        self.format_id_combo.addItem("自动选择最佳质量", "best")
+        self.format_id_combo.addItem(t("自动选择最佳质量"), "best")
         
         # 添加所有可用格式
         for fmt in formats:
@@ -6578,7 +6530,7 @@ class VideoDownloaderApp(QMainWindow):
             self.format_id_combo.setCurrentIndex(0)
         
         # 自动选择指定格式ID选项
-        self.format_combo.setCurrentText("指定格式ID")
+        self.format_combo.setCurrentText(t("指定格式ID"))
         self.format_id_combo.setEnabled(True)
     
     def show_failed_videos(self, failed_videos):
@@ -6667,16 +6619,16 @@ class VideoDownloaderApp(QMainWindow):
         # 显示可用格式
         formats = info.get('formats', [])
         if formats:
-            self.progress_text.append("\n<b>可用格式:</b>")
+            self.progress_text.append(t("\n<b>可用格式:</b>"))
             
             # 检查格式列表的结构
             if all(isinstance(fmt, dict) for fmt in formats):
                 # 标准格式列表
                 for fmt in formats:
-                    format_id = fmt.get('format_id', '未知')
+                    format_id = fmt.get('format_id', t('未知'))
                     format_note = fmt.get('format_note', '')
-                    resolution = fmt.get('resolution', '未知')
-                    ext = fmt.get('ext', '未知')
+                    resolution = fmt.get('resolution', t('未知'))
+                    ext = fmt.get('ext', t('未知'))
                     
                     # 构建格式描述
                     format_desc = f"ID: {format_id}"
@@ -6704,7 +6656,7 @@ class VideoDownloaderApp(QMainWindow):
                     elif isinstance(fmt, str):
                         self.progress_text.append(fmt)
         else:
-            self.progress_text.append("\n<b>注意:</b> 未找到格式信息，可能需要使用'获取可用格式'按钮获取详细格式列表。")
+            self.progress_text.append(t("\n<b>注意:</b> 未找到格式信息，可能需要使用'获取可用格式'按钮获取详细格式列表。"))
         
         # 显示字幕信息并自动设置
         self._display_and_auto_set_subtitles(info)
@@ -6717,7 +6669,7 @@ class VideoDownloaderApp(QMainWindow):
             if len(desc) > max_desc_length:
                 desc = desc[:max_desc_length] + "... (描述已截断)"
             
-            self.progress_text.append("\n<b>视频描述:</b>")
+            self.progress_text.append(t("\n<b>视频描述:</b>"))
             self.progress_text.append(desc)
     
     def _display_playlist_info(self, playlist_info):
@@ -6734,7 +6686,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 显示播放列表中的视频
         if entries:
-            self.progress_text.append("\n<b>播放列表中的视频:</b>")
+            self.progress_text.append(t("\n<b>播放列表中的视频:</b>"))
             # 限制显示的条目数量，避免UI过长
             max_entries = 20
             for i, entry in enumerate(entries[:max_entries]):
@@ -6745,8 +6697,8 @@ class VideoDownloaderApp(QMainWindow):
                 self.progress_text.append(t_format("... 还有 {} 个视频未显示", len(entries) - max_entries))
         
         # 提示用户如何下载播放列表
-        self.progress_text.append("\n<b>提示:</b> 要下载整个播放列表，请在'高级选项'中勾选'下载播放列表'选项。")
-        self.progress_text.append("<b>智能选择:</b> 点击'智能选择范围'按钮可以可视化选择下载范围。")
+        self.progress_text.append(t("\n<b>提示:</b> 要下载整个播放列表，请在'高级选项'中勾选'下载播放列表'选项。"))
+        self.progress_text.append(t("<b>智能选择:</b> 点击'智能选择范围'按钮可以可视化选择下载范围。"))
         
         # 自动勾选播放列表选项并启用智能选择按钮
         self.playlist_check.setChecked(True)
@@ -6765,7 +6717,7 @@ class VideoDownloaderApp(QMainWindow):
         self._last_preview_subtitle_langs = sorted(all_subtitles.keys())
         
         if all_subtitles:
-            self.progress_text.append("\n<b>可用字幕:</b>")
+            self.progress_text.append(t("\n<b>可用字幕:</b>"))
             
             # 显示可用的字幕语言
             subtitle_langs = list(all_subtitles.keys())
@@ -6828,7 +6780,7 @@ class VideoDownloaderApp(QMainWindow):
                 self.progress_text.append(t_format("<b>已自动选择:</b> {} ({}) - {}", lang_name, selected_lang, subtitle_type))
             
         else:
-            self.progress_text.append("\n<b>字幕信息:</b> 此视频没有可用的字幕")
+            self.progress_text.append(t("\n<b>字幕信息:</b> 此视频没有可用的字幕"))
             self._last_preview_subtitle_langs = []
             # 如果没有字幕，取消勾选字幕选项
             self.subtitle_check.setChecked(False)
@@ -6899,8 +6851,8 @@ class VideoDownloaderApp(QMainWindow):
         
         # 清空进度显示
         self.progress_text.clear()
-        self.progress_text.append("正在获取播放列表信息...")
-        self.progress_text.append("提示: 此功能专门用于获取博主主页、频道页面等的播放列表信息")
+        self.progress_text.append(t("正在获取播放列表信息..."))
+        self.progress_text.append(t("提示: 此功能专门用于获取博主主页、频道页面等的播放列表信息"))
         
         # 创建并启动播放列表信息获取线程
         self.download_thread = DownloadThread(url, None, None, [], extract_playlist=True)
@@ -7499,7 +7451,7 @@ class VideoDownloaderApp(QMainWindow):
             self.browser_window.show()
             
         except Exception as e:
-            self._show_browser_safe_message(QMessageBox.Critical, "错误", t_format("打开浏览器失败: {}", str(e)))
+            self._show_browser_safe_message(QMessageBox.Critical, t("错误"), t_format("打开浏览器失败: {}", str(e)))
             print(f"Open browser error: {e}")
     
     def _on_media_url_received(self, url: str, title: str = ""):
@@ -7529,7 +7481,7 @@ class VideoDownloaderApp(QMainWindow):
             self.progress_text.append(t_format("📡 从浏览器捕获媒体: {}", display_title))
             if format_id:
                 self.progress_text.append(t_format("🎯 捕获到的媒体分辨率/格式: {}", format_id))
-            self.progress_text.append("ℹ️ 本次媒体捕获下载将忽略下载器页面当前格式设置，自动使用兼容模式")
+            self.progress_text.append(t("ℹ️ 本次媒体捕获下载将忽略下载器页面当前格式设置，自动使用兼容模式"))
         
         # 将主窗口带到前台
         self.showNormal()  # 确保不是最小化
@@ -7651,7 +7603,7 @@ class VideoDownloaderApp(QMainWindow):
         # 开始下载
         url_text = self.url_input.text().strip()
         if not url_text:
-            self._show_browser_safe_message(QMessageBox.Warning, "错误", "请输入视频URL")
+            self._show_browser_safe_message(QMessageBox.Warning, t("错误"), "请输入视频URL")
             return
             
         # 从输入文本中提取URL
@@ -7670,7 +7622,7 @@ class VideoDownloaderApp(QMainWindow):
             try:
                 os.makedirs(output_path)
             except Exception as e:
-                self._show_browser_safe_message(QMessageBox.Critical, "错误", t_format("无法创建输出目录: {}", str(e)))
+                self._show_browser_safe_message(QMessageBox.Critical, t("错误"), t_format("无法创建输出目录: {}", str(e)))
                 return
         
         is_media_capture_download = bool(self._pending_media_capture_download)
@@ -7682,10 +7634,10 @@ class VideoDownloaderApp(QMainWindow):
         try:
             additional_options = self.get_additional_options()
         except ValueError as e:
-            self._show_browser_safe_message(QMessageBox.Warning, "时间片段设置错误", str(e))
+            self._show_browser_safe_message(QMessageBox.Warning, t("时间片段设置错误"), str(e))
             return
         except Exception as e:
-            self._show_browser_safe_message(QMessageBox.Critical, "参数构建失败", t_format("下载参数构建失败: {}", str(e)))
+            self._show_browser_safe_message(QMessageBox.Critical, t("参数构建失败"), t_format("下载参数构建失败: {}", str(e)))
             return
         
         # 【调试】打印获取到的additional_options
@@ -7698,7 +7650,7 @@ class VideoDownloaderApp(QMainWindow):
                 and _is_x_platform_url(url)
                 and not self.playlist_check.isChecked()):
             self.progress_text.clear()
-            self.progress_text.append("🔍 检测到X平台链接，正在探测推文中的视频数量...")
+            self.progress_text.append(t("🔍 检测到X平台链接，正在探测推文中的视频数量..."))
             QApplication.processEvents()
 
             x_entries = self._probe_x_multi_video(url)
@@ -7707,14 +7659,14 @@ class VideoDownloaderApp(QMainWindow):
                 dialog = XVideoSelectionDialog(x_entries, self)
                 if dialog.exec_() != QDialog.Accepted:
                     # 用户取消了选择
-                    self.progress_text.append("已取消下载")
+                    self.progress_text.append(t("已取消下载"))
                     return
                 x_playlist_items_override = dialog.get_playlist_items_str()
                 self.progress_text.append(
                     t_format("✅ 已选择 {}/{} 个视频", len(dialog.selected_indices), len(x_entries))
                 )
             else:
-                self.progress_text.append("✅ 该推文只包含一个视频，直接下载")
+                self.progress_text.append(t("✅ 该推文只包含一个视频，直接下载"))
 
         # 如果用户选择了指定格式ID但没有先获取可用格式列表
         # 注意：如果格式 ID 是从媒体捕获窗口传入的，则跳过此检查
@@ -7729,8 +7681,8 @@ class VideoDownloaderApp(QMainWindow):
                 self.list_available_formats()
 
             reply = self._show_browser_safe_question(
-                "确认",
-                "您选择了指定格式ID但尚未获取可用格式列表。\n\n是否先获取可用格式列表？",
+                t("确认"),
+                t("您选择了指定格式ID但尚未获取可用格式列表。\n\n是否先获取可用格式列表？"),
                 yes_callback=_go_list_formats,
             )
             if reply is None or handled["triggered"]:
@@ -7743,20 +7695,20 @@ class VideoDownloaderApp(QMainWindow):
             if self._pending_media_capture_format_id and self._pending_media_capture_format_id.lower() != "best":
                 self.progress_text.append(t_format("ℹ️ 媒体捕获下载：已忽略主页面格式选择，优先使用捕获面板格式 {}", self._pending_media_capture_format_id))
             else:
-                self.progress_text.append("ℹ️ 媒体捕获下载：已忽略主页面格式选择，使用直链兼容下载策略")
+                self.progress_text.append(t("ℹ️ 媒体捕获下载：已忽略主页面格式选择，使用直链兼容下载策略"))
         
         # 重置进度条并确保正确设置
         self.progress_bar.setValue(0)
         self.progress_bar.setFormat("0%")
         self.progress_bar.setAlignment(Qt.AlignCenter)  # 确保文本居中显示
         self.progress_bar.setTextVisible(True)  # 确保文本可见
-        self.setWindowTitle("SourceCraft - 准备下载")
+        self.setWindowTitle(t("SourceCraft - 准备下载"))
         
         # 强制更新UI，确保进度条初始状态正确显示
         QApplication.processEvents()
         
         # 添加调试信息
-        self.progress_text.append("正在初始化下载线程...")
+        self.progress_text.append(t("正在初始化下载线程..."))
         
         # 新增：源地址绑定反馈
         if hasattr(self, 'source_address_check') and self.source_address_check.isChecked():
@@ -7791,7 +7743,7 @@ class VideoDownloaderApp(QMainWindow):
                 additional_options.extend(["--playlist-items", x_playlist_items_override])
                 self.progress_text.append(t_format("🐦 X平台多视频：下载第 {} 个视频", x_playlist_items_override))
             else:
-                self.progress_text.append("🐦 X平台多视频：下载全部视频")
+                self.progress_text.append(t("🐦 X平台多视频：下载全部视频"))
 
         # 创建并启动下载线程，传递playlist_enabled参数
         self.download_thread = DownloadThread(url, output_path, format_option, additional_options, 
@@ -7836,7 +7788,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 清空进度显示
         self.progress_text.clear()
-        self.progress_text.append("正在获取字幕信息...")
+        self.progress_text.append(t("正在获取字幕信息..."))
         
         # 创建字幕预览线程
         self.subtitle_thread = SubtitlePreviewThread(url)
@@ -7849,25 +7801,25 @@ class VideoDownloaderApp(QMainWindow):
     def show_subtitle_preview(self, subtitle_info):
         """显示字幕预览信息"""
         if not subtitle_info:
-            self.progress_text.append("该视频没有可用的字幕")
+            self.progress_text.append(t("该视频没有可用的字幕"))
             return
             
         # 创建字幕预览对话框
         dialog = QDialog(self)
-        dialog.setWindowTitle("可用字幕预览")
+        dialog.setWindowTitle(t("可用字幕预览"))
         dialog.setMinimumSize(600, 400)
         dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         
         layout = QVBoxLayout(dialog)
         
         # 添加说明文本
-        info_label = QLabel("以下是该视频的可用字幕信息：")
+        info_label = QLabel(t("以下是该视频的可用字幕信息："))
         layout.addWidget(info_label)
         
         # 创建表格显示字幕信息
         table = QTableWidget()
         table.setColumnCount(4)
-        table.setHorizontalHeaderLabels(["语言代码", "语言名称", "格式", "类型"])
+        table.setHorizontalHeaderLabels([t("语言代码"), "语言名称", t("格式"), "类型"])
         
         # 设置表格样式
         table.horizontalHeader().setStretchLastSection(True)
@@ -7896,18 +7848,18 @@ class VideoDownloaderApp(QMainWindow):
         for lang_code, formats in subtitles.items():
             for fmt in formats:
                 table.setItem(row, 0, QTableWidgetItem(lang_code))
-                table.setItem(row, 1, QTableWidgetItem(fmt.get('name', '未知')))
-                table.setItem(row, 2, QTableWidgetItem(fmt.get('ext', '未知')))
-                table.setItem(row, 3, QTableWidgetItem("手动字幕"))
+                table.setItem(row, 1, QTableWidgetItem(fmt.get('name', t('未知'))))
+                table.setItem(row, 2, QTableWidgetItem(fmt.get('ext', t('未知'))))
+                table.setItem(row, 3, QTableWidgetItem(t("手动字幕")))
                 row += 1
                 
         # 添加自动字幕
         for lang_code, formats in automatic_captions.items():
             for fmt in formats:
                 table.setItem(row, 0, QTableWidgetItem(lang_code))
-                table.setItem(row, 1, QTableWidgetItem(fmt.get('name', '未知')))
-                table.setItem(row, 2, QTableWidgetItem(fmt.get('ext', '未知')))
-                table.setItem(row, 3, QTableWidgetItem("自动字幕"))
+                table.setItem(row, 1, QTableWidgetItem(fmt.get('name', t('未知'))))
+                table.setItem(row, 2, QTableWidgetItem(fmt.get('ext', t('未知'))))
+                table.setItem(row, 3, QTableWidgetItem(t("自动字幕")))
                 row += 1
         
         layout.addWidget(table)
@@ -7918,15 +7870,13 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加帮助/关闭按钮
         button_layout = QHBoxLayout()
-        help_button = QPushButton("帮助")
+        help_button = QPushButton(t("帮助"))
         help_button.clicked.connect(lambda: QMessageBox.information(
             dialog,
-            "字幕预览说明",
-            "手动字幕请选择“下载手动字幕”。\n"
-            "自动字幕请仅勾选“下载自动生成字幕”。\n"
-            "没有预览字幕代表源视频无字幕。"
+            t("字幕预览说明"),
+            t("手动字幕请选择“下载手动字幕”。\n") + t("自动字幕请仅勾选“下载自动生成字幕”。\n") + t("没有预览字幕代表源视频无字幕。")
         ))
-        close_button = QPushButton("关闭")
+        close_button = QPushButton(t("关闭"))
         close_button.clicked.connect(dialog.accept)
         button_layout.addStretch()
         button_layout.addWidget(help_button)
@@ -7944,7 +7894,7 @@ class VideoDownloaderApp(QMainWindow):
     def cancel_download(self):
         """取消下载，添加异常处理确保UI稳定性"""
         try:
-            self.progress_text.append(" 用户点击取消按钮，开始取消下载流程...")
+            self.progress_text.append(t(" 用户点击取消按钮，开始取消下载流程..."))
             
             if self.download_thread and self.download_thread.isRunning():
                 self.progress_text.append(t_format(" 检测到下载线程正在运行，线程 ID: {}", self.download_thread.currentThreadId()))
@@ -7964,7 +7914,7 @@ class VideoDownloaderApp(QMainWindow):
                 # 显示取消成功消息（使用QTimer延迟显示，避免UI冲突）
                 QTimer.singleShot(100, self._show_cancel_success_message)
             else:
-                self.progress_text.append(" 没有检测到正在运行的下载线程")
+                self.progress_text.append(t(" 没有检测到正在运行的下载线程"))
                 self._update_ui_after_cancel()
                 
                 # 即使没有运行的线程也显示取消成功消息
@@ -8019,7 +7969,7 @@ class VideoDownloaderApp(QMainWindow):
             
             # 重置进度条
             self.progress_bar.setValue(0)
-            self.progress_bar.setFormat("已取消")
+            self.progress_bar.setFormat(t("已取消"))
             
             # 重置窗口标题
             self.setWindowTitle("SourceCraft")
@@ -8040,7 +7990,7 @@ class VideoDownloaderApp(QMainWindow):
             # 如果消息框显示失败，在进度文本中显示替代消息
             print(t_format("显示取消成功消息框时发生错误: {}", str(e)))
             try:
-                self.progress_text.append("✓ 下载已成功取消！")
+                self.progress_text.append(t("✓ 下载已成功取消！"))
                 # 滚动到底部显示最新消息
                 self.progress_text.verticalScrollBar().setValue(self.progress_text.verticalScrollBar().maximum())
             except Exception as inner_e:
@@ -8059,8 +8009,8 @@ class VideoDownloaderApp(QMainWindow):
         if percent == -1:
             self.progress_bar.setValue(0)
             self.progress_bar.setFormat("0%")
-            self.setWindowTitle("SourceCraft - 重试下载")
-            self.progress_text.append("📊 进度已重置（重试模式）")
+            self.setWindowTitle(t("SourceCraft - 重试下载"))
+            self.progress_text.append(t("📊 进度已重置（重试模式）"))
             QApplication.processEvents()
             return
         
@@ -8070,10 +8020,10 @@ class VideoDownloaderApp(QMainWindow):
         # 确保百分比值在有效范围内(0-100)
         if percent < 0:
             percent = 0
-            self.progress_text.append("警告: 收到负进度值，已修正为0%")
+            self.progress_text.append(t("警告: 收到负进度值，已修正为0%"))
         elif percent > 100:
             percent = 100
-            self.progress_text.append("警告: 收到超过100%的进度值，已修正为100%")
+            self.progress_text.append(t("警告: 收到超过100%的进度值，已修正为100%"))
         
         # 保留两位小数用于内部计算，但显示整数百分比
         float_percent = round(percent, 2)  # 保留两位小数，避免浮点误差
@@ -8112,7 +8062,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 如果进度达到100%，确保进度条显示完成状态
         if int_percent == 100:
-            self.progress_text.append("下载进度条更新完成！")
+            self.progress_text.append(t("下载进度条更新完成！"))
             # 再次强制更新UI，确保最终状态正确显示
             QApplication.processEvents()
 
@@ -8465,7 +8415,7 @@ class VideoDownloaderApp(QMainWindow):
             t_format("{}\n\n最可能原因：\n{}\n\n建议操作：\n{}\n\n诊断依据：\n{}\n匹配规则：{}\n\n原始错误（截断）：\n{}", diagnosis.get('summary', '下载失败'), causes_text or '1. 暂无', actions_text or '1. 暂无', evidence, matched_keyword, raw_preview)
 
         )
-        self._show_browser_safe_message(QMessageBox.Critical, diagnosis.get("title", "下载失败"), detail)
+        self._show_browser_safe_message(QMessageBox.Critical, diagnosis.get("title", t("下载失败")), detail)
     
     def download_finished(self, success, message):
         # 下载完成处理
@@ -8687,19 +8637,19 @@ class VideoDownloaderApp(QMainWindow):
                 'temporary failure', 'name resolution', 'dns error',
                 'no route', 'host unreachable'
             ]) and 'ssl' not in message_lower and 'tls' not in message_lower and 'certificate' not in message_lower:
-                self._show_browser_safe_message(QMessageBox.Critical, "网络连接失败", 
-                    "无法连接到视频服务器，请检查您的网络连接。\n\n" +
-                    "💡 可能的原因：\n" +
-                    "1. 🌐 网络连接不稳定或已断开\n" +
-                    "2. 🔒 防火墙阻止了连接\n" +
-                    "3. 🌍 DNS解析失败\n" +
-                    "4. ⏱️ 服务器响应超时\n\n" +
-                    "🔧 建议解决方案：\n" +
-                    "• 检查您的网络连接是否正常\n" +
-                    "• 尝试刷新DNS缓存（运行 ipconfig /flushdns）\n" +
-                    "• 切换到其他网络或使用代理\n" +
-                    "• 检查防火墙设置\n" +
-                    "• 稍后重试，可能是服务器暂时过载\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("网络连接失败"), 
+                    t("无法连接到视频服务器，请检查您的网络连接。\n\n") +
+                    t("💡 可能的原因：\n") +
+                    t("1. 🌐 网络连接不稳定或已断开\n") +
+                    t("2. 🔒 防火墙阻止了连接\n") +
+                    t("3. 🌍 DNS解析失败\n") +
+                    t("4. ⏱️ 服务器响应超时\n\n") +
+                    t("🔧 建议解决方案：\n") +
+                    t("• 检查您的网络连接是否正常\n") +
+                    t("• 尝试刷新DNS缓存（运行 ipconfig /flushdns）\n") +
+                    t("• 切换到其他网络或使用代理\n") +
+                    t("• 检查防火墙设置\n") +
+                    t("• 稍后重试，可能是服务器暂时过载\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否需要登录/账号验证
@@ -8709,15 +8659,15 @@ class VideoDownloaderApp(QMainWindow):
                 'only available for registered', 'members only',
                 'subscribers only', 'requires authentication'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "需要登录账号", 
-                    "此视频需要登录账号才能下载。\n\n" +
-                    "💡 解决方案：\n" +
-                    "1. 🌐 点击工具栏的内置浏览器按钮\n" +
-                    "2. 🔐 在浏览器中登录您的账号\n" +
-                    "3. 🍪 点击Cookie提取按钮获取登录状态\n" +
-                    "4. 🔄 重新开始下载\n\n" +
-                    "⚠️ 注意：如果是会员专享内容，\n" +
-                    "需要使用有会员权限的账号登录。\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("需要登录账号"), 
+                    t("此视频需要登录账号才能下载。\n\n") +
+                    t("💡 解决方案：\n") +
+                    t("1. 🌐 点击工具栏的内置浏览器按钮\n") +
+                    t("2. 🔐 在浏览器中登录您的账号\n") +
+                    t("3. 🍪 点击Cookie提取按钮获取登录状态\n") +
+                    t("4. 🔄 重新开始下载\n\n") +
+                    t("⚠️ 注意：如果是会员专享内容，\n") +
+                    t("需要使用有会员权限的账号登录。\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是年龄限制错误
@@ -8727,14 +8677,14 @@ class VideoDownloaderApp(QMainWindow):
                 'inappropriate for some users', 'this video may be inappropriate',
                 'content warning', 'mature content'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "年龄限制", 
-                    "此视频设置了年龄限制，需要验证身份。\n\n" +
-                    "💡 解决方案：\n" +
-                    "1. 🌐 使用内置浏览器登录已验证年龄的账号\n" +
-                    "2. 🍪 提取Cookie后重新下载\n" +
-                    "3. 🔧 在「高级选项」中启用「限制绕过」功能\n\n" +
-                    "⚠️ 注意：您的账号需要已完成年龄验证\n" +
-                    "（通常需要满18岁）\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("年龄限制"), 
+                    t("此视频设置了年龄限制，需要验证身份。\n\n") +
+                    t("💡 解决方案：\n") +
+                    t("1. 🌐 使用内置浏览器登录已验证年龄的账号\n") +
+                    t("2. 🍪 提取Cookie后重新下载\n") +
+                    t("3. 🔧 在「高级选项」中启用「限制绕过」功能\n\n") +
+                    t("⚠️ 注意：您的账号需要已完成年龄验证\n") +
+                    t("（通常需要满18岁）\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是地理位置限制
@@ -8744,15 +8694,15 @@ class VideoDownloaderApp(QMainWindow):
                 'country restriction', 'territory restriction', 'blocked in your region',
                 'this video is not available', 'ip blocked', '地区限制'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "地区限制", 
-                    "此视频在您所在的地区不可用。\n\n" +
-                    "💡 解决方案：\n" +
-                    "1. 🔄 更换VPN服务器线路\n" +
-                    "   - 尝试切换到美国、日本等服务器节点\n" +
-                    "2. 🌐 在「高级选项」中配置代理服务器\n" +
-                    "3. 🔧 启用「限制绕过」功能\n\n" +
-                    "💡 提示：不同视频可能在不同地区可用，\n" +
-                    "尝试切换到视频允许的地区。\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("地区限制"), 
+                    t("此视频在您所在的地区不可用。\n\n") +
+                    t("💡 解决方案：\n") +
+                    t("1. 🔄 更换VPN服务器线路\n") +
+                    t("   - 尝试切换到美国、日本等服务器节点\n") +
+                    t("2. 🌐 在「高级选项」中配置代理服务器\n") +
+                    t("3. 🔧 启用「限制绕过」功能\n\n") +
+                    t("💡 提示：不同视频可能在不同地区可用，\n") +
+                    t("尝试切换到视频允许的地区。\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是会员/付费内容
@@ -8761,13 +8711,13 @@ class VideoDownloaderApp(QMainWindow):
                 'membership required', 'subscription required', '会员专享',
                 'vip', 'youtube premium', 'requires subscription'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "会员专享内容", 
-                    "此视频为会员/付费专享内容。\n\n" +
-                    "💡 解决方案：\n" +
-                    "1. 💳 需要使用有会员权限的账号\n" +
-                    "2. 🌐 在内置浏览器中登录会员账号\n" +
-                    "3. 🍪 提取Cookie后重新下载\n\n" +
-                    "⚠️ 注意：请确保您的账号已购买相应的会员服务。\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("会员专享内容"), 
+                    t("此视频为会员/付费专享内容。\n\n") +
+                    t("💡 解决方案：\n") +
+                    t("1. 💳 需要使用有会员权限的账号\n") +
+                    t("2. 🌐 在内置浏览器中登录会员账号\n") +
+                    t("3. 🍪 提取Cookie后重新下载\n\n") +
+                    t("⚠️ 注意：请确保您的账号已购买相应的会员服务。\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是视频不存在/已删除/私有
@@ -8777,17 +8727,17 @@ class VideoDownloaderApp(QMainWindow):
                 'this video is unavailable', 'this video does not exist',
                 'video not found', 'http error 404', 'page not found', '视频不可用'
             ]) and 'ffmpeg' not in message_lower and 'cookie' not in message_lower and 'playlist' not in message_lower:
-                self._show_browser_safe_message(QMessageBox.Critical, "视频不可用", 
-                    "该视频不存在、已被删除或设为私有。\n\n" +
-                    "💡 可能的原因：\n" +
-                    "1. 📹 视频已被上传者删除\n" +
-                    "2. 🔒 视频被设置为私有\n" +
-                    "3. 🔗 视频链接已失效或不正确\n" +
-                    "4. ⚖️ 视频因违规被平台删除\n\n" +
-                    "🔧 建议：\n" +
-                    "• 确认视频链接是否正确\n" +
-                    "• 尝试在浏览器中直接访问链接\n" +
-                    "• 如果是私有视频，需要获得授权\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("视频不可用"), 
+                    t("该视频不存在、已被删除或设为私有。\n\n") +
+                    t("💡 可能的原因：\n") +
+                    t("1. 📹 视频已被上传者删除\n") +
+                    t("2. 🔒 视频被设置为私有\n") +
+                    t("3. 🔗 视频链接已失效或不正确\n") +
+                    t("4. ⚖️ 视频因违规被平台删除\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 确认视频链接是否正确\n") +
+                    t("• 尝试在浏览器中直接访问链接\n") +
+                    t("• 如果是私有视频，需要获得授权\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是服务器错误
@@ -8796,16 +8746,16 @@ class VideoDownloaderApp(QMainWindow):
                 'service unavailable', 'internal server error', 'bad gateway', 'gateway timeout',
                 'server is down', 'server temporarily unavailable'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "服务器错误", 
-                    "视频平台服务器暂时出现问题。\n\n" +
-                    "💡 这通常是临时性问题：\n" +
-                    "1. ⏱️ 服务器正在维护或过载\n" +
-                    "2. 🌐 平台暂时不可用\n\n" +
-                    "🔧 建议：\n" +
-                    "• 稍等几分钟后重试\n" +
-                    "• 检查视频网站是否正常运行\n" +
-                    "• 在非高峰时段重试\n" +
-                    "• 尝试使用代理或VPN\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("服务器错误"), 
+                    t("视频平台服务器暂时出现问题。\n\n") +
+                    t("💡 这通常是临时性问题：\n") +
+                    t("1. ⏱️ 服务器正在维护或过载\n") +
+                    t("2. 🌐 平台暂时不可用\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 稍等几分钟后重试\n") +
+                    t("• 检查视频网站是否正常运行\n") +
+                    t("• 在非高峰时段重试\n") +
+                    t("• 尝试使用代理或VPN\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是请求频率限制
@@ -8813,14 +8763,14 @@ class VideoDownloaderApp(QMainWindow):
                 'too many requests', 'rate limit', 'slow down', 'throttled',
                 '429', 'quota exceeded', 'api limit', 'request limit'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "请求过于频繁", 
-                    "触发了平台的访问频率限制。\n\n" +
-                    "💡 解决方案：\n" +
-                    "1. ⏱️ 等待几分钟后重试\n" +
-                    "2. ⚙️ 在「高级选项」中增加下载延迟\n" +
-                    "3. 📉 减少并发下载数量\n" +
-                    "4. 🔄 使用不同的IP地址或代理\n\n" +
-                    "⚠️ 避免短时间内大量下载\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("请求过于频繁"), 
+                    t("触发了平台的访问频率限制。\n\n") +
+                    t("💡 解决方案：\n") +
+                    t("1. ⏱️ 等待几分钟后重试\n") +
+                    t("2. ⚙️ 在「高级选项」中增加下载延迟\n") +
+                    t("3. 📉 减少并发下载数量\n") +
+                    t("4. 🔄 使用不同的IP地址或代理\n\n") +
+                    t("⚠️ 避免短时间内大量下载\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是版权问题
@@ -8828,29 +8778,29 @@ class VideoDownloaderApp(QMainWindow):
                 'copyright', 'dmca', 'content id', 'blocked due to',
                 'contains content from', 'who has blocked it', 'policy violation'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "版权限制", 
-                    "该视频因版权问题受到限制。\n\n" +
-                    "💡 可能的情况：\n" +
-                    "1. 📜 视频内容涉及版权保护\n" +
-                    "2. ⚖️ 收到版权投诉被限制\n" +
-                    "3. 🌍 特定地区的版权限制\n\n" +
-                    "🔧 建议：\n" +
-                    "• 尝试使用其他地区的代理\n" +
-                    "• 检查是否有其他来源可用\n" +
-                    "• 联系版权持有者获取授权\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("版权限制"), 
+                    t("该视频因版权问题受到限制。\n\n") +
+                    t("💡 可能的情况：\n") +
+                    t("1. 📜 视频内容涉及版权保护\n") +
+                    t("2. ⚖️ 收到版权投诉被限制\n") +
+                    t("3. 🌍 特定地区的版权限制\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 尝试使用其他地区的代理\n") +
+                    t("• 检查是否有其他来源可用\n") +
+                    t("• 联系版权持有者获取授权\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是格式不可用的错误
             elif "requested format is not available" in message_lower:
                 self._show_browser_safe_question(
-                    "格式不可用",
-                    "请求的视频格式不可用。\n\n是否获取此视频的可用格式列表？",
+                    t("格式不可用"),
+                    t("请求的视频格式不可用。\n\n是否获取此视频的可用格式列表？"),
                     yes_callback=self.list_available_formats,
                 )
             elif "format" in message_lower and "not available" in message_lower:
                 self._show_browser_safe_question(
-                    "格式不可用",
-                    "所选格式可能不可用。\n\n是否获取此视频的可用格式列表？",
+                    t("格式不可用"),
+                    t("所选格式可能不可用。\n\n是否获取此视频的可用格式列表？"),
                     yes_callback=self.list_available_formats,
                 )
             
@@ -8859,13 +8809,13 @@ class VideoDownloaderApp(QMainWindow):
                 'ffmpeg', 'postprocessor', 'conversion failed', 'merging',
                 'muxing', 'could not write header', 'invalid data'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "视频处理失败", 
-                    "FFmpeg处理视频时出错。\n\n" +
-                    "💡 解决方案：\n" +
-                    "1. 📁 确认ffmpeg.exe在程序目录下\n" +
-                    "2. 💾 检查磁盘空间是否充足\n" +
-                    "3. 🔄 尝试选择不同的输出格式\n" +
-                    "4. ⚙️ 关闭字幕嵌入或其他后处理功能\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("视频处理失败"), 
+                    t("FFmpeg处理视频时出错。\n\n") +
+                    t("💡 解决方案：\n") +
+                    t("1. 📁 确认ffmpeg.exe在程序目录下\n") +
+                    t("2. 💾 检查磁盘空间是否充足\n") +
+                    t("3. 🔄 尝试选择不同的输出格式\n") +
+                    t("4. ⚙️ 关闭字幕嵌入或其他后处理功能\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是SSL/证书问题
@@ -8873,13 +8823,13 @@ class VideoDownloaderApp(QMainWindow):
                 'ssl', 'certificate', 'tls', 'certificate verify failed', 
                 'ssl handshake', 'https error'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "安全连接失败", 
-                    "HTTPS连接安全证书验证失败。\n\n" +
-                    "💡 解决方案：\n" +
-                    "1. 🕐 检查系统时间是否正确\n" +
-                    "2. 🔄 更新系统根证书\n" +
-                    "3. 🌐 检查网络代理设置\n" +
-                    "4. 🔧 程序会自动禁用证书检查重试\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("安全连接失败"), 
+                    t("HTTPS连接安全证书验证失败。\n\n") +
+                    t("💡 解决方案：\n") +
+                    t("1. 🕐 检查系统时间是否正确\n") +
+                    t("2. 🔄 更新系统根证书\n") +
+                    t("3. 🌐 检查网络代理设置\n") +
+                    t("4. 🔧 程序会自动禁用证书检查重试\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是字幕相关问题
@@ -8888,18 +8838,18 @@ class VideoDownloaderApp(QMainWindow):
                 'no subtitles', 'subtitle download', 'embed subtitle',
                 'write subtitle', 'convert subtitle'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "字幕处理失败", 
-                    "字幕下载或处理时出错。\n\n" +
-                    "💡 可能的原因：\n" +
-                    "1. 📝 该视频没有可用的字幕\n" +
-                    "2. 🌐 字幕语言不可用\n" +
-                    "3. ⚙️ 字幕格式转换失败\n" +
-                    "4. 📁 字幕嵌入到视频失败\n\n" +
-                    "🔧 建议：\n" +
-                    "• 在「字幕选项」中选择其他语言\n" +
-                    "• 尝试下载自动生成的字幕\n" +
-                    "• 关闭字幕嵌入，单独下载字幕文件\n" +
-                    "• 确保ffmpeg正确安装\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("字幕处理失败"), 
+                    t("字幕下载或处理时出错。\n\n") +
+                    t("💡 可能的原因：\n") +
+                    t("1. 📝 该视频没有可用的字幕\n") +
+                    t("2. 🌐 字幕语言不可用\n") +
+                    t("3. ⚙️ 字幕格式转换失败\n") +
+                    t("4. 📁 字幕嵌入到视频失败\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 在「字幕选项」中选择其他语言\n") +
+                    t("• 尝试下载自动生成的字幕\n") +
+                    t("• 关闭字幕嵌入，单独下载字幕文件\n") +
+                    t("• 确保ffmpeg正确安装\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是时间片段/裁剪问题
@@ -8908,18 +8858,18 @@ class VideoDownloaderApp(QMainWindow):
                 'duration', 'segment', 'clip', 'cut', 'trim', 'split',
                 'invalid time', 'time format', 'chapter'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "时间片段处理失败", 
-                    "时间片段下载或裁剪时出错。\n\n" +
-                    "💡 可能的原因：\n" +
-                    "1. ⏱️ 时间格式输入不正确\n" +
-                    "2. 📹 指定的时间超出视频长度\n" +
-                    "3. 🔧 FFmpeg裁剪处理失败\n" +
-                    "4. 📊 视频不支持分段下载\n\n" +
-                    "🔧 建议：\n" +
-                    "• 检查时间格式是否正确（如 00:01:30-00:05:00）\n" +
-                    "• 确保开始时间小于结束时间\n" +
-                    "• 确保时间不超过视频总长度\n" +
-                    "• 尝试先下载完整视频再使用转码功能裁剪\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("时间片段处理失败"), 
+                    t("时间片段下载或裁剪时出错。\n\n") +
+                    t("💡 可能的原因：\n") +
+                    t("1. ⏱️ 时间格式输入不正确\n") +
+                    t("2. 📹 指定的时间超出视频长度\n") +
+                    t("3. 🔧 FFmpeg裁剪处理失败\n") +
+                    t("4. 📊 视频不支持分段下载\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 检查时间格式是否正确（如 00:01:30-00:05:00）\n") +
+                    t("• 确保开始时间小于结束时间\n") +
+                    t("• 确保时间不超过视频总长度\n") +
+                    t("• 尝试先下载完整视频再使用转码功能裁剪\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是播放列表问题
@@ -8927,18 +8877,18 @@ class VideoDownloaderApp(QMainWindow):
                 'playlist', 'playlist_index', 'entries', 'playlist error',
                 'playlist unavailable', 'private playlist', 'empty playlist'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "播放列表处理失败", 
-                    "播放列表下载时出错。\n\n" +
-                    "💡 可能的原因：\n" +
-                    "1. 📋 播放列表已被删除或设为私有\n" +
-                    "2. 🔒 需要登录才能访问该播放列表\n" +
-                    "3. 📊 播放列表为空或无可用视频\n" +
-                    "4. 🌐 播放列表链接无效\n\n" +
-                    "🔧 建议：\n" +
-                    "• 确认播放列表链接是否正确\n" +
-                    "• 在浏览器中检查播放列表是否可访问\n" +
-                    "• 使用内置浏览器登录账号后重试\n" +
-                    "• 尝试单独下载播放列表中的视频\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("播放列表处理失败"), 
+                    t("播放列表下载时出错。\n\n") +
+                    t("💡 可能的原因：\n") +
+                    t("1. 📋 播放列表已被删除或设为私有\n") +
+                    t("2. 🔒 需要登录才能访问该播放列表\n") +
+                    t("3. 📊 播放列表为空或无可用视频\n") +
+                    t("4. 🌐 播放列表链接无效\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 确认播放列表链接是否正确\n") +
+                    t("• 在浏览器中检查播放列表是否可访问\n") +
+                    t("• 使用内置浏览器登录账号后重试\n") +
+                    t("• 尝试单独下载播放列表中的视频\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是直播视频问题
@@ -8947,17 +8897,17 @@ class VideoDownloaderApp(QMainWindow):
                 'live broadcast', 'stream ended', 'live event',
                 'premiere', 'upcoming', 'scheduled'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "直播视频限制", 
-                    "该视频为直播或正在进行中的视频。\n\n" +
-                    "💡 说明：\n" +
-                    "1. 📺 正在直播的视频无法直接下载\n" +
-                    "2. ⏰ 预告/首播视频需要等待发布\n" +
-                    "3. 🔴 直播结束后可能需要等待转录\n\n" +
-                    "🔧 建议：\n" +
-                    "• 等待直播结束并转为回放后再下载\n" +
-                    "• 对于首播视频，等待正式发布时间\n" +
-                    "• 使用直播录制功能（如果支持）\n" +
-                    "• 稍后重试，直播回放可能需要处理时间\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("直播视频限制"), 
+                    t("该视频为直播或正在进行中的视频。\n\n") +
+                    t("💡 说明：\n") +
+                    t("1. 📺 正在直播的视频无法直接下载\n") +
+                    t("2. ⏰ 预告/首播视频需要等待发布\n") +
+                    t("3. 🔴 直播结束后可能需要等待转录\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 等待直播结束并转为回放后再下载\n") +
+                    t("• 对于首播视频，等待正式发布时间\n") +
+                    t("• 使用直播录制功能（如果支持）\n") +
+                    t("• 稍后重试，直播回放可能需要处理时间\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是磁盘空间问题
@@ -8966,15 +8916,15 @@ class VideoDownloaderApp(QMainWindow):
                 'disk space', 'write error', 'cannot write', 'out of space',
                 'quota exceeded', 'errno 28', 'no space left'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "磁盘空间不足", 
-                    "磁盘空间不足，无法保存视频。\n\n" +
-                    "💡 解决方案：\n" +
-                    "1. 💾 清理磁盘空间，删除不需要的文件\n" +
-                    "2. 📁 更换输出目录到其他磁盘\n" +
-                    "3. 🗑️ 清理临时文件（%TEMP%）\n" +
-                    "4. 📊 选择较低分辨率减少文件大小\n\n" +
-                    "⚠️ 建议确保有足够的可用空间\n" +
-                    "（一般预留视频大小2倍的空间）\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("磁盘空间不足"), 
+                    t("磁盘空间不足，无法保存视频。\n\n") +
+                    t("💡 解决方案：\n") +
+                    t("1. 💾 清理磁盘空间，删除不需要的文件\n") +
+                    t("2. 📁 更换输出目录到其他磁盘\n") +
+                    t("3. 🗑️ 清理临时文件（%TEMP%）\n") +
+                    t("4. 📊 选择较低分辨率减少文件大小\n\n") +
+                    t("⚠️ 建议确保有足够的可用空间\n") +
+                    t("（一般预留视频大小2倍的空间）\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是文件权限问题
@@ -8983,18 +8933,18 @@ class VideoDownloaderApp(QMainWindow):
                 'file in use', 'locked', 'read-only', 'write protected',
                 'cannot open', 'cannot delete', 'operation not permitted'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "文件权限错误", 
-                    "文件操作权限不足。\n\n" +
-                    "💡 可能的原因：\n" +
-                    "1. 🔒 输出目录没有写入权限\n" +
-                    "2. 📁 文件被其他程序占用\n" +
-                    "3. 🛡️ 杀毒软件阻止了文件写入\n" +
-                    "4. 💻 需要管理员权限\n\n" +
-                    "🔧 建议：\n" +
-                    "• 更换输出目录到用户文件夹\n" +
-                    "• 关闭可能占用文件的程序\n" +
-                    "• 以管理员身份运行程序\n" +
-                    "• 检查杀毒软件设置\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("文件权限错误"), 
+                    t("文件操作权限不足。\n\n") +
+                    t("💡 可能的原因：\n") +
+                    t("1. 🔒 输出目录没有写入权限\n") +
+                    t("2. 📁 文件被其他程序占用\n") +
+                    t("3. 🛡️ 杀毒软件阻止了文件写入\n") +
+                    t("4. 💻 需要管理员权限\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 更换输出目录到用户文件夹\n") +
+                    t("• 关闭可能占用文件的程序\n") +
+                    t("• 以管理员身份运行程序\n") +
+                    t("• 检查杀毒软件设置\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是yt-dlp版本问题
@@ -9003,17 +8953,17 @@ class VideoDownloaderApp(QMainWindow):
                 'extractor error', 'extract error', 'parser error',
                 'youtube said', 'site layout changed'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "需要更新yt-dlp", 
-                    "yt-dlp版本可能过旧或不支持该网站。\n\n" +
-                    "💡 说明：\n" +
-                    "1. 📦 网站更新后可能需要新版本yt-dlp\n" +
-                    "2. 🌐 该网站可能不被yt-dlp支持\n" +
-                    "3. 🔧 解析器需要更新\n\n" +
-                    "🔧 建议：\n" +
-                    "• 点击工具栏「更新yt-dlp」按钮\n" +
-                    "• 或运行命令: pip install -U yt-dlp\n" +
-                    "• 检查yt-dlp是否支持该网站\n" +
-                    "• 访问 yt-dlp GitHub 查看最新版本\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("需要更新yt-dlp"), 
+                    t("yt-dlp版本可能过旧或不支持该网站。\n\n") +
+                    t("💡 说明：\n") +
+                    t("1. 📦 网站更新后可能需要新版本yt-dlp\n") +
+                    t("2. 🌐 该网站可能不被yt-dlp支持\n") +
+                    t("3. 🔧 解析器需要更新\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 点击工具栏「更新yt-dlp」按钮\n") +
+                    t("• 或运行命令: pip install -U yt-dlp\n") +
+                    t("• 检查yt-dlp是否支持该网站\n") +
+                    t("• 访问 yt-dlp GitHub 查看最新版本\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是Cookie问题
@@ -9021,15 +8971,15 @@ class VideoDownloaderApp(QMainWindow):
                 'cookie', 'cookies', 'session expired', 'token expired',
                 'invalid cookie', 'cookie file', 'netscape cookie'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "Cookie认证失败", 
-                    "Cookie已过期或格式不正确。\n\n" +
-                    "💡 解决方案：\n" +
-                    "1. 🌐 打开内置浏览器重新登录\n" +
-                    "2. 🍪 点击Cookie提取按钮获取新Cookie\n" +
-                    "3. 📁 删除旧的Cookie文件重新导入\n" +
-                    "4. 🔄 清除浏览器缓存后重新登录\n\n" +
-                    "⚠️ Cookie通常在一段时间后会过期，\n" +
-                    "需要定期更新。\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("Cookie认证失败"), 
+                    t("Cookie已过期或格式不正确。\n\n") +
+                    t("💡 解决方案：\n") +
+                    t("1. 🌐 打开内置浏览器重新登录\n") +
+                    t("2. 🍪 点击Cookie提取按钮获取新Cookie\n") +
+                    t("3. 📁 删除旧的Cookie文件重新导入\n") +
+                    t("4. 🔄 清除浏览器缓存后重新登录\n\n") +
+                    t("⚠️ Cookie通常在一段时间后会过期，\n") +
+                    t("需要定期更新。\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是URL格式问题
@@ -9038,17 +8988,17 @@ class VideoDownloaderApp(QMainWindow):
                 'unsupported url', 'no valid', 'cannot parse url',
                 'url not recognized'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "URL格式错误", 
-                    "视频链接格式不正确或不被支持。\n\n" +
-                    "💡 检查项目：\n" +
-                    "1. 🔗 确保URL完整（包含http://或https://）\n" +
-                    "2. 📋 检查是否复制了完整的链接\n" +
-                    "3. 🌐 确认该网站被yt-dlp支持\n" +
-                    "4. ❓ 避免链接中有多余的空格或字符\n\n" +
-                    "🔧 建议：\n" +
-                    "• 从浏览器地址栏复制完整URL\n" +
-                    "• 尝试使用视频分享链接\n" +
-                    "• 查看yt-dlp支持的网站列表\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("URL格式错误"), 
+                    t("视频链接格式不正确或不被支持。\n\n") +
+                    t("💡 检查项目：\n") +
+                    t("1. 🔗 确保URL完整（包含http://或https://）\n") +
+                    t("2. 📋 检查是否复制了完整的链接\n") +
+                    t("3. 🌐 确认该网站被yt-dlp支持\n") +
+                    t("4. ❓ 避免链接中有多余的空格或字符\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 从浏览器地址栏复制完整URL\n") +
+                    t("• 尝试使用视频分享链接\n") +
+                    t("• 查看yt-dlp支持的网站列表\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是合并/混流问题
@@ -9056,18 +9006,18 @@ class VideoDownloaderApp(QMainWindow):
                 'merge', 'mux', 'remux', 'container', 'codec',
                 'incompatible', 'stream copy', 'audio sync'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "视频合并失败", 
-                    "视频和音频合并时出错。\n\n" +
-                    "💡 可能的原因：\n" +
-                    "1. 🎬 视频和音频编码不兼容\n" +
-                    "2. 📦 输出容器格式不支持该编码\n" +
-                    "3. 🔧 FFmpeg版本过旧\n" +
-                    "4. 📁 源文件已损坏\n\n" +
-                    "🔧 建议：\n" +
-                    "• 尝试选择不同的输出格式（如mkv）\n" +
-                    "• 更新FFmpeg到最新版本\n" +
-                    "• 关闭「贪婪合并」选项\n" +
-                    "• 尝试仅下载视频或音频\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("视频合并失败"), 
+                    t("视频和音频合并时出错。\n\n") +
+                    t("💡 可能的原因：\n") +
+                    t("1. 🎬 视频和音频编码不兼容\n") +
+                    t("2. 📦 输出容器格式不支持该编码\n") +
+                    t("3. 🔧 FFmpeg版本过旧\n") +
+                    t("4. 📁 源文件已损坏\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 尝试选择不同的输出格式（如mkv）\n") +
+                    t("• 更新FFmpeg到最新版本\n") +
+                    t("• 关闭「贪婪合并」选项\n") +
+                    t("• 尝试仅下载视频或音频\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             # 检查是否是下载中断问题
@@ -9075,30 +9025,30 @@ class VideoDownloaderApp(QMainWindow):
                 'interrupted', 'incomplete', 'partial', 'resume',
                 'broken pipe', 'aborted', 'terminated', 'cancelled'
             ]):
-                self._show_browser_safe_message(QMessageBox.Critical, "下载被中断", 
-                    "下载过程被中断。\n\n" +
-                    "💡 可能的原因：\n" +
-                    "1. 🌐 网络连接不稳定\n" +
-                    "2. 🔌 服务器断开了连接\n" +
-                    "3. ⏸️ 下载被手动取消\n" +
-                    "4. 💻 系统资源不足\n\n" +
-                    "🔧 建议：\n" +
-                    "• 检查网络连接稳定性\n" +
-                    "• 重新开始下载（支持断点续传）\n" +
-                    "• 尝试使用代理服务器\n" +
-                    "• 降低视频质量减少下载时间\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("下载被中断"), 
+                    t("下载过程被中断。\n\n") +
+                    t("💡 可能的原因：\n") +
+                    t("1. 🌐 网络连接不稳定\n") +
+                    t("2. 🔌 服务器断开了连接\n") +
+                    t("3. ⏸️ 下载被手动取消\n") +
+                    t("4. 💻 系统资源不足\n\n") +
+                    t("🔧 建议：\n") +
+                    t("• 检查网络连接稳定性\n") +
+                    t("• 重新开始下载（支持断点续传）\n") +
+                    t("• 尝试使用代理服务器\n") +
+                    t("• 降低视频质量减少下载时间\n\n") +
                     t_format("详细错误信息：\n{}", message[:500]))
             
             else:
                 # 显示通用错误弹窗（中文）
-                self._show_browser_safe_message(QMessageBox.Critical, "下载失败", 
-                    "下载过程中出现错误。\n\n" +
-                    "💡 通用解决方案：\n" +
-                    "1. 检查网络连接是否正常\n" +
-                    "2. 确认视频链接是否有效\n" +
-                    "3. 尝试选择不同的视频格式\n" +
-                    "4. 查看进度窗口中的详细错误日志\n" +
-                    "5. 更新yt-dlp到最新版本\n\n" +
+                self._show_browser_safe_message(QMessageBox.Critical, t("下载失败"), 
+                    t("下载过程中出现错误。\n\n") +
+                    t("💡 通用解决方案：\n") +
+                    t("1. 检查网络连接是否正常\n") +
+                    t("2. 确认视频链接是否有效\n") +
+                    t("3. 尝试选择不同的视频格式\n") +
+                    t("4. 查看进度窗口中的详细错误日志\n") +
+                    t("5. 更新yt-dlp到最新版本\n\n") +
                     t_format("错误信息：\n{}", message))
     
 
@@ -9196,7 +9146,7 @@ class VideoDownloaderApp(QMainWindow):
                 options.extend(["-c:v", "libvpx-vp9"])
                 options.extend(["-pix_fmt", "yuv420p"])
                 options.extend(["-b:v", "0", "-crf", str(self.video_quality_slider.value())])
-                self.transcode_progress_text.append("WebM输出检测：自动使用 VP9 编码器")
+                self.transcode_progress_text.append(t("WebM输出检测：自动使用 VP9 编码器"))
             else:
                 options.extend(["-c:v", "copy"])
         else:
@@ -9272,7 +9222,7 @@ class VideoDownloaderApp(QMainWindow):
             elif output_ext == '.webm' and input_ext != '.webm':
                 # 其他格式转换为WebM时，使用AAC编码器以确保兼容性
                 options.extend(["-c:a", "aac", "-b:a", "192k"])
-                self.transcode_progress_text.append("WebM输出检测：自动使用 aac 音频编码器")
+                self.transcode_progress_text.append(t("WebM输出检测：自动使用 aac 音频编码器"))
             else:
                 options.extend(["-c:a", "copy"])
         else:
@@ -9314,7 +9264,7 @@ class VideoDownloaderApp(QMainWindow):
                     options.pop(ba_index)  # 移除-b:a
                     if ba_index < len(options):
                         options.pop(ba_index)  # 移除比特率值
-            self.transcode_progress_text.append("MP3转码优化：使用保守缓冲区设置和VBR质量模式")
+            self.transcode_progress_text.append(t("MP3转码优化：使用保守缓冲区设置和VBR质量模式"))
         
         # 添加额外参数以确保转码成功
         # 对于webm格式的特殊处理
@@ -9401,7 +9351,7 @@ class VideoDownloaderApp(QMainWindow):
             
             # 清空进度显示
             self.transcode_progress_text.clear()
-            self.transcode_progress_text.append("准备开始转码...")
+            self.transcode_progress_text.append(t("准备开始转码..."))
             self._transcode_cancel_requested = False
             
             self.transcode_progress_bar.setValue(0)
@@ -9420,7 +9370,7 @@ class VideoDownloaderApp(QMainWindow):
             # 如果启用GPU加速，在进度文本中显示
             if use_gpu:
                 if gpu_type == "自动检测":
-                    self.transcode_progress_text.append("使用硬件加速编码: 自动检测 GPU 类型")
+                    self.transcode_progress_text.append(t("使用硬件加速编码: 自动检测 GPU 类型"))
                 else:
                     self.transcode_progress_text.append(t_format("使用{}硬件加速编码", gpu_type))
             
@@ -9468,7 +9418,7 @@ class VideoDownloaderApp(QMainWindow):
             # 连接取消成功信号
             self.transcode_thread.cancel_signal.connect(self._on_transcode_canceled)
             self.transcode_thread.stop()
-            self.transcode_progress_text.append("转码已取消")
+            self.transcode_progress_text.append(t("转码已取消"))
             self._reset_transcode_progress_bar()
             self.transcode_button.setEnabled(True)
             self.cancel_transcode_button.setEnabled(False)
@@ -9526,15 +9476,15 @@ class VideoDownloaderApp(QMainWindow):
             # 检查是否为错误状态（负值）
             if percent < 0:
                 # 负值表示转码错误
-                self.transcode_progress_text.append("错误: 转码失败，显示错误状态")
+                self.transcode_progress_text.append(t("错误: 转码失败，显示错误状态"))
                 # 设置进度条为错误状态（红色）
                 self.transcode_progress_bar.setStyleSheet("QProgressBar::chunk { background-color: red; }")
                 # 保持当前进度值，但更改显示文本为错误状态
-                self.transcode_progress_bar.setFormat("转码失败")
+                self.transcode_progress_bar.setFormat(t("转码失败"))
                 return
             elif percent > 100:
                 percent = 100
-                self.transcode_progress_text.append("警告: 收到超过100%的进度值，已修正为100%")
+                self.transcode_progress_text.append(t("警告: 收到超过100%的进度值，已修正为100%"))
             
             # 保留两位小数用于内部计算，但显示整数百分比
             float_percent = round(percent, 2)  # 保留两位小数，避免浮点误差
@@ -9578,7 +9528,7 @@ class VideoDownloaderApp(QMainWindow):
             
             # 如果进度达到100%，确保进度条显示完成状态
             if int_percent == 100:
-                self.transcode_progress_text.append("转码进度条更新完成！")
+                self.transcode_progress_text.append(t("转码进度条更新完成！"))
                 # 再次强制更新UI，确保最终状态正确显示
                 QApplication.processEvents()
     
@@ -9624,7 +9574,7 @@ class VideoDownloaderApp(QMainWindow):
                 # 转码失败时设置进度条样式为红色并显示失败文本
                 self.transcode_progress_bar.setStyleSheet("QProgressBar::chunk { background-color: red; }")
                 # 设置显示文本为转码失败
-                self.transcode_progress_bar.setFormat("转码失败")
+                self.transcode_progress_bar.setFormat(t("转码失败"))
                 # 不更新进度值，保持当前进度
         
         if success:
@@ -9672,7 +9622,7 @@ class VideoDownloaderApp(QMainWindow):
             self.history_table.setItem(row, 0, type_item)
             
             # 标题
-            title_item = QTableWidgetItem(record.get('title', '未知标题'))
+            title_item = QTableWidgetItem(record.get('title', t('未知标题')))
             if record_type == 'download':
                 title_item.setToolTip(record.get('url', ''))
             elif record_type in ('image_process', 'quality_repair'):
@@ -9749,7 +9699,7 @@ class VideoDownloaderApp(QMainWindow):
                 
                 # 如果转码失败，显示错误信息
                 if not record.get('success', True):
-                    error_msg = record.get('error_message', '未知错误')
+                    error_msg = record.get('error_message', t('未知错误'))
                     format_item.setToolTip(t_format("转码选项: {}\n错误信息: {}", ' '.join((str(opt) for opt in transcode_options)) if transcode_options else '默认设置', error_msg))
             elif record_type == 'image_process':
                 # 显示图片处理选项
@@ -9812,7 +9762,7 @@ class VideoDownloaderApp(QMainWindow):
                 file_path = record.get('file_path', '')
             
             # 打开文件夹按钮
-            open_folder_btn = QPushButton("打开文件夹")
+            open_folder_btn = QPushButton(t("打开文件夹"))
             open_folder_btn.setMaximumWidth(80)
             if record_type in ('image_process', 'quality_repair'):
                 # 图片处理：直接打开输出目录
@@ -9822,14 +9772,14 @@ class VideoDownloaderApp(QMainWindow):
             button_layout.addWidget(open_folder_btn)
             
             # 定位文件按钮
-            locate_file_btn = QPushButton("定位文件")
+            locate_file_btn = QPushButton(t("定位文件"))
             locate_file_btn.setMaximumWidth(80)
             # 统一使用locate_file方法，它有更完善的窗口重用功能
             locate_file_btn.clicked.connect(lambda checked, path=file_path: self.locate_file(path))
             button_layout.addWidget(locate_file_btn)
             
             # 删除记录按钮
-            delete_btn = QPushButton("删除")
+            delete_btn = QPushButton(t("删除"))
             delete_btn.setMaximumWidth(50)
             delete_btn.clicked.connect(lambda checked, idx=row: self.delete_history_record(idx))
             button_layout.addWidget(delete_btn)
@@ -9872,13 +9822,13 @@ class VideoDownloaderApp(QMainWindow):
                 break
         
         # 显示刷新开始状态
-        self.update_status("正在刷新历史记录...", "info")
+        self.update_status(t("正在刷新历史记录..."), "info")
         
         # 临时禁用刷新按钮并显示加载状态
         if refresh_button:
             refresh_button.setEnabled(False)
             original_text = refresh_button.text()
-            refresh_button.setText("⏳ 刷新中...")
+            refresh_button.setText(t("⏳ 刷新中..."))
         
         # 使用QTimer延迟执行刷新操作，让UI有时间更新
         QTimer.singleShot(100, lambda: self._do_refresh_history(refresh_button, original_text))
@@ -9906,7 +9856,7 @@ class VideoDownloaderApp(QMainWindow):
                 refresh_button.setText(original_text)
             
             # 3秒后恢复状态标签为默认状态
-            QTimer.singleShot(3000, lambda: self.update_status("就绪", "normal"))
+            QTimer.singleShot(3000, lambda: self.update_status(t("就绪"), "normal"))
     
     def clear_history(self):
         """清空历史记录"""
@@ -9921,13 +9871,13 @@ class VideoDownloaderApp(QMainWindow):
                     break
             
             # 显示清空开始状态
-            self.update_status("正在清空历史记录...", "info")
+            self.update_status(t("正在清空历史记录..."), "info")
             
             # 临时禁用清空按钮并显示加载状态
             if clear_button:
                 clear_button.setEnabled(False)
                 original_text = clear_button.text()
-                clear_button.setText("🗑️ 清空中...")
+                clear_button.setText(t("🗑️ 清空中..."))
             
             # 使用QTimer延迟执行清空操作，让UI有时间更新
             QTimer.singleShot(100, lambda: self._do_clear_history(clear_button, original_text))
@@ -9941,7 +9891,7 @@ class VideoDownloaderApp(QMainWindow):
             self.history_search.clear()
             
             # 显示清空完成状态
-            self.update_status("所有历史记录已成功清空", "success")
+            self.update_status(t("所有历史记录已成功清空"), "success")
             
         except Exception as e:
             # 如果清空失败，显示错误信息
@@ -9954,7 +9904,7 @@ class VideoDownloaderApp(QMainWindow):
                 clear_button.setText(original_text)
             
             # 3秒后恢复状态标签为默认状态
-            QTimer.singleShot(3000, lambda: self.update_status("就绪", "normal"))
+            QTimer.singleShot(3000, lambda: self.update_status(t("就绪"), "normal"))
     
     def filter_history(self, text):
         """过滤历史记录"""
@@ -10887,12 +10837,12 @@ class VideoDownloaderApp(QMainWindow):
         
         diag_messages = []
         diag_messages.append("=" * 50)
-        diag_messages.append("时间段下载功能诊断")
+        diag_messages.append(t("时间段下载功能诊断"))
         diag_messages.append("=" * 50)
         diag_messages.append("")
         
         # 1. 检查 ffmpeg
-        diag_messages.append("1. 检查 ffmpeg（必需）")
+        diag_messages.append(t("1. 检查 ffmpeg（必需）"))
         diag_messages.append("-" * 40)
         
         ffmpeg_ok = False
@@ -10908,7 +10858,7 @@ class VideoDownloaderApp(QMainWindow):
                 diag_messages.append(f"✅ ffmpeg: {version[:60]}")
                 ffmpeg_ok = True
             else:
-                diag_messages.append("❌ ffmpeg 未找到或无法运行")
+                diag_messages.append(t("❌ ffmpeg 未找到或无法运行"))
         except Exception as e:
             diag_messages.append(t_format("❌ ffmpeg 未找到: {}", str(e)[:40]))
         
@@ -10918,17 +10868,17 @@ class VideoDownloaderApp(QMainWindow):
                                   text=True, 
                                   timeout=5)
             if result.returncode == 0:
-                diag_messages.append("✅ ffprobe 已安装")
+                diag_messages.append(t("✅ ffprobe 已安装"))
                 ffprobe_ok = True
             else:
-                diag_messages.append("❌ ffprobe 未找到")
+                diag_messages.append(t("❌ ffprobe 未找到"))
         except:
-            diag_messages.append("❌ ffprobe 未找到")
+            diag_messages.append(t("❌ ffprobe 未找到"))
         
         diag_messages.append("")
         
         # 2. 检查当前设置（支持多段）
-        diag_messages.append("2. 当前时间段/章节设置")
+        diag_messages.append(t("2. 当前时间段/章节设置"))
         diag_messages.append("-" * 40)
         
         current = getattr(self, 'download_sections', [])
@@ -10952,63 +10902,63 @@ class VideoDownloaderApp(QMainWindow):
             diag_messages.append(t_format("   统计: {} 个时间范围, {} 个章节匹配", len(time_ranges), len(chapters)))
             
             if time_ranges and not ffmpeg_ok:
-                diag_messages.append("   ⚠️ 警告：时间范围需要 ffmpeg！")
+                diag_messages.append(t("   ⚠️ 警告：时间范围需要 ffmpeg！"))
             if chapters:
-                diag_messages.append("   ✅ 章节匹配不需要 ffmpeg")
+                diag_messages.append(t("   ✅ 章节匹配不需要 ffmpeg"))
         else:
-            diag_messages.append("当前未设置任何时间段或章节")
+            diag_messages.append(t("当前未设置任何时间段或章节"))
         
         diag_messages.append("")
         
         # 3. 官方文档格式说明（优化版）
-        diag_messages.append("3. 官方格式说明（基于 yt-dlp 文档）")
+        diag_messages.append(t("3. 官方格式说明（基于 yt-dlp 文档）"))
         diag_messages.append("-" * 40)
-        diag_messages.append("【时间范围】（需要 * 前缀和 ffmpeg）")
-        diag_messages.append("✅ *0-30          前30秒")
-        diag_messages.append("✅ *0-1:00        前1分钟")
-        diag_messages.append("✅ *1:00-2:30     1分钟到2分30秒")
-        diag_messages.append("✅ *-60-inf       最后1分钟")
-        diag_messages.append("✅ *10:00-inf     从10分钟到结束")
-        diag_messages.append("✅ *from-url      使用URL时间参数")
+        diag_messages.append(t("【时间范围】（需要 * 前缀和 ffmpeg）"))
+        diag_messages.append(t("✅ *0-30          前30秒"))
+        diag_messages.append(t("✅ *0-1:00        前1分钟"))
+        diag_messages.append(t("✅ *1:00-2:30     1分钟到2分30秒"))
+        diag_messages.append(t("✅ *-60-inf       最后1分钟"))
+        diag_messages.append(t("✅ *10:00-inf     从10分钟到结束"))
+        diag_messages.append(t("✅ *from-url      使用URL时间参数"))
         diag_messages.append("")
-        diag_messages.append("【章节匹配】（正则表达式，不需要 ffmpeg）")
-        diag_messages.append("✅ intro          匹配intro章节")
-        diag_messages.append("✅ sponsor.*      匹配sponsor开头的章节")
-        diag_messages.append("✅ outro|ending   匹配outro或ending章节")
+        diag_messages.append(t("【章节匹配】（正则表达式，不需要 ffmpeg）"))
+        diag_messages.append(t("✅ intro          匹配intro章节"))
+        diag_messages.append(t("✅ sponsor.*      匹配sponsor开头的章节"))
+        diag_messages.append(t("✅ outro|ending   匹配outro或ending章节"))
         diag_messages.append("")
-        diag_messages.append("【多段下载】")
-        diag_messages.append("可以添加多个时间段/章节，每个都会生成")
-        diag_messages.append("独立的 --download-sections 参数")
+        diag_messages.append(t("【多段下载】"))
+        diag_messages.append(t("可以添加多个时间段/章节，每个都会生成"))
+        diag_messages.append(t("独立的 --download-sections 参数"))
         diag_messages.append("")
-        diag_messages.append("【常见错误】")
-        diag_messages.append("❌ 0-30           缺少 * 前缀")
-        diag_messages.append("❌ *-30-0         结束应该用 inf")
+        diag_messages.append(t("【常见错误】"))
+        diag_messages.append(t("❌ 0-30           缺少 * 前缀"))
+        diag_messages.append(t("❌ *-30-0         结束应该用 inf"))
         diag_messages.append("")
         
         # 4. 总结
         diag_messages.append("=" * 50)
-        diag_messages.append("诊断总结")
+        diag_messages.append(t("诊断总结"))
         diag_messages.append("=" * 50)
         
         if ffmpeg_ok and ffprobe_ok:
-            diag_messages.append("✅ ffmpeg 和 ffprobe 都已安装")
-            diag_messages.append("✅ 时间段下载功能应该可以正常使用")
+            diag_messages.append(t("✅ ffmpeg 和 ffprobe 都已安装"))
+            diag_messages.append(t("✅ 时间段下载功能应该可以正常使用"))
         else:
-            diag_messages.append("❌ 缺少必要组件！")
+            diag_messages.append(t("❌ 缺少必要组件！"))
             if not ffmpeg_ok:
-                diag_messages.append("   - 需要安装 ffmpeg")
+                diag_messages.append(t("   - 需要安装 ffmpeg"))
             if not ffprobe_ok:
-                diag_messages.append("   - 需要安装 ffprobe")
+                diag_messages.append(t("   - 需要安装 ffprobe"))
             diag_messages.append("")
-            diag_messages.append("请从以下网址下载 ffmpeg:")
+            diag_messages.append(t("请从以下网址下载 ffmpeg:"))
             diag_messages.append("https://ffmpeg.org/download.html")
             diag_messages.append("")
-            diag_messages.append("Windows用户可以使用：")
+            diag_messages.append(t("Windows用户可以使用："))
             diag_messages.append("https://github.com/BtbN/FFmpeg-Builds/releases")
         
         # 显示诊断结果
         msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("时间段下载功能诊断")
+        msg_box.setWindowTitle(t("时间段下载功能诊断"))
         msg_box.setText("\n".join(diag_messages))
         
         if ffmpeg_ok and ffprobe_ok:
@@ -11084,7 +11034,7 @@ class VideoDownloaderApp(QMainWindow):
             return
 
         if not self.download_sections:
-            self.current_section_label.setText("当前: 无")
+            self.current_section_label.setText(t("当前: 无"))
             self.current_section_label.setStyleSheet(
                 "font-size: 11px; "
                 "color: #7f8c8d; "
@@ -11162,7 +11112,7 @@ class VideoDownloaderApp(QMainWindow):
                 )
             else:
                 self.remove_chapters_regex = ""
-                self.current_remove_label.setText("当前: 无")
+                self.current_remove_label.setText(t("当前: 无"))
                 self.current_remove_label.setStyleSheet(
                     "font-size: 11px; "
                     "color: #7f8c8d; "
@@ -11347,7 +11297,7 @@ class VideoDownloaderApp(QMainWindow):
                 if hasattr(self, 'subtitle_delay_spin'):
                     self.subtitle_delay_spin.setValue(0)
                 if hasattr(self, 'ip_version_combo'):
-                    self.ip_version_combo.setCurrentText("仅IPv4")
+                    self.ip_version_combo.setCurrentText(t("仅IPv4"))
             
             # ========================================
             # 第二步：控制所有控件的启用/禁用状态
@@ -11707,7 +11657,7 @@ class VideoDownloaderApp(QMainWindow):
         """显示更新通知"""
         reply = QMessageBox.question(
             self,
-            "yt-dlp 更新可用",
+            t("yt-dlp 更新可用"),
             t("发现新版本！\n\n") + t_format("当前版本: {}\n", current_version) + t_format("最新版本: {}\n\n", latest_version) + t("是否立即更新？"),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes
@@ -11723,9 +11673,9 @@ class VideoDownloaderApp(QMainWindow):
         try:
             files, _ = QFileDialog.getOpenFileNames(
                 self,
-                "选择图片文件",
+                t("选择图片文件"),
                 "",
-                "图片文件 (*.jpg *.jpeg *.png *.webp *.bmp *.gif *.tiff *.tif *.ico *.heic *.heif);;所有文件 (*.*)"
+                t("图片文件 (*.jpg *.jpeg *.png *.webp *.bmp *.gif *.tiff *.tif *.ico *.heic *.heif);;所有文件 (*.*)")
             )
             if files:
                 added = 0
@@ -11782,7 +11732,7 @@ class VideoDownloaderApp(QMainWindow):
         try:
             directory = QFileDialog.getExistingDirectory(
                 self,
-                "选择输出目录",
+                t("选择输出目录"),
                 self.image_output_dir.text() or ""
             )
             if directory:
@@ -11794,9 +11744,9 @@ class VideoDownloaderApp(QMainWindow):
         """输出格式改变时更新UI - 切换质量/压缩控件"""
         if format_text == "PNG":
             # PNG使用压缩级别（无损）
-            self.quality_label.setText("压缩级别:")
-            self.quality_low_label.setText("快速")
-            self.quality_high_label.setText("高压缩")
+            self.quality_label.setText(t("压缩级别:"))
+            self.quality_low_label.setText(t("快速"))
+            self.quality_high_label.setText(t("高压缩"))
             self.image_quality_slider.hide()
             self.image_quality_label.hide()
             self.png_compress_slider.show()
@@ -11807,18 +11757,18 @@ class VideoDownloaderApp(QMainWindow):
             layout.insertWidget(3, self.png_compress_label)
         elif format_text in ["BMP", "GIF", "TIFF", "ICO"]:
             # 这些格式不支持质量调整
-            self.quality_label.setText("压缩选项:")
+            self.quality_label.setText(t("压缩选项:"))
             self.quality_low_label.setText("")
-            self.quality_high_label.setText("(此格式无需设置)")
+            self.quality_high_label.setText(t("(此格式无需设置)"))
             self.image_quality_slider.hide()
             self.image_quality_label.hide()
             self.png_compress_slider.hide()
             self.png_compress_label.hide()
         else:
             # JPEG/WebP使用质量（有损）
-            self.quality_label.setText("压缩质量:")
-            self.quality_low_label.setText("低")
-            self.quality_high_label.setText("高")
+            self.quality_label.setText(t("压缩质量:"))
+            self.quality_low_label.setText(t("低"))
+            self.quality_high_label.setText(t("高"))
             self.png_compress_slider.hide()
             self.png_compress_label.hide()
             self.image_quality_slider.show()
@@ -11848,13 +11798,13 @@ class VideoDownloaderApp(QMainWindow):
             if not check_pillow():
                 reply = QMessageBox.question(
                     self,
-                    "需要安装 Pillow",
-                    "图片处理功能需要 Pillow 库。\n\n是否现在安装？",
+                    t("需要安装 Pillow"),
+                    t("图片处理功能需要 Pillow 库。\n\n是否现在安装？"),
                     QMessageBox.Yes | QMessageBox.No,
                     QMessageBox.Yes
                 )
                 if reply == QMessageBox.Yes:
-                    self.image_progress_text.append("正在安装 Pillow...")
+                    self.image_progress_text.append(t("正在安装 Pillow..."))
                     import subprocess
                     result = subprocess.run(
                         ['pip', 'install', 'Pillow'],
@@ -11863,7 +11813,7 @@ class VideoDownloaderApp(QMainWindow):
                         timeout=120
                     )
                     if result.returncode == 0:
-                        self.image_progress_text.append("✅ Pillow 安装成功！请重新启动程序。")
+                        self.image_progress_text.append(t("✅ Pillow 安装成功！请重新启动程序。"))
                     else:
                         self.image_progress_text.append(t_format("❌ 安装失败: {}", result.stderr))
                 return
@@ -11943,7 +11893,7 @@ class VideoDownloaderApp(QMainWindow):
         """取消图片处理"""
         if self.image_process_thread and self.image_process_thread.isRunning():
             self.image_process_thread.stop()
-            self.image_progress_text.append("⚠️ 正在取消处理...")
+            self.image_progress_text.append(t("⚠️ 正在取消处理..."))
     
     def _on_image_progress(self, message):
         """处理进度日志回调"""
@@ -12038,9 +11988,9 @@ class VideoDownloaderApp(QMainWindow):
         try:
             files, _ = QFileDialog.getOpenFileNames(
                 self,
-                "选择要修复的图片或视频",
+                t("选择要修复的图片或视频"),
                 "",
-                "媒体文件 (*.jpg *.jpeg *.png *.webp *.bmp *.gif *.tif *.tiff *.mp4 *.mov *.avi *.mkv *.flv *.webm *.m4v);;所有文件 (*.*)"
+                t("媒体文件 (*.jpg *.jpeg *.png *.webp *.bmp *.gif *.tif *.tiff *.mp4 *.mov *.avi *.mkv *.flv *.webm *.m4v);;所有文件 (*.*)")
             )
             added = 0
             for file_path in files:
@@ -12087,7 +12037,7 @@ class VideoDownloaderApp(QMainWindow):
         try:
             directory = QFileDialog.getExistingDirectory(
                 self,
-                "选择画质修复输出目录",
+                t("选择画质修复输出目录"),
                 self.realesrgan_output_dir.text() or ""
             )
             if directory:
@@ -12125,12 +12075,12 @@ class VideoDownloaderApp(QMainWindow):
                 auto_label = "自动检测硬件（已支持 Vulkan 视频加速）"
             self.realesrgan_device_combo.addItem(auto_label, "auto")
         else:
-            self.realesrgan_device_combo.addItem("自动选择（当前仅能用 CPU）", "auto")
+            self.realesrgan_device_combo.addItem(t("自动选择（当前仅能用 CPU）"), "auto")
 
         if has_cuda or ncnn_available:
-            self.realesrgan_device_combo.addItem("使用 CPU（更稳）", "cpu")
+            self.realesrgan_device_combo.addItem(t("使用 CPU（更稳）"), "cpu")
         else:
-            self.realesrgan_device_combo.addItem("使用 CPU", "cpu")
+            self.realesrgan_device_combo.addItem(t("使用 CPU"), "cpu")
 
         target_value = previous_value
         if target_value not in ("auto", "cpu"):
@@ -12143,7 +12093,7 @@ class VideoDownloaderApp(QMainWindow):
             index = 0
         self.realesrgan_device_combo.setCurrentIndex(index)
         self.realesrgan_device_combo.setToolTip(
-            "普通情况下保持“自动检测硬件（推荐）”即可。程序会自动探测 NVIDIA / AMD / Intel 等显卡并优先走最快的可用路径；如果某条 GPU 路径不稳定，会继续自动降级重试。"
+            t("普通情况下保持“自动检测硬件（推荐）”即可。程序会自动探测 NVIDIA / AMD / Intel 等显卡并优先走最快的可用路径；如果某条 GPU 路径不稳定，会继续自动降级重试。")
         )
         self.realesrgan_device_combo.blockSignals(False)
 
@@ -12195,7 +12145,7 @@ class VideoDownloaderApp(QMainWindow):
             start_dir = current_value if (current_value and os.path.isfile(current_value)) else self._get_dialog_start_dir()
             file_path, _ = QFileDialog.getOpenFileName(
                 self,
-                "选择画质修复运行时 Python",
+                t("选择画质修复运行时 Python"),
                 start_dir,
                 "Python (python.exe);;Executable (*.exe);;All files (*.*)",
             )
@@ -12274,7 +12224,7 @@ class VideoDownloaderApp(QMainWindow):
         if hasattr(self, "realesrgan_output_dir"):
             self.realesrgan_output_dir.clear()
         if hasattr(self, "realesrgan_suffix_input"):
-            self.realesrgan_suffix_input.setText("_画质修复")
+            self.realesrgan_suffix_input.setText(t("_画质修复"))
         if hasattr(self, "realesrgan_overwrite_check"):
             self.realesrgan_overwrite_check.setChecked(False)
         self.on_realesrgan_preset_changed()
@@ -12332,10 +12282,10 @@ class VideoDownloaderApp(QMainWindow):
             self.realesrgan_denoise_spin.setEnabled(advanced_enabled and supports_denoise)
             self.realesrgan_denoise_hint.setEnabled(advanced_enabled)
             if supports_denoise:
-                self.realesrgan_denoise_hint.setText("仅当前通用小模型支持降噪强度调节。数值越高，降噪越强；数值越低，通常保留更多原始细节。")
+                self.realesrgan_denoise_hint.setText(t("仅当前通用小模型支持降噪强度调节。数值越高，降噪越强；数值越低，通常保留更多原始细节。"))
                 self.realesrgan_denoise_hint.setToolTip(self.realesrgan_denoise_hint.text())
             else:
-                self.realesrgan_denoise_hint.setText("当前模型不使用降噪强度调节，因此这里会自动禁用。")
+                self.realesrgan_denoise_hint.setText(t("当前模型不使用降噪强度调节，因此这里会自动禁用。"))
                 self.realesrgan_denoise_hint.setToolTip(self.realesrgan_denoise_hint.text())
 
     def _collect_realesrgan_options(self):
@@ -12477,7 +12427,7 @@ class VideoDownloaderApp(QMainWindow):
                 "实际视频模型: " + (normalized_model_name or requested_model_name or "未指定"),
                 "计划输出编码器: " + selected_encoder,
                 effective_runtime_desc,
-                self._describe_realesrgan_runtime("实际使用环境", effective_runtime),
+                self._describe_realesrgan_runtime(t("实际使用环境"), effective_runtime),
             ]
             detail_message = "\n".join(detail_parts)
             self.realesrgan_runtime_hint.setText(summary_message)
@@ -12495,7 +12445,7 @@ class VideoDownloaderApp(QMainWindow):
         """下载画质修复资源（内部工具保留）"""
         try:
             options = self._collect_realesrgan_options() if hasattr(self, "realesrgan_preset_combo") else {}
-            self.realesrgan_progress_text.append("开始下载当前任务所需画质修复资源...")
+            self.realesrgan_progress_text.append(t("开始下载当前任务所需画质修复资源..."))
             downloaded = download_realesrgan_models(
                 progress_cb=self.realesrgan_progress_text.append,
                 face_enhance=self.realesrgan_keep_face_check.isChecked(),
@@ -12505,7 +12455,7 @@ class VideoDownloaderApp(QMainWindow):
             if downloaded:
                 self.realesrgan_progress_text.append(t_format("✅ 已下载 {} 个画质修复资源文件", len(downloaded)))
             else:
-                self.realesrgan_progress_text.append("✅ 当前任务所需画质修复资源已齐全，无需重复下载")
+                self.realesrgan_progress_text.append(t("✅ 当前任务所需画质修复资源已齐全，无需重复下载"))
             self.check_realesrgan_runtime(silent=True)
         except Exception as e:
             self.realesrgan_progress_text.append(t_format("❌ 下载画质修复资源失败: {}", e))
@@ -12529,14 +12479,14 @@ class VideoDownloaderApp(QMainWindow):
 
             if ncnn_video_ready and str(options.get("device") or "auto").strip().lower() == "cuda":
                 self.realesrgan_progress_text.append(
-                    "ℹ️ 当前任务为纯视频修复，已优先切换到自动硬件检测模式，将由官方 NCNN/Vulkan 后端自动选择可用 GPU。"
+                    t("ℹ️ 当前任务为纯视频修复，已优先切换到自动硬件检测模式，将由官方 NCNN/Vulkan 后端自动选择可用 GPU。")
                 )
                 options["device"] = "auto"
 
             if str(options.get("device") or "auto").strip().lower() == "cuda" and not capability.get("cuda_available") and not ncnn_video_ready:
                 if capability.get("cuda_detected"):
                     self.realesrgan_progress_text.append(
-                        "⚠️ 已检测到显卡，但当前模型或驱动环境下 CUDA 初始化失败，本次会自动回退到 CPU 继续处理。"
+                        t("⚠️ 已检测到显卡，但当前模型或驱动环境下 CUDA 初始化失败，本次会自动回退到 CPU 继续处理。")
                     )
                 else:
                     QMessageBox.warning(
@@ -12572,12 +12522,12 @@ class VideoDownloaderApp(QMainWindow):
             self.realesrgan_progress_text.clear()
             self._realesrgan_started_at = time.time()
             self._realesrgan_last_stats = None
-            self.realesrgan_speed_hint.setText("准备开始处理...")
+            self.realesrgan_speed_hint.setText(t("准备开始处理..."))
             self.realesrgan_progress_text.append(
                 t_format("已选择方案：{} | 放大倍率：{} 倍", self.realesrgan_preset_combo.currentText(), int(options['outscale']))
             )
             if options.get("auto_download_models"):
-                self.realesrgan_progress_text.append("检测到缺少模型，程序将自动下载官方模型；如下载失败，请先开启代理后重试。")
+                self.realesrgan_progress_text.append(t("检测到缺少模型，程序将自动下载官方模型；如下载失败，请先开启代理后重试。"))
             normalized_options = execution_plan.get("normalized_options") or {}
             requested_model_name = str(options.get("model_name") or "").strip()
             normalized_model_name = str(normalized_options.get("model_name") or requested_model_name).strip()
@@ -12669,16 +12619,16 @@ class VideoDownloaderApp(QMainWindow):
             self.realesrgan_progress_bar.setValue(100)
             self.realesrgan_progress_bar.setFormat("100%")
         else:
-            self.realesrgan_progress_bar.setFormat("处理失败")
+            self.realesrgan_progress_bar.setFormat(t("处理失败"))
         if success:
             started_at = getattr(self, "_realesrgan_started_at", None)
             elapsed = (time.time() - started_at) if started_at else None
             if elapsed is not None:
                 self.realesrgan_speed_hint.setText(t_format("处理完成，总耗时：{}", self._format_eta_text(elapsed)))
             else:
-                self.realesrgan_speed_hint.setText("处理完成")
+                self.realesrgan_speed_hint.setText(t("处理完成"))
         else:
-            self.realesrgan_speed_hint.setText("处理失败")
+            self.realesrgan_speed_hint.setText(t("处理失败"))
 
         try:
             success_count = 0
@@ -12695,7 +12645,7 @@ class VideoDownloaderApp(QMainWindow):
             if hasattr(self, '_current_realesrgan_files') and hasattr(self, '_current_realesrgan_output_dir') and hasattr(self, '_current_realesrgan_options'):
                 output_dir = self._current_realesrgan_output_dir
                 options = self._current_realesrgan_options or {}
-                suffix = options.get('suffix', '_画质修复')
+                suffix = options.get('suffix', t('_画质修复'))
                 for input_file in self._current_realesrgan_files[:10]:
                     base_name = os.path.splitext(os.path.basename(input_file))[0]
                     ext = os.path.splitext(input_file)[1].lower() or '.png'

@@ -1178,7 +1178,7 @@ class TranscodeThread(QThread):
             duration_seconds = 0
             
             # 发送初始进度信号，并确保它能被显示
-            self.progress_signal.emit("开始转码，发送初始进度信号: 0%")
+            self.progress_signal.emit(t("开始转码，发送初始进度信号: 0%"))
             self.progress_percent_signal.emit(0.0)
             self.progress_sent = True
             # 强制更新UI，确保进度条立即显示
@@ -1552,7 +1552,7 @@ class TranscodeThread(QThread):
                                     self.progress_percent_signal.emit(1.0)
                                     self.last_progress_value = 1.0
                                     self.progress_sent = True
-                                    self.progress_signal.emit("没有进度信息，发送初始进度信号: 1.0%")
+                                    self.progress_signal.emit(t("没有进度信息，发送初始进度信号: 1.0%"))
                                 
                         last_update_time = current_time
                         
@@ -1593,7 +1593,7 @@ class TranscodeThread(QThread):
             # 检查进程返回码
             if self.process.returncode == 0:
                 # 转码成功，平滑过渡到100%
-                self.progress_signal.emit("转码成功完成，平滑过渡到100%")
+                self.progress_signal.emit(t("转码成功完成，平滑过渡到100%"))
                 # 获取当前进度值
                 current_progress = self.last_progress_value
                 # 如果当前进度小于100%，则平滑过渡到100%
@@ -1616,7 +1616,7 @@ class TranscodeThread(QThread):
                 self.last_progress_value = 100.0
                 # 强制更新UI，确保进度条显示完成状态
                 QApplication.processEvents()
-                self.progress_signal.emit("转码完成，进度100%")
+                self.progress_signal.emit(t("转码完成，进度100%"))
                 
                 # 增强的输出文件验证
                 self.progress_signal.emit(t("验证输出文件有效性..."))
@@ -1672,9 +1672,9 @@ class TranscodeThread(QThread):
                     self.finished_signal.emit(True, t_format("转码完成！总耗时: {}", time_str))
                 else:
                     # 即使返回码为0，如果文件验证失败，也认为转码失败
-                    self.progress_signal.emit("转码结果不完整，进度未达到100%")
+                    self.progress_signal.emit(t("转码结果不完整，进度未达到100%"))
                     self.progress_percent_signal.emit(-1.0)  # 发送错误状态
-                    self.progress_signal.emit("收到转码进度信号: -1.00%")
+                    self.progress_signal.emit(t("收到转码进度信号: -1.00%"))
                     self.progress_signal.emit(t("错误: 转码失败，显示错误状态"))
                     self.finished_signal.emit(False, t_format("转码结果不完整，进度未达到100%，耗时: {}", time_str))
             else:
@@ -2212,14 +2212,14 @@ class TranscodeThread(QThread):
                         self.progress_signal.emit(t("输出文件验证成功，包含有效视频流"))
                         # 只有在重试转码真正成功时才发送100%的进度信号
                         self.progress_percent_signal.emit(100.0)
-                        self.progress_signal.emit("转码完成，进度100%")
+                        self.progress_signal.emit(t("转码完成，进度100%"))
                         self.finished_signal.emit(True, t_format("使用安全参数重试转码成功！总耗时: {}", time_str))
                         return True
                     else:
                         self.progress_signal.emit(t_format("输出文件验证失败: {}", probe_error))
                         # 文件存在但验证失败，可能是不完整或损坏
                         error_msg = t_format("重试转码可能部分成功，但输出文件验证失败，耗时: {}\n建议尝试使用其他格式或编码器。", time_str)
-                        self.progress_signal.emit("转码结果不完整，进度未达到100%")
+                        self.progress_signal.emit(t("转码结果不完整，进度未达到100%"))
                         self.progress_percent_signal.emit(-1.0)  # 使用负值表示错误状态
                         self.finished_signal.emit(False, error_msg)
                         return False
@@ -2252,7 +2252,7 @@ class TranscodeThread(QThread):
                 error_msg += "3. 尝试不同的编码器\n"
                 error_msg += "4. 确保输入文件未损坏"
                 
-                self.progress_signal.emit("转码失败，进度未达到100%")
+                self.progress_signal.emit(t("转码失败，进度未达到100%"))
                 self.progress_percent_signal.emit(-1.0)  # 使用负值表示错误状态
                 self.finished_signal.emit(False, error_msg)
                 return False
@@ -2604,7 +2604,7 @@ class TranscodeThread(QThread):
             self.process.wait()
             
             # 在转码完成时发送平滑的进度信号，确保从当前进度平滑过渡到100%
-            self.progress_signal.emit("转码完成，开始发送平滑过渡到100%的进度信号")
+            self.progress_signal.emit(t("转码完成，开始发送平滑过渡到100%的进度信号"))
             # 获取当前进度值
             current_progress = last_percent
             # 如果当前进度小于100%，则平滑过渡到100%
@@ -2634,11 +2634,11 @@ class TranscodeThread(QThread):
                 if download_success:
                     # 确保在下载完成时发送100%的进度信号
                     self.progress_percent_signal.emit(100.0)
-                    self.progress_signal.emit("重试下载成功，进度100%")
-                    self.finished_signal.emit(True, "下载完成！")
+                    self.progress_signal.emit(t("重试下载成功，进度100%"))
+                    self.finished_signal.emit(True, t("下载完成！"))
                 else:
                     self.progress_signal.emit(t("警告：重试下载过程完成但未找到输出文件"))
-                    self.finished_signal.emit(False, "重试下载失败：未找到输出文件")
+                    self.finished_signal.emit(False, t("重试下载失败：未找到输出文件"))
             else:
                 # 如果重试也失败了
                 if postprocessing_error:
@@ -2674,7 +2674,7 @@ class TranscodeThread(QThread):
                     staged_dir = self._prepare_staging_output_dir()
                     if staged_dir:
                         safe_output_path = staged_dir
-                output_template = self._build_output_template(safe_output_path, "_单文件")
+                output_template = self._build_output_template(safe_output_path, t("_单文件"))
                 cmd.extend(["-o", output_template])
                 self.progress_signal.emit(t_format("使用输出模板: {}", output_template))
             
@@ -2773,8 +2773,8 @@ class TranscodeThread(QThread):
                         self.progress_signal.emit(t_format("✓ 单一格式重试已搬运 {} 个结果文件", len(moved)))
                 # 确保在下载完成时发送100%的进度信号
                 self.progress_percent_signal.emit(100.0)
-                self.progress_signal.emit("单一格式下载成功，进度100%")
-                self.finished_signal.emit(True, "下载完成！")
+                self.progress_signal.emit(t("单一格式下载成功，进度100%"))
+                self.finished_signal.emit(True, t("下载完成！"))
             else:
                 # 如果所有尝试都失败了
                 self.finished_signal.emit(False, t_format("所有下载尝试均失败，返回码：{}\n{}", self.process.returncode, error_output))

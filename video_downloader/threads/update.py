@@ -36,7 +36,7 @@ class UpdateThread(QThread):
             # 获取当前版本
             current_version = self.get_current_version()
             if not current_version:
-                self.finished_signal.emit(False, "无法获取当前yt-dlp版本", "")
+                self.finished_signal.emit(False, t("无法获取当前yt-dlp版本"), "")
                 return
             
             self.progress_signal.emit(t_format("当前版本: {}", current_version))
@@ -45,7 +45,7 @@ class UpdateThread(QThread):
             self.progress_signal.emit(t("正在获取最新版本信息..."))
             latest_info = self.get_latest_version_info()
             if not latest_info:
-                self.finished_signal.emit(False, "无法获取最新版本信息", "")
+                self.finished_signal.emit(False, t("无法获取最新版本信息"), "")
                 return
             
             latest_version = latest_info.get('tag_name', 'Unknown')
@@ -77,7 +77,7 @@ class UpdateThread(QThread):
                     else:
                         self.finished_signal.emit(False, error_msg, "")
                 else:
-                    self.finished_signal.emit(True, "已是最新版本，无需更新", "")
+                    self.finished_signal.emit(True, t("已是最新版本，无需更新"), "")
                 return
             
             # 比较版本 - 只检查，不自动更新
@@ -160,7 +160,7 @@ class UpdateThread(QThread):
                     return True, ""
             else:
                 # 识别具体错误类型
-                error_type, error_detail = self._classify_error(full_output, "yt-dlp自更新")
+                error_type, error_detail = self._classify_error(full_output, t("yt-dlp自更新"))
                 last_error = f"{error_type}: {error_detail}"
                 self.progress_signal.emit(last_error)
                 
@@ -171,7 +171,7 @@ class UpdateThread(QThread):
             last_error = "yt-dlp自更新失败: 未找到yt-dlp.exe文件"
             self.progress_signal.emit(last_error)
         except Exception as e:
-            error_type, error_detail = self._classify_error(str(e), "yt-dlp自更新")
+            error_type, error_detail = self._classify_error(str(e), t("yt-dlp自更新"))
             last_error = f"{error_type}: {error_detail}"
             self.progress_signal.emit(last_error)
         
@@ -201,7 +201,7 @@ class UpdateThread(QThread):
                     return True, ""
             else:
                 # 识别具体错误类型
-                error_type, error_detail = self._classify_error(full_output, "pip更新")
+                error_type, error_detail = self._classify_error(full_output, t("pip更新"))
                 last_error = f"{error_type}: {error_detail}"
                 self.progress_signal.emit(last_error)
                 
@@ -212,7 +212,7 @@ class UpdateThread(QThread):
             last_error = "pip更新失败: 未找到Python或pip"
             self.progress_signal.emit(last_error)
         except Exception as e:
-            error_type, error_detail = self._classify_error(str(e), "pip更新")
+            error_type, error_detail = self._classify_error(str(e), t("pip更新"))
             last_error = f"{error_type}: {error_detail}"
             self.progress_signal.emit(last_error)
         
@@ -226,7 +226,7 @@ class UpdateThread(QThread):
                 else:
                     last_error = error_msg
             except Exception as e:
-                error_type, error_detail = self._classify_error(str(e), "手动下载")
+                error_type, error_detail = self._classify_error(str(e), t("手动下载"))
                 last_error = f"{error_type}: {error_detail}"
                 self.progress_signal.emit(last_error)
         
@@ -306,14 +306,14 @@ class UpdateThread(QThread):
                         shutil.copyfileobj(response, f)
             except urllib.error.URLError as url_error:
                 # 精确识别网络错误
-                error_type, error_detail = self._classify_error(str(url_error), "GitHub下载")
+                error_type, error_detail = self._classify_error(str(url_error), t("GitHub下载"))
                 return False, f"{error_type}: {error_detail}"
             except urllib.error.HTTPError as http_error:
                 return False, t_format("网络错误: HTTP {} - {}\n建议：检查网络连接，如访问外网需配置代理", http_error.code, http_error.reason)
             except socket.timeout:
                 return False, "网络错误: 下载超时\n建议：检查网络连接速度，如访问外网需配置代理"
             except Exception as download_error:
-                error_type, error_detail = self._classify_error(str(download_error), "GitHub下载")
+                error_type, error_detail = self._classify_error(str(download_error), t("GitHub下载"))
                 return False, f"{error_type}: {error_detail}"
             
             # 验证下载的文件
@@ -358,11 +358,11 @@ class UpdateThread(QThread):
             except PermissionError:
                 return False, "权限错误: 权限不足，无法替换yt-dlp.exe文件。请尝试以管理员身份运行程序"
             except Exception as replace_error:
-                error_type, error_detail = self._classify_error(str(replace_error), "文件替换")
+                error_type, error_detail = self._classify_error(str(replace_error), t("文件替换"))
                 return False, f"{error_type}: {error_detail}"
             
         except Exception as e:
-            error_type, error_detail = self._classify_error(str(e), "手动下载更新")
+            error_type, error_detail = self._classify_error(str(e), t("手动下载更新"))
             error_msg = f"{error_type}: {error_detail}"
             self.progress_signal.emit(error_msg)
             return False, error_msg

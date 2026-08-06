@@ -3046,7 +3046,7 @@ class DownloadThread(QThread):
                     if needs_timeline_fix:
                         self.progress_signal.emit(t("下载成功，正在执行后处理（覆盖修复）..."))
                     else:
-                        self.progress_signal.emit("下载成功，开始平滑过渡到100%")
+                        self.progress_signal.emit(t("下载成功，开始平滑过渡到100%"))
                     current_progress = last_percent
                     if current_progress < target_progress:
                         # 计算需要增加的进度步数（每次增加1%）
@@ -3070,7 +3070,7 @@ class DownloadThread(QThread):
 
                     # 最后确保仅在全部处理完成后发送100%
                     self.progress_percent_signal.emit(100.0)
-                    self.progress_signal.emit("下载完成，进度100%")
+                    self.progress_signal.emit(t("下载完成，进度100%"))
                     
                     # 【关键修复】扫描输出目录，统计实际下载的新文件数量
                     try:
@@ -3379,7 +3379,7 @@ class DownloadThread(QThread):
                     # 转换元数据文件为可读格式
                     self._convert_metadata_files_to_readable()
                     
-                    self.finished_signal.emit(True, "下载完成！")
+                    self.finished_signal.emit(True, t("下载完成！"))
                 else:
                     # 虽然返回码为0，但没有找到下载的文件，可能是年龄限制等问题
                     # 检查错误输出中是否包含年龄限制相关信息
@@ -3436,7 +3436,7 @@ class DownloadThread(QThread):
                             self.finished_signal.emit(False, error_message)
                     else:
                         self.progress_signal.emit(t("警告：下载过程完成但未找到输出文件"))
-                        self.finished_signal.emit(False, "下载失败：未找到输出文件")
+                        self.finished_signal.emit(False, t("下载失败：未找到输出文件"))
             else:
                 # 【关键修复】如果是播放列表下载且返回码非0，先检查是否有文件下载成功
                 # 这样可以正确处理"部分成功"的情况（有些视频成功，有些失败）
@@ -3468,7 +3468,7 @@ class DownloadThread(QThread):
                         self.progress_signal.emit(t("✅ 检测到已有视频下载成功，播放列表下载部分完成"))
                         # 发送100%进度
                         self.progress_percent_signal.emit(100.0)
-                        self.progress_signal.emit("下载完成，进度100%")
+                        self.progress_signal.emit(t("下载完成，进度100%"))
                         
                         # 【关键修复】统计实际下载成功的视频数量
                         actual_success_count = 0
@@ -3766,11 +3766,11 @@ class DownloadThread(QThread):
                 elif "Video unavailable" in error_output or "Private video" in error_output:
                     if self._retry_with_browser_media_fallback():
                         return
-                    self.finished_signal.emit(False, "视频不可用或为私有视频")
+                    self.finished_signal.emit(False, t("视频不可用或为私有视频"))
                 elif "Unable to extract" in error_output or "Unsupported URL" in error_output:
                     if self._retry_with_browser_media_fallback():
                         return
-                    self.finished_signal.emit(False, "无法提取视频信息，URL可能不受支持")
+                    self.finished_signal.emit(False, t("无法提取视频信息，URL可能不受支持"))
                 else:
                     # 其他任何未被捕获的错误
                     self.progress_signal.emit(t("下载出错，正在尝试浏览器媒体嗅探回退..."))
@@ -4133,8 +4133,8 @@ class DownloadThread(QThread):
                             if not os.path.exists(description_txt_path) and not os.path.exists(base_name + '.description'):
                                 description = info_data.get('description', '')
                                 if description:
-                                    title = info_data.get('title', '未知标题')
-                                    uploader = info_data.get('uploader', info_data.get('channel', '未知作者'))
+                                    title = info_data.get('title', t('未知标题'))
+                                    uploader = info_data.get('uploader', info_data.get('channel', t('未知作者')))
                                     upload_date = info_data.get('upload_date', '')
                                     if upload_date and len(upload_date) == 8:
                                         upload_date = f"{upload_date[:4]}-{upload_date[4:6]}-{upload_date[6:8]}"
@@ -4166,7 +4166,7 @@ class DownloadThread(QThread):
                             if comments:
                                 comments_txt_path = base_name + '.comments.txt'
                                 if not os.path.exists(comments_txt_path):
-                                    title = info_data.get('title', '未知标题')
+                                    title = info_data.get('title', t('未知标题'))
                                     
                                     with open(comments_txt_path, 'w', encoding='utf-8') as f:
                                         f.write("=" * 60 + "\n")
@@ -4176,7 +4176,7 @@ class DownloadThread(QThread):
                                         f.write("=" * 60 + "\n\n")
                                         
                                         for i, comment in enumerate(comments, 1):
-                                            author = comment.get('author', '匿名用户')
+                                            author = comment.get('author', t('匿名用户'))
                                             text = comment.get('text', '')
                                             like_count = comment.get('like_count', 0)
                                             timestamp = comment.get('timestamp', 0)
@@ -4202,7 +4202,7 @@ class DownloadThread(QThread):
                                             # 处理回复评论
                                             replies = comment.get('replies', [])
                                             for j, reply in enumerate(replies, 1):
-                                                reply_author = reply.get('author', '匿名用户')
+                                                reply_author = reply.get('author', t('匿名用户'))
                                                 reply_text = reply.get('text', '')
                                                 reply_likes = reply.get('like_count', 0)
                                                 
@@ -4525,7 +4525,7 @@ class DownloadThread(QThread):
                     if moved:
                         self.progress_signal.emit(t_format("✓ 增强重试已搬运 {} 个结果文件", len(moved)))
                 self.progress_signal.emit(t("✓ 下载成功完成"))
-                self.finished_signal.emit(True, "下载完成")
+                self.finished_signal.emit(True, t("下载完成"))
             else:
                 self.progress_signal.emit(t("增强重试下载失败，尝试使用浏览器媒体嗅探回退..."))
                 if self._retry_with_browser_media_fallback():
@@ -4794,7 +4794,7 @@ class DownloadThread(QThread):
     def _retry_with_captured_media(self, media_info):
         direct_url = str((media_info or {}).get("url", "") or "").strip()
         if not direct_url:
-            self.finished_signal.emit(False, "媒体嗅探成功，但未获取到有效的媒体地址")
+            self.finished_signal.emit(False, t("媒体嗅探成功，但未获取到有效的媒体地址"))
             return
 
         try:
@@ -5066,7 +5066,7 @@ class DownloadThread(QThread):
                     if (video_info.get('_type') == 'playlist' or 'entries' in video_info) and self.playlist_enabled:
                         self.progress_signal.emit(t("检测到播放列表，提取播放列表信息..."))
                         self.info_signal.emit(video_info)
-                        self.finished_signal.emit(True, "播放列表信息获取成功")
+                        self.finished_signal.emit(True, t("播放列表信息获取成功"))
                         return
                     elif video_info.get('_type') == 'playlist' or 'entries' in video_info:
                         # 如果检测到播放列表但用户未启用播放列表功能，只提取第一个视频信息
@@ -5074,12 +5074,12 @@ class DownloadThread(QThread):
                             first_video = video_info['entries'][0]
                             self.progress_signal.emit(t("检测到播放列表，但未启用播放列表功能，仅获取第一个视频信息"))
                             self.info_signal.emit(first_video)
-                            self.finished_signal.emit(True, "视频信息获取成功")
+                            self.finished_signal.emit(True, t("视频信息获取成功"))
                             return
                     
                     # 单个视频信息
                     self.info_signal.emit(video_info)
-                    self.finished_signal.emit(True, "视频信息获取成功")
+                    self.finished_signal.emit(True, t("视频信息获取成功"))
                     return
                 except json.JSONDecodeError as json_err:
                     # JSON解析失败，记录详细错误
@@ -5144,7 +5144,7 @@ class DownloadThread(QThread):
                     # 尝试解析JSON输出
                     video_info = json.loads(stdout)
                     self.info_signal.emit(video_info)
-                    self.finished_signal.emit(True, "使用备用方法获取视频信息成功")
+                    self.finished_signal.emit(True, t("使用备用方法获取视频信息成功"))
                     return
                 except json.JSONDecodeError:
                     self.progress_signal.emit(t("备用JSON解析失败，尝试使用简单信息提取..."))
@@ -5242,7 +5242,7 @@ class DownloadThread(QThread):
                 if basic_info:
                     self.progress_signal.emit(t("成功提取基本视频信息"))
                     self.info_signal.emit(basic_info)
-                    self.finished_signal.emit(True, "获取基本视频信息成功")
+                    self.finished_signal.emit(True, t("获取基本视频信息成功"))
                     return
             
             # 如果所有方法都失败
@@ -5253,7 +5253,7 @@ class DownloadThread(QThread):
             # 创建一个最小的信息对象，至少包含URL
             minimal_info = {"url": self.url, "title": "未知标题", "_type": "video"}
             self.info_signal.emit(minimal_info)
-            self.finished_signal.emit(False, "无法获取完整视频信息，仅返回基本URL信息")
+            self.finished_signal.emit(False, t("无法获取完整视频信息，仅返回基本URL信息"))
         except Exception as e:
             self.progress_signal.emit(t_format("获取基本信息时出错: {}", str(e)))
             # 创建一个最小的信息对象，至少包含URL
@@ -5433,7 +5433,7 @@ class DownloadThread(QThread):
                 self.progress_signal.emit(t_format("✅ X平台自动选择格式: {}", auto_format))
                 self.progress_signal.emit(t("ℹ️ 已自动选择最佳格式，无需手动选择"))
                 self.formats_signal.emit(x_formats)
-                self.finished_signal.emit(True, "X平台自动格式选择完成")
+                self.finished_signal.emit(True, t("X平台自动格式选择完成"))
                 return
 
             cmd = ["yt-dlp.exe", "-j", "--no-playlist", self.url]
@@ -5662,7 +5662,7 @@ class DownloadThread(QThread):
                 self.finished_signal.emit(True, t_format("格式列表获取成功，找到 {} 个可用格式", len(unique)))
             else:
                 self.progress_signal.emit(output)
-                self.finished_signal.emit(False, "获取格式列表失败")
+                self.finished_signal.emit(False, t("获取格式列表失败"))
         except Exception as e:
             self.finished_signal.emit(False, t_format("获取格式列表时出错: {}", str(e)))
     
@@ -6027,7 +6027,7 @@ class DownloadThread(QThread):
             self.process.wait()
             
             # 在转码完成时发送平滑的进度信号，确保从当前进度平滑过渡到100%
-            self.progress_signal.emit("转码完成，开始发送平滑过渡到100%的进度信号")
+            self.progress_signal.emit(t("转码完成，开始发送平滑过渡到100%的进度信号"))
             # 获取当前进度值
             current_progress = last_percent
             # 如果当前进度小于100%，则平滑过渡到100%
@@ -6057,11 +6057,11 @@ class DownloadThread(QThread):
                 if download_success:
                     # 确保在下载完成时发送100%的进度信号
                     self.progress_percent_signal.emit(100.0)
-                    self.progress_signal.emit("重试下载成功，进度100%")
-                    self.finished_signal.emit(True, "下载完成！")
+                    self.progress_signal.emit(t("重试下载成功，进度100%"))
+                    self.finished_signal.emit(True, t("下载完成！"))
                 else:
                     self.progress_signal.emit(t("警告：重试下载过程完成但未找到输出文件"))
-                    self.finished_signal.emit(False, "重试下载失败：未找到输出文件")
+                    self.finished_signal.emit(False, t("重试下载失败：未找到输出文件"))
             else:
                 # 如果重试也失败了
                 if postprocessing_error:
@@ -6103,7 +6103,7 @@ class DownloadThread(QThread):
                     staged_dir = self._prepare_staging_output_dir()
                     if staged_dir:
                         safe_output_path = staged_dir
-                output_template = self._build_output_template(safe_output_path, "_单文件")
+                output_template = self._build_output_template(safe_output_path, t("_单文件"))
                 cmd.extend(["-o", output_template])
                 self.progress_signal.emit(t_format("使用输出模板: {}", output_template))
             
@@ -6202,8 +6202,8 @@ class DownloadThread(QThread):
                         self.progress_signal.emit(t_format("✓ 单一格式重试已搬运 {} 个结果文件", len(moved)))
                 # 确保在下载完成时发送100%的进度信号
                 self.progress_percent_signal.emit(100.0)
-                self.progress_signal.emit("单一格式下载成功，进度100%")
-                self.finished_signal.emit(True, "下载完成！")
+                self.progress_signal.emit(t("单一格式下载成功，进度100%"))
+                self.finished_signal.emit(True, t("下载完成！"))
             else:
                 # 如果所有尝试都失败了
                 self.finished_signal.emit(False, t_format("所有下载尝试均失败，返回码：{}\n{}", self.process.returncode, error_output))

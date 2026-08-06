@@ -18,7 +18,7 @@ class FailedVideosDialog(QDialog):
         self.init_ui()
         
     def init_ui(self):
-        self.setWindowTitle("播放列表下载报告")
+        self.setWindowTitle(t("播放列表下载报告"))
         self.setModal(True)
         self.resize(900, 600)
         
@@ -39,7 +39,7 @@ class FailedVideosDialog(QDialog):
         stats_layout = QVBoxLayout(stats_frame)
         
         # 标题
-        title_label = QLabel("📊 播放列表下载完成")
+        title_label = QLabel(t("📊 播放列表下载完成"))
         title_label.setStyleSheet(
             "font-size: 18px; "
             "font-weight: bold; "
@@ -181,7 +181,7 @@ class FailedVideosDialog(QDialog):
             self.table = QTableWidget()
             self.table.setColumnCount(3)
             # 【简化】表头只显示失败视频信息
-            self.table.setHorizontalHeaderLabels(["#", "视频标题", "失败原因"])
+            self.table.setHorizontalHeaderLabels(["#", t("视频标题"), "失败原因"])
             self.table.setRowCount(len(self.failed_videos))
             
             # 设置表格样式
@@ -213,13 +213,13 @@ class FailedVideosDialog(QDialog):
                 self.table.setItem(i, 0, index_item)
                 
                 # 视频标题
-                title_item = QTableWidgetItem(video.get('title', '未知视频'))
-                title_item.setToolTip(video.get('title', '未知视频'))
+                title_item = QTableWidgetItem(video.get('title', t('未知视频')))
+                title_item.setToolTip(video.get('title', t('未知视频')))
                 self.table.setItem(i, 1, title_item)
                 
                 # 失败原因
-                reason_item = QTableWidgetItem(video.get('reason', '未知错误'))
-                reason_item.setToolTip(video.get('full_error', video.get('reason', '未知错误')))
+                reason_item = QTableWidgetItem(video.get('reason', t('未知错误')))
+                reason_item.setToolTip(video.get('full_error', video.get('reason', t('未知错误'))))
                 self.table.setItem(i, 2, reason_item)
             
             # 调整列宽
@@ -239,7 +239,7 @@ class FailedVideosDialog(QDialog):
             layout.addWidget(self.table)
         else:
             # 如果没有失败视频，显示成功消息
-            success_label = QLabel("✅ 所有视频均成功下载！")
+            success_label = QLabel(t("✅ 所有视频均成功下载！"))
             success_label.setStyleSheet(
                 "font-size: 16px; "
                 "font-weight: bold; "
@@ -295,7 +295,7 @@ class FailedVideosDialog(QDialog):
         
         # 导出按钮（只在有失败视频时显示）
         if self.failed_videos:
-            export_btn = QPushButton("📄 导出失败列表")
+            export_btn = QPushButton(t("📄 导出失败列表"))
             export_btn.setStyleSheet(
                 "QPushButton { "
                 "background-color: #3498db; "
@@ -317,7 +317,7 @@ class FailedVideosDialog(QDialog):
             button_layout.addWidget(export_btn)
         
         # 关闭按钮
-        close_btn = QPushButton("✓ 确定")
+        close_btn = QPushButton(t("✓ 确定"))
         close_btn.setStyleSheet(
             "QPushButton { "
             "background-color: #2ecc71; "
@@ -352,9 +352,9 @@ class FailedVideosDialog(QDialog):
         # 打开保存文件对话框
         filename, _ = QFileDialog.getSaveFileName(
             self,
-            "导出失败视频列表",
+            t("导出失败视频列表"),
             default_filename,
-            "文本文件 (*.txt);;所有文件 (*.*)"
+            t("文本文件 (*.txt);;所有文件 (*.*)")
         )
         
         if filename:
@@ -402,7 +402,7 @@ class FailedVideosDialog(QDialog):
                 
                 QMessageBox.information(
                     self,
-                    "导出成功",
+                    t("导出成功"),
                     t_format("失败视频列表已成功导出到:\n{}", filename)
                 )
             except Exception as e:

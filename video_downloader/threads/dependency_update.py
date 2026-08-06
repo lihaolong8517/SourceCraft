@@ -84,7 +84,7 @@ class DependencyUpdateThread(QThread):
                 # 获取最新版本
                 latest_ver, download_url = self._get_latest_version(config['repo'], config['asset_pattern'])
                 if not latest_ver:
-                    self.component_signal.emit(comp_name, current_ver, "获取失败", "error")
+                    self.component_signal.emit(comp_name, current_ver, t("获取失败"), "error")
                     continue
                 
                 # 比较版本
@@ -122,7 +122,7 @@ class DependencyUpdateThread(QThread):
                 elif updates_performed:
                     self.finished_signal.emit(True, t_format("已自动更新: {}", ', '.join(updates_performed)))
                 else:
-                    self.finished_signal.emit(True, "所有组件已是最新版本")
+                    self.finished_signal.emit(True, t("所有组件已是最新版本"))
                 return
             
             # 执行更新
@@ -154,7 +154,7 @@ class DependencyUpdateThread(QThread):
             elif errors:
                 self.finished_signal.emit(False, t_format("更新失败: {}", ', '.join(errors)))
             else:
-                self.finished_signal.emit(True, "没有需要更新的组件")
+                self.finished_signal.emit(True, t("没有需要更新的组件"))
                 
         except Exception as e:
             self.finished_signal.emit(False, t_format("更新过程出错: {}", str(e)))

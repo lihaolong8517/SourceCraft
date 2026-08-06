@@ -30,7 +30,7 @@ class AppUpdateCheckThread(QThread):
 
             latest_version = str(payload.get("version") or "").strip()
             if not latest_version:
-                self.finished_signal.emit(False, "网站版本信息缺少 version 字段", {})
+                self.finished_signal.emit(False, t("网站版本信息缺少 version 字段"), {})
                 return
 
             current_version = get_app_version()

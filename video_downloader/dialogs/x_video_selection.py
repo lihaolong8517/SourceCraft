@@ -12,7 +12,7 @@ class XVideoSelectionDialog(QDialog):
         super().__init__(parent)
         self.video_entries = video_entries or []
         self.selected_indices = []  # 用户选择的视频索引列表（1-based，对应 --playlist-items）
-        self.setWindowTitle("🐦 X平台多视频选择")
+        self.setWindowTitle(t("🐦 X平台多视频选择"))
         self.setMinimumSize(560, 320)
         self.resize(620, min(420, 180 + 52 * len(self.video_entries)))
         self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
@@ -59,17 +59,17 @@ class XVideoSelectionDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(8)
 
-        select_all_btn = QPushButton("全选")
+        select_all_btn = QPushButton(t("全选"))
         select_all_btn.clicked.connect(self._select_all)
         btn_layout.addWidget(select_all_btn)
 
-        deselect_all_btn = QPushButton("取消全选")
+        deselect_all_btn = QPushButton(t("取消全选"))
         deselect_all_btn.clicked.connect(self._deselect_all)
         btn_layout.addWidget(deselect_all_btn)
 
         btn_layout.addStretch()
 
-        download_btn = QPushButton("📥 下载所选")
+        download_btn = QPushButton(t("📥 下载所选"))
         download_btn.setDefault(True)
         download_btn.setStyleSheet(
             "QPushButton { font-weight: bold; padding: 6px 18px; }"
@@ -77,7 +77,7 @@ class XVideoSelectionDialog(QDialog):
         download_btn.clicked.connect(self._accept_selection)
         btn_layout.addWidget(download_btn)
 
-        cancel_btn = QPushButton("取消")
+        cancel_btn = QPushButton(t("取消"))
         cancel_btn.clicked.connect(self.reject)
         btn_layout.addWidget(cancel_btn)
 
