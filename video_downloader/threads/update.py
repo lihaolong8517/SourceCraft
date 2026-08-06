@@ -15,6 +15,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 from .. import utils
 from .. import utils_update
+from i18n import t, t_format
 
 
 class UpdateThread(QThread):
@@ -30,7 +31,7 @@ class UpdateThread(QThread):
     
     def run(self):
         try:
-            self.progress_signal.emit("正在检查当前yt-dlp版本...")
+            self.progress_signal.emit(t("正在检查当前yt-dlp版本..."))
             
             # 获取当前版本
             current_version = self.get_current_version()
@@ -41,7 +42,7 @@ class UpdateThread(QThread):
             self.progress_signal.emit(f"当前版本: {current_version}")
             
             # 获取最新版本信息
-            self.progress_signal.emit("正在获取最新版本信息...")
+            self.progress_signal.emit(t("正在获取最新版本信息..."))
             latest_info = self.get_latest_version_info()
             if not latest_info:
                 self.finished_signal.emit(False, "无法获取最新版本信息", "")
@@ -56,12 +57,12 @@ class UpdateThread(QThread):
                     # 保存更新前的版本
                     self.before_update_version = current_version
                     # 执行更新
-                    self.progress_signal.emit("开始更新yt-dlp...")
+                    self.progress_signal.emit(t("开始更新yt-dlp..."))
                     success, error_msg = self.update_yt_dlp()
                     
                     if success:
                         # 验证版本是否真正更新
-                        self.progress_signal.emit("正在验证更新结果...")
+                        self.progress_signal.emit(t("正在验证更新结果..."))
                         import time
                         time.sleep(2)  # 等待文件系统更新
                         
@@ -132,7 +133,7 @@ class UpdateThread(QThread):
         
         try:
             # 方法1: 使用yt-dlp自身的更新功能
-            self.progress_signal.emit("尝试使用yt-dlp自更新...")
+            self.progress_signal.emit(t("尝试使用yt-dlp自更新..."))
             result = subprocess.run(
                 ["yt-dlp.exe", "-U"],
                 capture_output=True,
@@ -148,14 +149,14 @@ class UpdateThread(QThread):
             if result.returncode == 0:
                 # 检查输出中是否包含更新成功的标志
                 if "updated" in output or "downloading" in output:
-                    self.progress_signal.emit("yt-dlp自更新命令执行成功")
+                    self.progress_signal.emit(t("yt-dlp自更新命令执行成功"))
                     return True, ""
                 elif "already up to date" in output or "latest version" in output:
                     last_error = "当前已是最新版本"
                     self.progress_signal.emit(f"yt-dlp自更新: {last_error}")
                 else:
                     # 返回码为0但输出不明确
-                    self.progress_signal.emit("yt-dlp自更新命令完成")
+                    self.progress_signal.emit(t("yt-dlp自更新命令完成"))
                     return True, ""
             else:
                 # 识别具体错误类型
@@ -176,7 +177,7 @@ class UpdateThread(QThread):
         
         # 方法2: 使用pip更新（如果是通过pip安装的）
         try:
-            self.progress_signal.emit("尝试使用pip更新...")
+            self.progress_signal.emit(t("尝试使用pip更新..."))
             result = subprocess.run(
                 ["python", "-m", "pip", "install", "--upgrade", "yt-dlp"],
                 capture_output=True,
@@ -190,13 +191,13 @@ class UpdateThread(QThread):
             
             if result.returncode == 0:
                 if "successfully installed" in output:
-                    self.progress_signal.emit("pip更新成功")
+                    self.progress_signal.emit(t("pip更新成功"))
                     return True, ""
                 elif "requirement already satisfied" in output or "already up-to-date" in output:
                     last_error = "pip显示当前已是最新版本"
                     self.progress_signal.emit(last_error)
                 else:
-                    self.progress_signal.emit("pip更新命令完成")
+                    self.progress_signal.emit(t("pip更新命令完成"))
                     return True, ""
             else:
                 # 识别具体错误类型
@@ -218,7 +219,7 @@ class UpdateThread(QThread):
         # 方法3: 手动下载更新（Windows）
         if os.name == 'nt':
             try:
-                self.progress_signal.emit("尝试手动下载更新...")
+                self.progress_signal.emit(t("尝试手动下载更新..."))
                 success, error_msg = self.manual_download_update()
                 if success:
                     return True, ""
@@ -296,7 +297,7 @@ class UpdateThread(QThread):
             with tempfile.NamedTemporaryFile(delete=False, suffix=".exe") as temp_file:
                 temp_path = temp_file.name
             
-            self.progress_signal.emit("正在从GitHub下载yt-dlp.exe...")
+            self.progress_signal.emit(t("正在从GitHub下载yt-dlp.exe..."))
             
             try:
                 headers = {'User-Agent': 'Mozilla/5.0'}
@@ -351,7 +352,7 @@ class UpdateThread(QThread):
                         shutil.move(backup_path, current_path)
                     return False, "文件错误: 下载的文件无法正常执行，已恢复原版本"
                 
-                self.progress_signal.emit("手动更新完成")
+                self.progress_signal.emit(t("手动更新完成"))
                 return True, ""
                 
             except PermissionError:

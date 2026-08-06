@@ -30,6 +30,7 @@ from download_sections_utils import (
     split_time_range_tokens, parse_time_token_to_seconds, validate_download_section
 )
 from special_scene_utils import build_wait_for_video_arg, fragment_unavailable_flag
+from i18n import t, t_format
 
 
 class DownloadThread(QThread):
@@ -453,7 +454,7 @@ class DownloadThread(QThread):
                 os.makedirs(self._yt_dlp_temp_dir, exist_ok=True)
 
             cmd.extend(["--paths", f"temp:{self._yt_dlp_temp_dir}"])
-            self.progress_signal.emit("✓ 临时分片已重定向到系统临时目录（下载目录仅保留最终文件）")
+            self.progress_signal.emit(t("✓ 临时分片已重定向到系统临时目录（下载目录仅保留最终文件）"))
         except Exception as e:
             self.progress_signal.emit(f"⚠️ 临时目录重定向失败，继续默认模式: {str(e)}")
 
@@ -589,10 +590,10 @@ class DownloadThread(QThread):
         # 只处理视频文件，去重并保持顺序
         targets = _dedupe_preserve_order(targets)
         if not targets:
-            self.progress_signal.emit("ℹ 未找到可稳定化处理的视频文件")
+            self.progress_signal.emit(t("ℹ 未找到可稳定化处理的视频文件"))
             return
 
-        self.progress_signal.emit("🛠️ 检测到指定音频语言，开始执行直接时间轴修复...")
+        self.progress_signal.emit(t("🛠️ 检测到指定音频语言，开始执行直接时间轴修复..."))
         creation_flags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
         for src_path in targets:
             try:
@@ -989,7 +990,7 @@ class DownloadThread(QThread):
         这样在视频因限制失败时，可以从映射中获取准确的标题
         """
         try:
-            self.progress_signal.emit("🔍 正在获取播放列表信息（用于准确记录失败视频标题）...")
+            self.progress_signal.emit(t("🔍 正在获取播放列表信息（用于准确记录失败视频标题）..."))
             
             # 使用 --flat-playlist 快速获取播放列表信息
             cmd = [
@@ -1049,13 +1050,13 @@ class DownloadThread(QThread):
                     if self.playlist_video_map:
                         self.progress_signal.emit(f"✅ 成功获取 {len(self.playlist_video_map)} 个视频的标题信息")
                     else:
-                        self.progress_signal.emit("⚠️ 未能获取视频标题映射，将使用实时提取的标题")
+                        self.progress_signal.emit(t("⚠️ 未能获取视频标题映射，将使用实时提取的标题"))
                 else:
-                    self.progress_signal.emit("⚠️ 获取播放列表信息失败，将使用实时提取的标题")
+                    self.progress_signal.emit(t("⚠️ 获取播放列表信息失败，将使用实时提取的标题"))
                     
             except subprocess.TimeoutExpired:
                 process.kill()
-                self.progress_signal.emit("⚠️ 获取播放列表信息超时，将使用实时提取的标题")
+                self.progress_signal.emit(t("⚠️ 获取播放列表信息超时，将使用实时提取的标题"))
                 
         except Exception as e:
             self.progress_signal.emit(f"⚠️ 获取播放列表信息出错: {str(e)}，将使用实时提取的标题")
@@ -1172,19 +1173,19 @@ class DownloadThread(QThread):
                 next_mode = api_modes[current_index + 1]
                 self.x_api_retry_mode = next_mode
                 self.progress_signal.emit(f"🔄 尝试使用不同API模式: {next_mode}")
-                self.progress_signal.emit("🔄 正在重新启动下载...")
+                self.progress_signal.emit(t("🔄 正在重新启动下载..."))
                 
                 # 重新调用run方法
                 self.run()
                 return True
             else:
                 # 所有API模式都已尝试
-                self.progress_signal.emit("⚠️ 所有X平台API模式都已尝试，无法下载该视频")
+                self.progress_signal.emit(t("⚠️ 所有X平台API模式都已尝试，无法下载该视频"))
                 return False
         except ValueError:
             # 当前API模式不在列表中
             self.x_api_retry_mode = 'graphql'
-            self.progress_signal.emit("🔄 尝试使用graphql API模式")
+            self.progress_signal.emit(t("🔄 尝试使用graphql API模式"))
             self.run()
             return True
     
@@ -1210,9 +1211,9 @@ class DownloadThread(QThread):
             
             # 显示代理信息
             self.progress_signal.emit("=" * 60)
-            self.progress_signal.emit("🔐 检测到代理设置")
+            self.progress_signal.emit(t("🔐 检测到代理设置"))
             self.progress_signal.emit(f"代理地址: {proxy_url}")
-            self.progress_signal.emit("正在测试代理连接...")
+            self.progress_signal.emit(t("正在测试代理连接..."))
             self.progress_signal.emit("=" * 60)
             
             # 快速测试代理连接
@@ -1267,15 +1268,15 @@ class DownloadThread(QThread):
             # 显示测试结果
             self.progress_signal.emit("-" * 60)
             if test_success:
-                self.progress_signal.emit("✅ 代理连接成功！")
-                self.progress_signal.emit("✅ 代理服务器工作正常，可以继续下载")
-                self.progress_signal.emit("💡 下载将通过代理服务器进行")
+                self.progress_signal.emit(t("✅ 代理连接成功！"))
+                self.progress_signal.emit(t("✅ 代理服务器工作正常，可以继续下载"))
+                self.progress_signal.emit(t("💡 下载将通过代理服务器进行"))
             else:
-                self.progress_signal.emit("⚠️ 代理连接测试失败")
+                self.progress_signal.emit(t("⚠️ 代理连接测试失败"))
                 if test_error:
                     self.progress_signal.emit(f"⚠️ 错误信息: {test_error}")
-                self.progress_signal.emit("⚠️ 将继续尝试下载，但可能会失败")
-                self.progress_signal.emit("💡 建议检查代理设置或点击'测试连接'按钮进行详细测试")
+                self.progress_signal.emit(t("⚠️ 将继续尝试下载，但可能会失败"))
+                self.progress_signal.emit(t("💡 建议检查代理设置或点击'测试连接'按钮进行详细测试"))
             
             self.progress_signal.emit("=" * 60)
             self.progress_signal.emit("")  # 空行分隔
@@ -1288,7 +1289,7 @@ class DownloadThread(QThread):
             self.progress_signal.emit(f"⚠️ 异常类型: {type(e).__name__}")
             # 在调试模式下显示详细的堆栈跟踪
             # self.progress_signal.emit(f"堆栈跟踪:\n{traceback.format_exc()}")
-            self.progress_signal.emit("将继续执行下载任务...")
+            self.progress_signal.emit(t("将继续执行下载任务..."))
         
     def run(self):
         import subprocess  # 确保 subprocess 在整个 run 方法中可用
@@ -1298,11 +1299,11 @@ class DownloadThread(QThread):
         try:
             # 在任务开始时检查是否已被取消
             if self._cancelled:
-                self.progress_signal.emit("检测到下载已被取消，停止执行")
+                self.progress_signal.emit(t("检测到下载已被取消，停止执行"))
                 self.cancel_signal.emit()
                 return
                 
-            self.progress_signal.emit("ℹ 开始执行下载任务...")
+            self.progress_signal.emit(t("ℹ 开始执行下载任务..."))
             self.progress_signal.emit(f"目标URL: {self.url}")
             self.progress_signal.emit(f"输出路径: {self.output_path}")
             self.progress_signal.emit(f"格式选项: {self.format_option}")
@@ -1314,23 +1315,23 @@ class DownloadThread(QThread):
             
             if self.extract_info:
                 # 只提取视频信息
-                self.progress_signal.emit("模式: 提取视频信息")
+                self.progress_signal.emit(t("模式: 提取视频信息"))
                 self._extract_video_info()
                 return
                 
             if self.extract_playlist:
                 # 专门提取播放列表信息
-                self.progress_signal.emit("模式: 提取播放列表信息")
+                self.progress_signal.emit(t("模式: 提取播放列表信息"))
                 self._extract_playlist_info()
                 return
                 
             if self.list_formats:
                 # 只列出可用格式
-                self.progress_signal.emit("模式: 列出可用格式")
+                self.progress_signal.emit(t("模式: 列出可用格式"))
                 self._list_formats()
                 return
                 
-            self.progress_signal.emit("模式: 正常下载")
+            self.progress_signal.emit(t("模式: 正常下载"))
             time_section_mode = self._time_section_mode_active()
             is_youtube_url = ('youtube' in self.url.lower() or 'youtu.be' in self.url.lower())
             
@@ -1365,7 +1366,7 @@ class DownloadThread(QThread):
             # 媒体捕获下载优先走兼容模式，忽略主下载器页面的格式选择
             if self.media_capture_download:
                 if self._looks_like_direct_media_url(self.url):
-                    self.progress_signal.emit("✓ 媒体捕获下载检测到直链，已忽略格式筛选并使用兼容模式")
+                    self.progress_signal.emit(t("✓ 媒体捕获下载检测到直链，已忽略格式筛选并使用兼容模式"))
                     if any(token in str(self.url).lower() for token in (".m3u8", ".mpd", "playlist.m3u8", "master.m3u8")):
                         cmd.extend(["--hls-use-mpegts"])
                 elif self.media_capture_format_id and self.media_capture_format_id.lower() != "best":
@@ -1374,11 +1375,11 @@ class DownloadThread(QThread):
                     cmd.extend(["--merge-output-format", "mp4"])
                 else:
                     cmd.extend(["-f", "best"])
-                    self.progress_signal.emit("✓ 媒体捕获下载使用兼容最佳格式")
+                    self.progress_signal.emit(t("✓ 媒体捕获下载使用兼容最佳格式"))
                     cmd.extend(["--merge-output-format", "mp4"])
             # X平台（原Twitter）自动格式选择处理
             elif self._is_x_platform_url(self.url):
-                self.progress_signal.emit("🔄 检测到X平台视频，启用自动格式选择...")
+                self.progress_signal.emit(t("🔄 检测到X平台视频，启用自动格式选择..."))
                 # 对X平台使用自动选择的最佳格式，避免手动选择对话框
                 auto_format = self._get_x_platform_best_format()
                 cmd.extend(["-f", auto_format])
@@ -1390,7 +1391,7 @@ class DownloadThread(QThread):
                 # 特殊处理“仅缩略图”选项
                 if self.format_option == "--skip-download --write-thumbnail":
                     cmd.extend(["--skip-download", "--write-thumbnail"])
-                    self.progress_signal.emit("ℹ 仅下载缩略图模式")
+                    self.progress_signal.emit(t("ℹ 仅下载缩略图模式"))
                 # 处理音频提取选项
                 elif self.format_option and (" -x " in self.format_option or "--extract-audio" in self.format_option):
                     parts = self.format_option.split(" -x ") if self.format_option and " -x " in self.format_option else [self.format_option.replace("--extract-audio", "").strip()]
@@ -1416,7 +1417,7 @@ class DownloadThread(QThread):
                     else:
                         cmd.extend(["--audio-quality", "0"])  # 最高质量
                     
-                    self.progress_signal.emit("✓ 启用音频提取模式")
+                    self.progress_signal.emit(t("✓ 启用音频提取模式"))
                 else:
                     # 标准视频格式选择 - 与官方yt-dlp完全一致
                     if self.format_option == "best":
@@ -1439,12 +1440,12 @@ class DownloadThread(QThread):
                     # yt-dlp会自动使用最合适的编码器，我们只需确保输出为mp4容器
                     if not "--skip-download" in self.format_option:  # 不是仅缩略图模式
                         cmd.extend(["--merge-output-format", "mp4"])
-                        self.progress_signal.emit("✓ 合并输出格式设置为mp4（最大兼容性）")
+                        self.progress_signal.emit(t("✓ 合并输出格式设置为mp4（最大兼容性）"))
             else:
                 # 默认格式 - 使用优化的兼容性格式选择器
                 cmd.extend(["-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best"])
                 cmd.extend(["--merge-output-format", "mp4"])
-                self.progress_signal.emit("✓ 使用默认最佳质量格式（mp4+m4a优先，最大兼容性）")
+                self.progress_signal.emit(t("✓ 使用默认最佳质量格式（mp4+m4a优先，最大兼容性）"))
 
             # 时间片段 + YouTube 场景：优先单流格式，加速中段裁剪；失败时回退到原格式链
             if time_section_mode and is_youtube_url:
@@ -1463,7 +1464,7 @@ class DownloadThread(QThread):
                             new_format = self._build_time_section_friendly_format(old_format)
                             if new_format and new_format != old_format:
                                 cmd[f_index + 1] = new_format
-                                self.progress_signal.emit("✓ 时间片段模式：单流格式兜底（用户格式优先，画质不受限）")
+                                self.progress_signal.emit(t("✓ 时间片段模式：单流格式兜底（用户格式优先，画质不受限）"))
                     except Exception:
                         pass
             
@@ -1478,7 +1479,7 @@ class DownloadThread(QThread):
                 selected_audio_lang = ""
             if selected_audio_lang and selected_audio_lang != "orig":
                 postprocessor_args = "ffmpeg:-fflags +genpts -movflags +faststart"
-                self.progress_signal.emit("✓ 指定音频语言场景启用稳健时间戳后处理")
+                self.progress_signal.emit(t("✓ 指定音频语言场景启用稳健时间戳后处理"))
 
             cmd.extend([
                 "--prefer-free-formats",               # 优先选择免费格式
@@ -1523,12 +1524,12 @@ class DownloadThread(QThread):
                     "--add-header", "Connection:keep-alive",
                     "--add-header", "Upgrade-Insecure-Requests:1",
                 ])
-                self.progress_signal.emit("✓ 已为中国平台添加专用Headers和User-Agent")
+                self.progress_signal.emit(t("✓ 已为中国平台添加专用Headers和User-Agent"))
             
             # 移除全局referer设置，让yt-dlp的官方extractor自己处理referer头
             # 这样可以避免B站、Facebook、Instagram等网站的403拒绝错误
             
-            self.progress_signal.emit("✓ 已应用基础yt-dlp下载选项和错误处理")
+            self.progress_signal.emit(t("✓ 已应用基础yt-dlp下载选项和错误处理"))
             
             # 添加输出路径和模板
             if self.output_path:
@@ -1538,7 +1539,7 @@ class DownloadThread(QThread):
                     staged_dir = self._prepare_staging_output_dir()
                     if staged_dir:
                         output_base_dir = staged_dir
-                        self.progress_signal.emit("✓ 单视频下载启用暂存目录，下载中不会在目标目录产生中间文件")
+                        self.progress_signal.emit(t("✓ 单视频下载启用暂存目录，下载中不会在目标目录产生中间文件"))
                 output_template = self._build_output_template(output_base_dir)
                 cmd.extend(["-o", output_template])
                 # 记录使用的输出模板，便于调试
@@ -1551,13 +1552,13 @@ class DownloadThread(QThread):
             
             # YouTube特定配置 - 智能客户端选择策略
             if 'youtube' in self.url.lower() or 'youtu.be' in self.url.lower():
-                self.progress_signal.emit("检测到YouTube URL...")
+                self.progress_signal.emit(t("检测到YouTube URL..."))
                 
                 # 【关键修复】添加 --impersonate 参数来绕过YouTube的TLS指纹检测
                 # 这可以解决 curl error (35) TLS connect error 问题
                 # 使用 curl_cffi 库模拟 Chrome 浏览器的 TLS 指纹
                 cmd.extend(["--impersonate", "chrome"])
-                self.progress_signal.emit("✓ 已启用浏览器指纹模拟 (Chrome)，解决TLS连接问题")
+                self.progress_signal.emit(t("✓ 已启用浏览器指纹模拟 (Chrome)，解决TLS连接问题"))
                 
                 # 根据用户的下载需求智能选择客户端策略：
                 # 1. 如果用户指定了特定分辨率或音频语言，不限制客户端，让yt-dlp自动选择最佳客户端
@@ -1569,19 +1570,19 @@ class DownloadThread(QThread):
                 
                 if has_resolution_limit or has_audio_lang:
                     # 用户指定了分辨率或音频语言，使用默认客户端以获取完整的格式列表
-                    self.progress_signal.emit("✓ 检测到特定格式要求，使用默认客户端以确保格式可用性")
+                    self.progress_signal.emit(t("✓ 检测到特定格式要求，使用默认客户端以确保格式可用性"))
                     self.progress_signal.emit(f"  - 分辨率限制: {has_resolution_limit}")
                     self.progress_signal.emit(f"  - 音频语言过滤: {has_audio_lang}")
                 else:
                     # 普通下载，也使用默认客户端，让yt-dlp自动优化
-                    self.progress_signal.emit("✓ 使用默认客户端策略，确保最佳兼容性")
+                    self.progress_signal.emit(t("✓ 使用默认客户端策略，确保最佳兼容性"))
                 
                 # 注意：不再强制设置player_client，让yt-dlp根据视频情况自动选择
                 # 如果遇到401/403等错误，会在重试逻辑中尝试特殊客户端
             # 简化TikTok/抖音配置 - 添加专用优化
             # 匹配抖音页面域名和 CDN 直链域名（douyinvod.com, douyincdn.com, tos-cn-v 等）
             elif any(domain in self.url.lower() for domain in ['tiktok.com', 'douyin.com', 'douyinvod.com', 'douyincdn.com', 'douyinpic.com', 'iesdouyin.com', 'tos-cn-v']):
-                self.progress_signal.emit("检测到TikTok/抖音 URL，应用专用优化...")
+                self.progress_signal.emit(t("检测到TikTok/抖音 URL，应用专用优化..."))
                 
                 # 检测是否为 CDN 直链（媒体捕获场景）
                 is_douyin_cdn = any(d in self.url.lower() for d in ['douyinvod.com', 'douyincdn.com', 'douyinpic.com', 'tos-cn-v'])
@@ -1604,13 +1605,13 @@ class DownloadThread(QThread):
                 
                 cmd.extend(douyin_options)
                 if is_douyin_cdn:
-                    self.progress_signal.emit("✓ 已为抖音CDN直链添加Referer和Origin头")
+                    self.progress_signal.emit(t("✓ 已为抖音CDN直链添加Referer和Origin头"))
                 else:
-                    self.progress_signal.emit("✓ 已应用TikTok/抖音专用优化配置")
+                    self.progress_signal.emit(t("✓ 已应用TikTok/抖音专用优化配置"))
                 
             # 优化快手配置 - 添加专用参数
             elif any(domain in self.url.lower() for domain in ['kuaishou.com', 'kwai.com', 'ksurl.cn']):
-                self.progress_signal.emit("检测到快手URL，应用专用优化...")
+                self.progress_signal.emit(t("检测到快手URL，应用专用优化..."))
                 
                 # 快手专用优化参数
                 kuaishou_options = [
@@ -1621,28 +1622,28 @@ class DownloadThread(QThread):
                 ]
                 
                 cmd.extend(kuaishou_options)
-                self.progress_signal.emit("✓ 已应用快手专用优化配置")
+                self.progress_signal.emit(t("✓ 已应用快手专用优化配置"))
                 
             # 简化X平台配置
             elif any(domain in self.url.lower() for domain in ['twitter.com', 'x.com', 't.co', 'm.twitter.com']):
-                self.progress_signal.emit("检测到X平台URL，使用默认配置...")
+                self.progress_signal.emit(t("检测到X平台URL，使用默认配置..."))
                 # X平台使用yt-dlp默认配置
-                self.progress_signal.emit("✓ 使用X平台默认配置")
+                self.progress_signal.emit(t("✓ 使用X平台默认配置"))
                 
             # 简化Facebook配置
             elif any(domain in self.url.lower() for domain in ['facebook.com', 'fb.com', 'fb.watch', 'm.facebook.com']):
-                self.progress_signal.emit("检测到Facebook URL，使用默认配置...")
+                self.progress_signal.emit(t("检测到Facebook URL，使用默认配置..."))
                 # Facebook使用yt-dlp默认配置
-                self.progress_signal.emit("✓ 使用Facebook默认配置")
+                self.progress_signal.emit(t("✓ 使用Facebook默认配置"))
                 
             # 简化B站配置
             elif any(domain in self.url.lower() for domain in ['bilibili.com', 'b23.tv', 'acg.tv']):
-                self.progress_signal.emit("检测到B站URL，使用默认配置...")
+                self.progress_signal.emit(t("检测到B站URL，使用默认配置..."))
                 # B站使用yt-dlp默认配置
-                self.progress_signal.emit("✓ 使用B站默认配置")
+                self.progress_signal.emit(t("✓ 使用B站默认配置"))
                 
             else:
-                self.progress_signal.emit("使用标准下载模式")
+                self.progress_signal.emit(t("使用标准下载模式"))
             
             # 添加其他选项
             if self.additional_options:
@@ -1663,7 +1664,7 @@ class DownloadThread(QThread):
                     "--http-chunk-size", "10M",
                     "--socket-timeout", "30",
                 ]
-                self.progress_signal.emit("✓ 时间片段模式启用精简网络参数（避免节流检测与无效并发）")
+                self.progress_signal.emit(t("✓ 时间片段模式启用精简网络参数（避免节流检测与无效并发）"))
             else:
                 optimization_options = [
                     # 重试机制优化 - 基于官方文档推荐，减少重试次数以加快失败恢复
@@ -1720,7 +1721,7 @@ class DownloadThread(QThread):
                     "--geo-bypass-country", "CN",       # 设置绕过国家为中国
                     "--extractor-retries", "3",         # 增加提取器重试次数
                 ])
-                self.progress_signal.emit("✓ 已为中国平台添加额外网络优化和反爬策略")
+                self.progress_signal.emit(t("✓ 已为中国平台添加额外网络优化和反爬策略"))
             
             cmd.extend(optimization_options)
             # 移除不建议默认启用的选项，确保与官方README更一致
@@ -1737,7 +1738,7 @@ class DownloadThread(QThread):
                 cmd = [arg for arg in cmd if arg not in risky_flags]
             except Exception:
                 pass
-            self.progress_signal.emit("✓ 已应用yt-dlp高性能优化参数（基于官方最佳实践）")
+            self.progress_signal.emit(t("✓ 已应用yt-dlp高性能优化参数（基于官方最佳实践）"))
 
             # 检查高级选项是否启用 - 所有新功能都需要高级选项启用才能生效
             advanced_enabled = (self.main_app and 
@@ -1745,29 +1746,29 @@ class DownloadThread(QThread):
                               self.main_app.advanced_group.isChecked())
             
             if not advanced_enabled:
-                self.progress_signal.emit("⚠️ 高级选项未启用，跳过所有新功能")
+                self.progress_signal.emit(t("⚠️ 高级选项未启用，跳过所有新功能"))
             
             # 添加元数据下载选项 (2025年新功能) - 需要高级选项启用
             metadata_options = []
             if advanced_enabled and self.main_app and hasattr(self.main_app, 'write_description_check') and self.main_app.write_description_check.isChecked():
                 metadata_options.extend(["--write-description"])
-                self.progress_signal.emit("✓ 启用视频描述下载")
+                self.progress_signal.emit(t("✓ 启用视频描述下载"))
             
             if advanced_enabled and self.main_app and hasattr(self.main_app, 'write_info_check') and self.main_app.write_info_check.isChecked():
                 metadata_options.extend(["--write-info-json"])
-                self.progress_signal.emit("✓ 启用JSON元数据下载")
+                self.progress_signal.emit(t("✓ 启用JSON元数据下载"))
             
             if advanced_enabled and self.main_app and hasattr(self.main_app, 'write_comments_check') and self.main_app.write_comments_check.isChecked():
                 metadata_options.extend(["--write-comments"])
-                self.progress_signal.emit("✓ 启用视频评论下载")
+                self.progress_signal.emit(t("✓ 启用视频评论下载"))
             
             if advanced_enabled and self.main_app and hasattr(self.main_app, 'embed_metadata_check') and self.main_app.embed_metadata_check.isChecked():
                 metadata_options.extend(["--embed-metadata"])
-                self.progress_signal.emit("✓ 启用元数据嵌入")
+                self.progress_signal.emit(t("✓ 启用元数据嵌入"))
             
             if advanced_enabled and self.main_app and hasattr(self.main_app, 'embed_thumbnail_check') and self.main_app.embed_thumbnail_check.isChecked():
                 metadata_options.extend(["--embed-thumbnail"])
-                self.progress_signal.emit("✓ 启用缩略图嵌入")
+                self.progress_signal.emit(t("✓ 启用缩略图嵌入"))
             
             # 注意：embed_chapters_check、embed_info_json_check、xattrs_check 
             # 现在统一在 get_additional_options() 中处理，避免重复添加
@@ -1821,12 +1822,12 @@ class DownloadThread(QThread):
                     else:
                         # 默认标记所有类别
                         cmd.extend(["--sponsorblock-mark", "all"])
-                        self.progress_signal.emit("✓ SponsorBlock标记所有类别")
+                        self.progress_signal.emit(t("✓ SponsorBlock标记所有类别"))
                 
                 # 如果没有选择任何类别，使用默认设置
                 if not sponsorblock_remove_categories and not (hasattr(self.main_app, 'sponsorblock_mark_chapters') and self.main_app.sponsorblock_mark_chapters.isChecked()):
                     cmd.extend(["--sponsorblock-remove", "sponsor"])
-                    self.progress_signal.emit("✓ SponsorBlock默认移除赞助商内容")
+                    self.progress_signal.emit(t("✓ SponsorBlock默认移除赞助商内容"))
                 
                 # 添加SponsorBlock API设置（如果有自定义）
                 if hasattr(self.main_app, 'sponsorblock_api_url') and self.main_app.sponsorblock_api_url.text().strip():
@@ -1848,7 +1849,7 @@ class DownloadThread(QThread):
                 # 按章节分割视频
                 if hasattr(self.main_app, 'split_chapters_check') and self.main_app.split_chapters_check.isChecked():
                     cmd.extend(["--split-chapters"])
-                    self.progress_signal.emit("✓ 启用按章节分割视频 (--split-chapters)")
+                    self.progress_signal.emit(t("✓ 启用按章节分割视频 (--split-chapters)"))
                 
                 # 移除匹配的章节（正则表达式）
                 if hasattr(self.main_app, 'chapters_to_remove') and self.main_app.chapters_to_remove:
@@ -1860,7 +1861,7 @@ class DownloadThread(QThread):
                 # 在切割点强制关键帧
                 if hasattr(self.main_app, 'force_keyframes_check') and self.main_app.force_keyframes_check.isChecked():
                     cmd.extend(["--force-keyframes-at-cuts"])
-                    self.progress_signal.emit("✓ 启用强制关键帧（提高切割质量）")
+                    self.progress_signal.emit(t("✓ 启用强制关键帧（提高切割质量）"))
             
             # 添加高级下载选项 - 与官方yt-dlp完全一致
             if advanced_enabled and self.main_app:
@@ -1872,7 +1873,7 @@ class DownloadThread(QThread):
                     # 从开头下载直播
                     if hasattr(self.main_app, 'live_from_start_check') and self.main_app.live_from_start_check.isChecked():
                         cmd.extend(["--live-from-start"])
-                        self.progress_signal.emit("✓ 从开头下载直播")
+                        self.progress_signal.emit(t("✓ 从开头下载直播"))
                     
                     # 等待视频可用
                     if hasattr(self.main_app, 'wait_for_video_check') and self.main_app.wait_for_video_check.isChecked():
@@ -1904,7 +1905,7 @@ class DownloadThread(QThread):
                     # 忽略错误继续下载
                     if hasattr(self.main_app, 'ignore_errors_check') and self.main_app.ignore_errors_check.isChecked():
                         cmd.extend(["--ignore-errors"])
-                        self.progress_signal.emit("✓ 忽略错误继续下载")
+                        self.progress_signal.emit(t("✓ 忽略错误继续下载"))
                     
                     # 片段可用性策略（主控启用时才显式设置）
                     if hasattr(self.main_app, 'skip_unavailable_fragments_check'):
@@ -1912,16 +1913,16 @@ class DownloadThread(QThread):
                         fragment_flag = fragment_unavailable_flag(skip_fragments)
                         cmd.append(fragment_flag)
                         if skip_fragments:
-                            self.progress_signal.emit("✓ 跳过不可用的片段")
+                            self.progress_signal.emit(t("✓ 跳过不可用的片段"))
                         else:
-                            self.progress_signal.emit("✓ 遇到不可用片段时中止下载")
+                            self.progress_signal.emit(t("✓ 遇到不可用片段时中止下载"))
                     
                     # 保留下载的片段
                     if hasattr(self.main_app, 'keep_fragments_check') and self.main_app.keep_fragments_check.isChecked():
                         cmd.extend(["--keep-fragments"])
-                        self.progress_signal.emit("✓ 保留下载的片段")
+                        self.progress_signal.emit(t("✓ 保留下载的片段"))
                 else:
-                    self.progress_signal.emit("⚠️ 特殊场景下载功能未启用，跳过相关选项")
+                    self.progress_signal.emit(t("⚠️ 特殊场景下载功能未启用，跳过相关选项"))
                 
                 # 播放列表排序参数已移除
 
@@ -1931,7 +1932,7 @@ class DownloadThread(QThread):
                 # 下载字幕文件
                 if hasattr(self.main_app, 'subtitle_check') and self.main_app.subtitle_check.isChecked():
                     cmd.extend(["--write-subs"])
-                    self.progress_signal.emit("✓ 启用字幕下载")
+                    self.progress_signal.emit(t("✓ 启用字幕下载"))
                     
                     # 字幕语言选择 - 使用用户在UI中选择的语言
                     if hasattr(self.main_app, 'subtitle_lang'):
@@ -1951,16 +1952,16 @@ class DownloadThread(QThread):
                             lang_pattern, _ = build_subtitle_lang_pattern("all", available_langs=preview_langs)
                             if not has_sub_langs:
                                 cmd.extend(["--sub-langs", lang_pattern])
-                                self.progress_signal.emit("✓ 字幕语言: 全部语言（排除直播聊天）")
+                                self.progress_signal.emit(t("✓ 字幕语言: 全部语言（排除直播聊天）"))
                             else:
-                                self.progress_signal.emit("✓ 字幕语言沿用预设参数: 全部语言")
+                                self.progress_signal.emit(t("✓ 字幕语言沿用预设参数: 全部语言"))
                         else:
                             default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
                             if not has_sub_langs:
                                 cmd.extend(["--sub-langs", default_langs])
-                                self.progress_signal.emit("✓ 默认字幕语言: 中文和英文")
+                                self.progress_signal.emit(t("✓ 默认字幕语言: 中文和英文"))
                             else:
-                                self.progress_signal.emit("✓ 默认字幕语言沿用预设参数")
+                                self.progress_signal.emit(t("✓ 默认字幕语言沿用预设参数"))
                     else:
                         # 兼容旧版本：如果没有新的语言选择器，使用文本框
                         if hasattr(self.main_app, 'subtitle_langs') and self.main_app.subtitle_langs.text().strip():
@@ -1970,7 +1971,7 @@ class DownloadThread(QThread):
                         else:
                             default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
                             cmd.extend(["--sub-langs", default_langs])
-                            self.progress_signal.emit("✓ 默认字幕语言: 中文和英文")
+                            self.progress_signal.emit(t("✓ 默认字幕语言: 中文和英文"))
                     
                     # 字幕格式选择
                     if hasattr(self.main_app, 'subtitle_format') and self.main_app.subtitle_format.currentData():
@@ -1980,12 +1981,12 @@ class DownloadThread(QThread):
                     else:
                         # 默认优先srt格式
                         cmd.extend(["--sub-format", "srt/ass/vtt/best"])
-                        self.progress_signal.emit("✓ 默认字幕格式: srt/ass/vtt/best")
+                        self.progress_signal.emit(t("✓ 默认字幕格式: srt/ass/vtt/best"))
                 
                 # 下载自动生成字幕
                 if hasattr(self.main_app, 'auto_subtitle_check') and self.main_app.auto_subtitle_check.isChecked():
                     cmd.extend(["--write-auto-subs"])
-                    self.progress_signal.emit("✓ 启用自动生成字幕下载")
+                    self.progress_signal.emit(t("✓ 启用自动生成字幕下载"))
                     
                     # 自动字幕也使用相同的语言和格式设置
                     if not (hasattr(self.main_app, 'subtitle_check') and self.main_app.subtitle_check.isChecked()):
@@ -2007,13 +2008,13 @@ class DownloadThread(QThread):
                                 all_langs, _ = build_subtitle_lang_pattern("all", available_langs=preview_langs)
                                 if not has_sub_langs:
                                     cmd.extend(["--sub-langs", all_langs])
-                                    self.progress_signal.emit("✓ 自动字幕语言: 全部语言（排除直播聊天）")
+                                    self.progress_signal.emit(t("✓ 自动字幕语言: 全部语言（排除直播聊天）"))
                                 else:
-                                    self.progress_signal.emit("✓ 自动字幕语言沿用预设参数: 全部语言")
+                                    self.progress_signal.emit(t("✓ 自动字幕语言沿用预设参数: 全部语言"))
                         else:
                             default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
                             cmd.extend(["--sub-langs", default_langs])
-                            self.progress_signal.emit("✓ 默认自动字幕语言: 中文或英语")
+                            self.progress_signal.emit(t("✓ 默认自动字幕语言: 中文或英语"))
                         
                         if hasattr(self.main_app, 'subtitle_format') and self.main_app.subtitle_format.currentData():
                             sub_format = self.main_app.subtitle_format.currentData()
@@ -2046,12 +2047,12 @@ class DownloadThread(QThread):
                     if should_auto_convert:
                         # 自动添加转换参数清理字幕（将 VTT/best 等格式的内联标签转换掉）
                         cmd.extend(["--convert-subs", "srt"])
-                        self.progress_signal.emit("✓ 自动转换字幕为 SRT 格式（清理内联时间标签）")
+                        self.progress_signal.emit(t("✓ 自动转换字幕为 SRT 格式（清理内联时间标签）"))
             
             # 添加缩略图下载选项 - 与官方yt-dlp完全一致
             if advanced_enabled and self.main_app and hasattr(self.main_app, 'thumbnail_check') and self.main_app.thumbnail_check.isChecked():
                 cmd.extend(["--write-thumbnail"])
-                self.progress_signal.emit("✓ 启用缩略图下载")
+                self.progress_signal.emit(t("✓ 启用缩略图下载"))
                 
                 # 缩略图格式选择
                 if hasattr(self.main_app, 'thumbnail_format') and self.main_app.thumbnail_format.currentText():
@@ -2077,12 +2078,12 @@ class DownloadThread(QThread):
                     # 自动选择原始语言：使用排序优先选择原始语言音频
                     # 优先选择原始语言，然后是英语，最后是中文
                     cmd.extend(["-S", "lang,quality,acodec:aac:m4a"])
-                    self.progress_signal.emit("✓ 启用音频语言优先排序（原始语言优先）")
+                    self.progress_signal.emit(t("✓ 启用音频语言优先排序（原始语言优先）"))
                 elif audio_lang_code:
                     # 选择了特定音频语言时，优先兼容性更好的视频/音频编码组合，减少播放器卡顿
                     # 注意：不使用 --format-sort-force，因为它会覆盖 -f 中的语言过滤器
                     cmd.extend(["-S", "vcodec:h264,res,fps,acodec:aac:mp4a,m4a"])
-                    self.progress_signal.emit("✓ 启用音频语言过滤 + 兼容排序（优先 H.264/AAC）")
+                    self.progress_signal.emit(t("✓ 启用音频语言过滤 + 兼容排序（优先 H.264/AAC）"))
             
             # 添加进度显示格式 - 优化中文显示
             cmd.extend(["--progress-template", "download:[%(progress.downloaded_bytes)s/%(progress.total_bytes)s] %(progress.percent)s 速度:%(progress.speed)s ETA:%(progress.eta)s"])
@@ -2121,7 +2122,7 @@ class DownloadThread(QThread):
                     stderr=subprocess.STDOUT,
                     creationflags=subprocess.CREATE_NO_WINDOW
                 )
-                self.progress_signal.emit("✓ 进程启动成功，开始监控输出...")
+                self.progress_signal.emit(t("✓ 进程启动成功，开始监控输出..."))
             except Exception as e:
                 self.progress_signal.emit(f"✗ 启动进程失败: {str(e)}")
                 self.finished_signal.emit(False, f"启动下载进程失败: {str(e)}")
@@ -2139,7 +2140,7 @@ class DownloadThread(QThread):
             eta_pattern = re.compile(r'\(([\d:]+)\)')
             
             # 添加调试信息
-            self.progress_signal.emit("已初始化进度解析正则表达式，开始监控下载进度...")
+            self.progress_signal.emit(t("已初始化进度解析正则表达式，开始监控下载进度..."))
             
             # 添加上次进度更新时间记录，避免过于频繁的更新
             last_progress_update = time.time()
@@ -2160,7 +2161,7 @@ class DownloadThread(QThread):
             if self.main_app and hasattr(self.main_app, 'time_section_check') and self.main_app.time_section_check.isChecked():
                 if hasattr(self.main_app, 'download_sections') and self.main_app.download_sections:
                     time_section_download_enabled = True
-                    self.progress_signal.emit("⏱️ 检测到时间片段下载模式，将跟踪多流下载和后处理进度")
+                    self.progress_signal.emit(t("⏱️ 检测到时间片段下载模式，将跟踪多流下载和后处理进度"))
             
             # 时间片段下载的进度跟踪变量
             ts_stream_count = 0  # 已检测到的流数量（通过Destination行计数）
@@ -2174,26 +2175,26 @@ class DownloadThread(QThread):
                 line = decode_subprocess_bytes(line_bytes)
                 # 首先检查是否被取消，如果是则立即终止进程并退出循环
                 if hasattr(self, '_cancelled') and self._cancelled:
-                    self.progress_signal.emit("🔴 检测到下载已被取消，正在终止进程...")
+                    self.progress_signal.emit(t("🔴 检测到下载已被取消，正在终止进程..."))
                     if self.process:
                         try:
                             self.process.terminate()
                             self.process.wait(timeout=2)
                         except subprocess.TimeoutExpired:
-                            self.progress_signal.emit("⚠️ 进程终止超时，使用强制终止")
+                            self.progress_signal.emit(t("⚠️ 进程终止超时，使用强制终止"))
                             self.process.kill()
                         except Exception as e:
                             self.progress_signal.emit(f"⚠️ 终止进程时出错: {str(e)}")
-                    self.progress_signal.emit("✅ 下载进程已终止")
+                    self.progress_signal.emit(t("✅ 下载进程已终止"))
                     self.cancel_signal.emit()
                     return
                     
                 # 检查进程是否被外部终止
                 if self.process and self.process.poll() is not None:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                 elif not self.process:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                     
                 stripped_line = line.strip()
@@ -2211,7 +2212,7 @@ class DownloadThread(QThread):
                     if any(pattern in stripped_line for pattern in postprocess_start_patterns):
                         if not ts_postprocess_started:
                             ts_postprocess_started = True
-                            self.progress_signal.emit("⏱️ 时间片段下载: ffmpeg后处理开始")
+                            self.progress_signal.emit(t("⏱️ 时间片段下载: ffmpeg后处理开始"))
                             # 后处理开始时，进度设为80%
                             self.progress_percent_signal.emit(80.0)
                             last_percent = 80.0
@@ -2226,7 +2227,7 @@ class DownloadThread(QThread):
                     if any(pattern in stripped_line for pattern in postprocess_complete_patterns):
                         if ts_postprocess_started and not ts_postprocess_completed:
                             ts_postprocess_completed = True
-                            self.progress_signal.emit("⏱️ 时间片段下载: 后处理完成")
+                            self.progress_signal.emit(t("⏱️ 时间片段下载: 后处理完成"))
                             # 后处理完成，进度设为95%（留5%给最终验证）
                             self.progress_percent_signal.emit(95.0)
                             last_percent = 95.0
@@ -2608,15 +2609,15 @@ class DownloadThread(QThread):
                     "bypassing geo restriction", "geo restriction bypassed", "using proxy",
                     "geo-bypass", "bypassed geo", "proxy connected", "geo restriction: bypassed"
                 ]):
-                    self.progress_signal.emit("✅ 地理限制绕过成功！正在继续下载...")
+                    self.progress_signal.emit(t("✅ 地理限制绕过成功！正在继续下载..."))
                 
                 # 检测代理连接成功 - 增强版
                 if any(keyword in stripped_line.lower() for keyword in ["proxy", "socks", "http proxy"]) and \
                    any(status in stripped_line.lower() for status in ["connected", "established", "success"]):
                     self.progress_signal.emit("=" * 60)
-                    self.progress_signal.emit("🌐 代理连接已建立！")
-                    self.progress_signal.emit("✅ 代理服务器响应正常")
-                    self.progress_signal.emit("✅ 下载流量正通过代理传输")
+                    self.progress_signal.emit(t("🌐 代理连接已建立！"))
+                    self.progress_signal.emit(t("✅ 代理服务器响应正常"))
+                    self.progress_signal.emit(t("✅ 下载流量正通过代理传输"))
                     self.progress_signal.emit("=" * 60)
                 
                 # 检测X平台特有错误模式
@@ -2636,7 +2637,7 @@ class DownloadThread(QThread):
                 is_x_platform_error = any(pattern in stripped_line.lower() for pattern in x_platform_error_patterns)
                 
                 if is_x_platform_error and any(domain in self.url.lower() for domain in ['twitter.com', 'x.com', 't.co', 'm.twitter.com']):
-                    self.progress_signal.emit("🔍 检测到X平台特有错误，正在分析原因...")
+                    self.progress_signal.emit(t("🔍 检测到X平台特有错误，正在分析原因..."))
                     
                     # 提供详细的错误分析和解决方案
                     if "no video could be found in this tweet" in stripped_line.lower():
@@ -2646,7 +2647,7 @@ class DownloadThread(QThread):
                         # 检查是否已经尝试过API重试
                         if not hasattr(self, 'x_api_retry_attempted') or not self.x_api_retry_attempted:
                             self.x_api_retry_attempted = True
-                            self.progress_signal.emit("🔄 正在尝试使用不同API模式重试...")
+                            self.progress_signal.emit(t("🔄 正在尝试使用不同API模式重试..."))
                             
                             # 终止当前进程
                             if self.process:
@@ -2656,13 +2657,13 @@ class DownloadThread(QThread):
                             if self._retry_x_platform_with_different_api():
                                 return  # 重试成功，退出当前执行
                         else:
-                            self.progress_signal.emit("⚠️ 已尝试所有API模式，该推文可能确实不包含视频内容")
+                            self.progress_signal.emit(t("⚠️ 已尝试所有API模式，该推文可能确实不包含视频内容"))
                     elif "tweet not found" in stripped_line.lower() or "tweet has been deleted" in stripped_line.lower():
-                        self.progress_signal.emit("⚠️ 该推文可能已被删除或不存在")
-                        self.progress_signal.emit("📝 请检查URL是否正确，或者该推文是否仍然存在")
+                        self.progress_signal.emit(t("⚠️ 该推文可能已被删除或不存在"))
+                        self.progress_signal.emit(t("📝 请检查URL是否正确，或者该推文是否仍然存在"))
                     elif "tweet is protected" in stripped_line.lower() or "user has protected their tweets" in stripped_line.lower():
-                        self.progress_signal.emit("🔒 该推文来自私人账户，需要登录才能访问")
-                        self.progress_signal.emit("📝 请在内置浏览器中登录X平台并提取Cookie")
+                        self.progress_signal.emit(t("🔒 该推文来自私人账户，需要登录才能访问"))
+                        self.progress_signal.emit(t("📝 请在内置浏览器中登录X平台并提取Cookie"))
                 
                 # 实时检测2024年更新的年龄限制和地理限制错误模式
                 age_restriction_patterns = [
@@ -2799,7 +2800,7 @@ class DownloadThread(QThread):
                         self._retry_with_enhanced_auth()
                         return
                     else:
-                        self.progress_signal.emit("增强认证重试失败，停止下载")
+                        self.progress_signal.emit(t("增强认证重试失败，停止下载"))
                         self.process.terminate()
                         # 提供更详细的错误信息和解决方案
                         error_message = self._generate_age_restriction_error_message(stripped_line)
@@ -2938,7 +2939,7 @@ class DownloadThread(QThread):
                 # 如果检测到下载开始但还没有进度信息，发送一个初始进度信号
                 # 但只在尚未发送过进度信号时才发送，避免重置已有进度
                 if "下载中" in stripped_line and not progress_match and not downloaded_match and not self.progress_sent:
-                    self.progress_signal.emit("检测到下载开始，但尚无进度信息，发送初始进度信号")
+                    self.progress_signal.emit(t("检测到下载开始，但尚无进度信息，发送初始进度信号"))
                     self.progress_percent_signal.emit(0.1)  # 发送一个很小的非零进度值
                     self.progress_sent = True  # 标记已发送过初始进度信号
                 
@@ -3022,7 +3023,7 @@ class DownloadThread(QThread):
             self.process.wait()
             
             # 不要无条件显示100%，先检查下载是否成功
-            self.progress_signal.emit("进程完成，检查下载结果...")
+            self.progress_signal.emit(t("进程完成，检查下载结果..."))
             
             # 检查是否因为达到最大下载限制而停止（这是正常情况，应视为成功）
             reached_max_downloads = ("Maximum number of downloads reached" in error_output or
@@ -3036,14 +3037,14 @@ class DownloadThread(QThread):
                     if moved:
                         self.progress_signal.emit(f"✓ 已将 {len(moved)} 个文件从暂存目录写入目标目录")
                     else:
-                        self.progress_signal.emit("⚠️ 暂存目录未检测到可搬运的最终文件")
+                        self.progress_signal.emit(t("⚠️ 暂存目录未检测到可搬运的最终文件"))
                 # 检查是否真的有文件被下载
                 download_success = self._verify_download_success()
                 if download_success:
                     needs_timeline_fix = self._needs_audio_lang_timeline_fix()
                     target_progress = 99.0 if needs_timeline_fix else 100.0
                     if needs_timeline_fix:
-                        self.progress_signal.emit("下载成功，正在执行后处理（覆盖修复）...")
+                        self.progress_signal.emit(t("下载成功，正在执行后处理（覆盖修复）..."))
                     else:
                         self.progress_signal.emit("下载成功，开始平滑过渡到100%")
                     current_progress = last_percent
@@ -3064,7 +3065,7 @@ class DownloadThread(QThread):
                     if needs_timeline_fix:
                         # 明确告诉用户：当前仍在后处理，尚未完成
                         self.progress_percent_signal.emit(99.0)
-                        self.progress_signal.emit("后处理进行中：正在覆盖修复输出文件...")
+                        self.progress_signal.emit(t("后处理进行中：正在覆盖修复输出文件..."))
                         self._normalize_video_timeline_for_selected_audio_language()
 
                     # 最后确保仅在全部处理完成后发送100%
@@ -3161,7 +3162,7 @@ class DownloadThread(QThread):
                     
                     # 如果是因为达到最大下载限制而停止，给出明确提示
                     if reached_max_downloads:
-                        self.progress_signal.emit("\n✓ 已达到设置的最大下载数量，下载任务正常完成")
+                        self.progress_signal.emit(t("\n✓ 已达到设置的最大下载数量，下载任务正常完成"))
                     
                     # 【关键修复】只在用户主动启用"下载播放列表"功能时才显示下载报告
                     # 单个视频下载、批量下载但未勾选播放列表等情况都不显示报告
@@ -3392,7 +3393,7 @@ class DownloadThread(QThread):
                         "confirm your age" in error_output.lower() or
                         "age gate" in error_output.lower() or
                         "This video is only available for registered users" in error_output):
-                        self.progress_signal.emit("警告：下载过程完成但因年龄限制或地理位置限制未生成文件")
+                        self.progress_signal.emit(t("警告：下载过程完成但因年龄限制或地理位置限制未生成文件"))
                         
                         # 如果是播放列表下载，检查是否有其他文件下载成功
                         if self.playlist_enabled:
@@ -3434,13 +3435,13 @@ class DownloadThread(QThread):
                             error_message = self._generate_simple_error_message(error_output)
                             self.finished_signal.emit(False, error_message)
                     else:
-                        self.progress_signal.emit("警告：下载过程完成但未找到输出文件")
+                        self.progress_signal.emit(t("警告：下载过程完成但未找到输出文件"))
                         self.finished_signal.emit(False, "下载失败：未找到输出文件")
             else:
                 # 【关键修复】如果是播放列表下载且返回码非0，先检查是否有文件下载成功
                 # 这样可以正确处理"部分成功"的情况（有些视频成功，有些失败）
                 if self.playlist_enabled:
-                    self.progress_signal.emit("⏳ 播放列表下载进程结束（返回码非0），检查是否有文件下载成功...")
+                    self.progress_signal.emit(t("⏳ 播放列表下载进程结束（返回码非0），检查是否有文件下载成功..."))
                     has_downloaded_files = False
                     if self.output_path and os.path.exists(self.output_path):
                         current_time = time.time()
@@ -3464,7 +3465,7 @@ class DownloadThread(QThread):
                     
                     if has_downloaded_files:
                         # 有文件下载成功，视为部分成功
-                        self.progress_signal.emit("✅ 检测到已有视频下载成功，播放列表下载部分完成")
+                        self.progress_signal.emit(t("✅ 检测到已有视频下载成功，播放列表下载部分完成"))
                         # 发送100%进度
                         self.progress_percent_signal.emit(100.0)
                         self.progress_signal.emit("下载完成，进度100%")
@@ -3703,7 +3704,7 @@ class DownloadThread(QThread):
                         self.finished_signal.emit(True, success_message)
                         return  # 重要：直接返回，不再执行后续的错误处理逻辑
                     else:
-                        self.progress_signal.emit("❌ 未检测到任何下载成功的文件，继续错误处理流程...")
+                        self.progress_signal.emit(t("❌ 未检测到任何下载成功的文件，继续错误处理流程..."))
                 
                 # 检查是否是格式不可用的错误
                 if "Requested format is not available" in error_output or ("format" in error_output.lower() and "not available" in error_output.lower()):
@@ -3717,13 +3718,13 @@ class DownloadThread(QThread):
                         pass
                     
                     if has_audio_lang:
-                        self.progress_signal.emit("⚠ 指定音频语言可能不可用，尝试使用带语言过滤的通用格式重试...")
+                        self.progress_signal.emit(t("⚠ 指定音频语言可能不可用，尝试使用带语言过滤的通用格式重试..."))
                     else:
-                        self.progress_signal.emit("所选格式不可用，正在尝试使用最佳可用格式重新下载...")
+                        self.progress_signal.emit(t("所选格式不可用，正在尝试使用最佳可用格式重新下载..."))
                     self._retry_with_best_format()
                 # 检查是否是后处理错误（视频和音频合并失败）
                 elif "Postprocessing: Error opening input files" in error_output or "Invalid data found when processing input" in error_output:
-                    self.progress_signal.emit("视频和音频合并失败，正在尝试使用兼容格式重新下载...")
+                    self.progress_signal.emit(t("视频和音频合并失败，正在尝试使用兼容格式重新下载..."))
                     self._retry_with_best_format(postprocessing_error=True)
                 elif ("This video is only available for registered users" in error_output or 
                       "Sign in to confirm your age" in error_output or
@@ -3747,19 +3748,19 @@ class DownloadThread(QThread):
                     
                     # 如果有内置Cookie，且没尝试过增强重试，先尝试增强重试
                     if not self.age_restriction_retry_attempted and self.internal_cookie_attached:
-                        self.progress_signal.emit("检测到需要Cookie或年龄限制错误，正在尝试增强认证重试...")
+                        self.progress_signal.emit(t("检测到需要Cookie或年龄限制错误，正在尝试增强认证重试..."))
                         self.age_restriction_retry_attempted = True
                         self._retry_with_enhanced_auth()
                         return
                     
                     # 否则，或者增强重试失败后，尝试浏览器媒体嗅探回退
-                    self.progress_signal.emit("解析遇到限制或错误，正在尝试浏览器媒体嗅探回退...")
+                    self.progress_signal.emit(t("解析遇到限制或错误，正在尝试浏览器媒体嗅探回退..."))
                     if self._retry_with_browser_media_fallback():
                         return
                     
                     # 回退失败才显示最终错误
                     if not self.internal_cookie_attached:
-                        self.progress_signal.emit("❌ 提示：如果下载失败，请先在内置浏览器登录目标网站并点击\"🍪提取Cookie\"")
+                        self.progress_signal.emit(t("❌ 提示：如果下载失败，请先在内置浏览器登录目标网站并点击\"🍪提取Cookie\""))
                     error_message = self._generate_simple_error_message(error_output)
                     self.finished_signal.emit(False, error_message)
                 elif "Video unavailable" in error_output or "Private video" in error_output:
@@ -3772,7 +3773,7 @@ class DownloadThread(QThread):
                     self.finished_signal.emit(False, "无法提取视频信息，URL可能不受支持")
                 else:
                     # 其他任何未被捕获的错误
-                    self.progress_signal.emit("下载出错，正在尝试浏览器媒体嗅探回退...")
+                    self.progress_signal.emit(t("下载出错，正在尝试浏览器媒体嗅探回退..."))
                     if self._retry_with_browser_media_fallback():
                         return
                     # 生成简洁的错误信息
@@ -4289,7 +4290,7 @@ class DownloadThread(QThread):
                 "--ignore-errors",
             ])
         
-            self.progress_signal.emit("正在使用增强认证参数重新启动下载...")
+            self.progress_signal.emit(t("正在使用增强认证参数重新启动下载..."))
             
             # 标记已尝试重试
             self.age_restriction_retry_attempted = True
@@ -4388,10 +4389,10 @@ class DownloadThread(QThread):
             for line in self.process.stdout:
                 # 检查进程是否被外部终止
                 if self.process and self.process.poll() is not None:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                 elif not self.process:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                     
                 stripped_line = line.strip()
@@ -4402,7 +4403,7 @@ class DownloadThread(QThread):
                     "bypassing geo restriction", "geo restriction bypassed", 
                     "using proxy", "proxy connection established",
                     "x-forwarded-for", "geo bypass", "country bypass"]):
-                    self.progress_signal.emit("✅ 地理限制绕过成功！正在继续下载...")
+                    self.progress_signal.emit(t("✅ 地理限制绕过成功！正在继续下载..."))
                     
                 # 检测代理连接成功 - 增强版
                 if any(keyword in stripped_line.lower() for keyword in [
@@ -4410,9 +4411,9 @@ class DownloadThread(QThread):
                     if any(success_keyword in stripped_line.lower() for success_keyword in [
                         "connected", "established", "success", "ok"]):
                         self.progress_signal.emit("=" * 60)
-                        self.progress_signal.emit("🌐 代理连接已建立！")
-                        self.progress_signal.emit("✅ 代理服务器响应正常")
-                        self.progress_signal.emit("✅ 下载流量正通过代理传输")
+                        self.progress_signal.emit(t("🌐 代理连接已建立！"))
+                        self.progress_signal.emit(t("✅ 代理服务器响应正常"))
+                        self.progress_signal.emit(t("✅ 下载流量正通过代理传输"))
                         self.progress_signal.emit("=" * 60)
                 
                 # 检测2024年更新的年龄限制和地理限制错误模式
@@ -4515,7 +4516,7 @@ class DownloadThread(QThread):
                 
                 # 检测合并阶段
                 if "[Merger]" in stripped_line:
-                    self.progress_signal.emit("🔄 正在合并视频和音频流...")
+                    self.progress_signal.emit(t("🔄 正在合并视频和音频流..."))
                     self.progress_percent_signal.emit(92.0)
                     last_percent = 92.0
                 
@@ -4540,10 +4541,10 @@ class DownloadThread(QThread):
                     moved = self._move_staging_outputs_to_target()
                     if moved:
                         self.progress_signal.emit(f"✓ 增强重试已搬运 {len(moved)} 个结果文件")
-                self.progress_signal.emit("✓ 下载成功完成")
+                self.progress_signal.emit(t("✓ 下载成功完成"))
                 self.finished_signal.emit(True, "下载完成")
             else:
-                self.progress_signal.emit("增强重试下载失败，尝试使用浏览器媒体嗅探回退...")
+                self.progress_signal.emit(t("增强重试下载失败，尝试使用浏览器媒体嗅探回退..."))
                 if self._retry_with_browser_media_fallback():
                     return
                 # 使用简洁的错误信息生成器
@@ -4672,7 +4673,7 @@ class DownloadThread(QThread):
             get_python_with_playwright = getattr(_playwright_browser_module, "get_python_with_playwright", None)
             browser_data_dir = getattr(_playwright_browser_module, "BROWSER_DATA_DIR", "")
             if not callable(build_launcher) or not callable(get_python_with_playwright) or not browser_data_dir:
-                self.progress_signal.emit("⚠️ Playwright 媒体捕获模块不可用，无法自动回退")
+                self.progress_signal.emit(t("⚠️ Playwright 媒体捕获模块不可用，无法自动回退"))
                 return None
 
             os.makedirs(browser_data_dir, exist_ok=True)
@@ -4748,7 +4749,7 @@ class DownloadThread(QThread):
                     browser_process.terminate()
                 except Exception:
                     pass
-                self.progress_signal.emit("⚠️ 浏览器媒体捕获启动超时")
+                self.progress_signal.emit(t("⚠️ 浏览器媒体捕获启动超时"))
                 return None
 
             if browser_process.stdin:
@@ -4829,7 +4830,7 @@ class DownloadThread(QThread):
             self._apply_base_yt_dlp_safety(cmd)
 
             if self.media_capture_download:
-                self.progress_signal.emit("ℹ 媒体直链重试已忽略主页面格式设置，继续使用兼容下载策略")
+                self.progress_signal.emit(t("ℹ 媒体直链重试已忽略主页面格式设置，继续使用兼容下载策略"))
             elif self.format_option and (" -x " in self.format_option or "--extract-audio" in self.format_option):
                 parts = self.format_option.split(" -x ") if " -x " in self.format_option else [self.format_option.replace("--extract-audio", "").strip()]
                 if parts and parts[0].strip():
@@ -4849,7 +4850,7 @@ class DownloadThread(QThread):
                 else:
                     cmd.extend(["--audio-quality", "0"])
             elif self.format_option:
-                self.progress_signal.emit("ℹ 媒体直链回退已忽略原复杂格式筛选，避免与直链冲突")
+                self.progress_signal.emit(t("ℹ 媒体直链回退已忽略原复杂格式筛选，避免与直链冲突"))
 
             try:
                 self._attach_internal_cookie(
@@ -4872,7 +4873,7 @@ class DownloadThread(QThread):
                 staged_dir = self._prepare_staging_output_dir()
                 if staged_dir:
                     output_base_dir = staged_dir
-                    self.progress_signal.emit("✓ 媒体直链重试启用暂存目录")
+                    self.progress_signal.emit(t("✓ 媒体直链重试启用暂存目录"))
                 output_template = self._build_output_template(output_base_dir)
                 cmd.extend(["-o", output_template])
                 self.progress_signal.emit(f"媒体直链输出模板: {output_template}")
@@ -4922,7 +4923,7 @@ class DownloadThread(QThread):
 
             for line in self.process.stdout:
                 if hasattr(self, "_cancelled") and self._cancelled:
-                    self.progress_signal.emit("🔴 检测到下载已被取消，正在终止媒体直链重试进程...")
+                    self.progress_signal.emit(t("🔴 检测到下载已被取消，正在终止媒体直链重试进程..."))
                     try:
                         self.process.terminate()
                     except Exception:
@@ -4977,14 +4978,14 @@ class DownloadThread(QThread):
             [item for item in existing_media if self._is_stable_captured_media(item)]
         )
         if reusable_media:
-            self.progress_signal.emit("✓ 复用当前浏览器已捕获的稳定媒体地址，跳过重复打开浏览器")
+            self.progress_signal.emit(t("✓ 复用当前浏览器已捕获的稳定媒体地址，跳过重复打开浏览器"))
             self._retry_with_captured_media(reusable_media)
             return True
 
-        self.progress_signal.emit("检测到网页 URL 未被 yt-dlp 直接支持，正在尝试浏览器媒体嗅探回退...")
+        self.progress_signal.emit(t("检测到网页 URL 未被 yt-dlp 直接支持，正在尝试浏览器媒体嗅探回退..."))
         media_info = self._capture_media_with_playwright(self.url, timeout_seconds=25.0)
         if not media_info:
-            self.progress_signal.emit("⚠️ 浏览器媒体嗅探未找到可下载的真实媒体地址")
+            self.progress_signal.emit(t("⚠️ 浏览器媒体嗅探未找到可下载的真实媒体地址"))
             return False
 
         self._retry_with_captured_media(media_info)
@@ -5027,7 +5028,7 @@ class DownloadThread(QThread):
                 self.progress_signal.emit(f"验证成功：找到下载文件 {latest_file[0]}")
                 return True
             else:
-                self.progress_signal.emit("验证失败：未找到最近下载的文件")
+                self.progress_signal.emit(t("验证失败：未找到最近下载的文件"))
                 return False
                 
         except Exception as e:
@@ -5069,7 +5070,7 @@ class DownloadThread(QThread):
             
             # 记录完整的输出信息以便调试
             if stdout:
-                self.progress_signal.emit("获取到输出数据")
+                self.progress_signal.emit(t("获取到输出数据"))
             if stderr:
                 self.progress_signal.emit(f"错误输出: {stderr}")
             
@@ -5080,7 +5081,7 @@ class DownloadThread(QThread):
                     
                     # 检查是否为播放列表类型，只有在用户启用播放列表功能时才处理
                     if (video_info.get('_type') == 'playlist' or 'entries' in video_info) and self.playlist_enabled:
-                        self.progress_signal.emit("检测到播放列表，提取播放列表信息...")
+                        self.progress_signal.emit(t("检测到播放列表，提取播放列表信息..."))
                         self.info_signal.emit(video_info)
                         self.finished_signal.emit(True, "播放列表信息获取成功")
                         return
@@ -5088,7 +5089,7 @@ class DownloadThread(QThread):
                         # 如果检测到播放列表但用户未启用播放列表功能，只提取第一个视频信息
                         if 'entries' in video_info and video_info['entries']:
                             first_video = video_info['entries'][0]
-                            self.progress_signal.emit("检测到播放列表，但未启用播放列表功能，仅获取第一个视频信息")
+                            self.progress_signal.emit(t("检测到播放列表，但未启用播放列表功能，仅获取第一个视频信息"))
                             self.info_signal.emit(first_video)
                             self.finished_signal.emit(True, "视频信息获取成功")
                             return
@@ -5100,11 +5101,11 @@ class DownloadThread(QThread):
                 except json.JSONDecodeError as json_err:
                     # JSON解析失败，记录详细错误
                     self.progress_signal.emit(f"JSON解析错误: {str(json_err)}")
-                    self.progress_signal.emit("尝试使用备用方法获取信息...")
+                    self.progress_signal.emit(t("尝试使用备用方法获取信息..."))
                     
                     # 检查是否是播放列表，只有在用户启用播放列表功能时才处理
                     if ("playlist" in stdout.lower() or "entries" in stdout) and self.playlist_enabled:
-                        self.progress_signal.emit("检测到可能是播放列表，尝试提取播放列表信息...")
+                        self.progress_signal.emit(t("检测到可能是播放列表，尝试提取播放列表信息..."))
                         self._extract_playlist_info()
                         return
                     
@@ -5118,11 +5119,11 @@ class DownloadThread(QThread):
                     self.progress_signal.emit(f"错误详情: {stderr}")
                 
                 # 尝试备用方法
-                self.progress_signal.emit("尝试使用备用方法获取信息...")
+                self.progress_signal.emit(t("尝试使用备用方法获取信息..."))
                 self._extract_info_fallback()
         except Exception as e:
             self.progress_signal.emit(f"获取视频信息时出错: {str(e)}")
-            self.progress_signal.emit("尝试使用备用方法...")
+            self.progress_signal.emit(t("尝试使用备用方法..."))
             self._extract_info_fallback()
     
     def _extract_info_fallback(self):
@@ -5163,7 +5164,7 @@ class DownloadThread(QThread):
                     self.finished_signal.emit(True, "使用备用方法获取视频信息成功")
                     return
                 except json.JSONDecodeError:
-                    self.progress_signal.emit("备用JSON解析失败，尝试使用简单信息提取...")
+                    self.progress_signal.emit(t("备用JSON解析失败，尝试使用简单信息提取..."))
             
             # 如果备用JSON方法也失败，尝试使用-F选项获取基本信息
             self._extract_basic_info()
@@ -5256,13 +5257,13 @@ class DownloadThread(QThread):
                 
                 # 如果提取到了一些基本信息
                 if basic_info:
-                    self.progress_signal.emit("成功提取基本视频信息")
+                    self.progress_signal.emit(t("成功提取基本视频信息"))
                     self.info_signal.emit(basic_info)
                     self.finished_signal.emit(True, "获取基本视频信息成功")
                     return
             
             # 如果所有方法都失败
-            self.progress_signal.emit("所有信息获取方法均失败")
+            self.progress_signal.emit(t("所有信息获取方法均失败"))
             if stderr:
                 self.progress_signal.emit(f"最终错误: {stderr}")
             
@@ -5289,7 +5290,7 @@ class DownloadThread(QThread):
             ])
             
             if is_channel_url:
-                self.progress_signal.emit("检测到频道/用户主页URL，使用专门的提取方法...")
+                self.progress_signal.emit(t("检测到频道/用户主页URL，使用专门的提取方法..."))
                 # 对于频道URL，使用flat-playlist并输出单个JSON
                 cmd = ["yt-dlp.exe", "--flat-playlist", "--dump-single-json", "--yes-playlist", self.url]
             else:
@@ -5363,7 +5364,7 @@ class DownloadThread(QThread):
                     self.progress_signal.emit(f"解析播放列表详细信息出错: {str(parse_err)}")
             
             # 如果详细信息提取失败，尝试使用flat-playlist模式并输出单个JSON
-            self.progress_signal.emit("尝试使用简化模式获取播放列表信息...")
+            self.progress_signal.emit(t("尝试使用简化模式获取播放列表信息..."))
             cmd = ["yt-dlp.exe", "--flat-playlist", "--dump-single-json", "--yes-playlist", self.url]
             try:
                 self._attach_internal_cookie(
@@ -5428,7 +5429,7 @@ class DownloadThread(QThread):
                     self.progress_signal.emit(f"解析播放列表信息出错: {str(parse_err)}")
             
             # 如果播放列表提取失败，回退到基本信息提取
-            self.progress_signal.emit("播放列表信息提取失败，尝试获取基本信息...")
+            self.progress_signal.emit(t("播放列表信息提取失败，尝试获取基本信息..."))
             self._extract_basic_info()
         except Exception as e:
             self.progress_signal.emit(f"提取播放列表信息时出错: {str(e)}")
@@ -5438,7 +5439,7 @@ class DownloadThread(QThread):
         """列出视频可用的格式"""
         try:
             if self._is_x_platform_url(self.url):
-                self.progress_signal.emit("🔄 检测到X平台视频，启用自动格式选择...")
+                self.progress_signal.emit(t("🔄 检测到X平台视频，启用自动格式选择..."))
                 auto_format = self._get_x_platform_best_format()
                 x_formats = [{
                     'format_id': 'best',
@@ -5447,7 +5448,7 @@ class DownloadThread(QThread):
                     'format': 'X平台自动选择最佳格式'
                 }]
                 self.progress_signal.emit(f"✅ X平台自动选择格式: {auto_format}")
-                self.progress_signal.emit("ℹ️ 已自动选择最佳格式，无需手动选择")
+                self.progress_signal.emit(t("ℹ️ 已自动选择最佳格式，无需手动选择"))
                 self.formats_signal.emit(x_formats)
                 self.finished_signal.emit(True, "X平台自动格式选择完成")
                 return
@@ -5465,7 +5466,7 @@ class DownloadThread(QThread):
             except Exception:
                 pass
             
-            self.progress_signal.emit("正在获取可用格式列表...")
+            self.progress_signal.emit(t("正在获取可用格式列表..."))
             self.progress_signal.emit(f"[日志] 格式列表请求使用URL: {self.url}")
             try:
                 vp = subprocess.Popen(["yt-dlp.exe", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, creationflags=subprocess.CREATE_NO_WINDOW)
@@ -5871,7 +5872,7 @@ class DownloadThread(QThread):
                 # 后处理错误（合并失败）情况下，使用更严格的格式限制
                 # 1. 尝试下载已合并的单文件
                 # 2. 如果需要合并，确保使用高兼容性的编解码器和容器格式
-                self.progress_signal.emit("使用高兼容性格式重试下载，确保视频和音频能够成功合并...")
+                self.progress_signal.emit(t("使用高兼容性格式重试下载，确保视频和音频能够成功合并..."))
                 
                 # 优先选择已合并的mp4文件，或确保视频和音频格式高度兼容
                 cmd.extend(["-f", "best[ext=mp4]/best[ext=mkv]/best[ext=webm]/"
@@ -5891,7 +5892,7 @@ class DownloadThread(QThread):
                 cmd.extend(["--verbose"])
             else:
                 # 格式不可用的情况，使用更通用的格式选项
-                self.progress_signal.emit("使用通用格式重试下载...")
+                self.progress_signal.emit(t("使用通用格式重试下载..."))
                 
                 # 优先选择高质量的mp4格式和h264编码
                 # 保留原始语言过滤器（如果用户指定了音频语言）
@@ -5975,10 +5976,10 @@ class DownloadThread(QThread):
             for line in self.process.stdout:
                 # 检查进程是否被外部终止
                 if self.process and self.process.poll() is not None:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                 elif not self.process:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                     
                 stripped_line = line.strip()
@@ -6001,17 +6002,17 @@ class DownloadThread(QThread):
                     
                     # 如果是播放列表下载，不要中断进程，让yt-dlp的--ignore-errors自动跳过
                     if self.playlist_enabled:
-                        self.progress_signal.emit("⚠️ 检测到年龄/地理限制，播放列表模式下将自动跳过该视频继续下载")
+                        self.progress_signal.emit(t("⚠️ 检测到年龄/地理限制，播放列表模式下将自动跳过该视频继续下载"))
                         continue  # 继续处理后续输出，不中断进程
                     
                     # 只在单个视频下载时才尝试使用增强认证参数重试
                     if not self.age_restriction_retry_attempted:
-                        self.progress_signal.emit("检测到年龄限制或地理位置限制错误（单个视频），正在尝试使用增强认证参数重试...")
+                        self.progress_signal.emit(t("检测到年龄限制或地理位置限制错误（单个视频），正在尝试使用增强认证参数重试..."))
                         self.process.terminate()
                         self._retry_with_enhanced_auth()
                         return
                     else:
-                        self.progress_signal.emit("增强认证重试失败，停止下载")
+                        self.progress_signal.emit(t("增强认证重试失败，停止下载"))
                         self.process.terminate()
                         # 提供更详细的错误信息和解决方案
                         error_message = self._generate_age_restriction_error_message(stripped_line)
@@ -6076,13 +6077,13 @@ class DownloadThread(QThread):
                     self.progress_signal.emit("重试下载成功，进度100%")
                     self.finished_signal.emit(True, "下载完成！")
                 else:
-                    self.progress_signal.emit("警告：重试下载过程完成但未找到输出文件")
+                    self.progress_signal.emit(t("警告：重试下载过程完成但未找到输出文件"))
                     self.finished_signal.emit(False, "重试下载失败：未找到输出文件")
             else:
                 # 如果重试也失败了
                 if postprocessing_error:
                     # 如果是后处理错误的重试失败，尝试使用单一格式下载
-                    self.progress_signal.emit("合并格式重试失败，尝试使用单一格式下载...")
+                    self.progress_signal.emit(t("合并格式重试失败，尝试使用单一格式下载..."))
                     self._retry_with_single_format()
                 else:
                     # 其他错误，直接报告失败
@@ -6099,7 +6100,7 @@ class DownloadThread(QThread):
             cmd = ["yt-dlp.exe"]
             
             # 使用单一格式，避免需要合并
-            self.progress_signal.emit("使用单一格式下载，避免后处理合并步骤...")
+            self.progress_signal.emit(t("使用单一格式下载，避免后处理合并步骤..."))
             audio_lang_filter = ""
             try:
                 if self.main_app and hasattr(self.main_app, '_get_audio_language_filter'):
@@ -6158,10 +6159,10 @@ class DownloadThread(QThread):
             for line in self.process.stdout:
                 # 检查进程是否被外部终止
                 if self.process and self.process.poll() is not None:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                 elif not self.process:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                     
                 stripped_line = line.strip()
@@ -6184,17 +6185,17 @@ class DownloadThread(QThread):
                     
                     # 如果是播放列表下载，不要中断进程，让yt-dlp的--ignore-errors自动跳过
                     if self.playlist_enabled:
-                        self.progress_signal.emit("⚠️ 检测到年龄/地理限制，播放列表模式下将自动跳过该视频继续下载")
+                        self.progress_signal.emit(t("⚠️ 检测到年龄/地理限制，播放列表模式下将自动跳过该视频继续下载"))
                         continue  # 继续处理后续输出，不中断进程
                     
                     # 只在单个视频下载时才尝试使用增强认证参数重试
                     if not self.age_restriction_retry_attempted:
-                        self.progress_signal.emit("检测到年龄限制或地理位置限制错误（单个视频），正在尝试使用增强认证参数重试...")
+                        self.progress_signal.emit(t("检测到年龄限制或地理位置限制错误（单个视频），正在尝试使用增强认证参数重试..."))
                         self.process.terminate()
                         self._retry_with_enhanced_auth()
                         return
                     else:
-                        self.progress_signal.emit("增强认证重试失败，停止下载")
+                        self.progress_signal.emit(t("增强认证重试失败，停止下载"))
                         self.process.terminate()
                         # 提供更详细的错误信息和解决方案
                         error_message = self._generate_age_restriction_error_message(stripped_line)
@@ -6209,7 +6210,7 @@ class DownloadThread(QThread):
             self.process.wait()
             
             # 不要无条件显示100%，先检查下载是否成功
-            self.progress_signal.emit("重试进程完成，检查下载结果...")
+            self.progress_signal.emit(t("重试进程完成，检查下载结果..."))
             
             if self.process.returncode == 0:
                 if self._staging_output_dir:
@@ -6245,7 +6246,7 @@ class DownloadThread(QThread):
     
     def stop(self):
         """安全地停止进程 - 改进版，专门处理并发片段下载，并清理残余文件"""
-        self.progress_signal.emit("🔴 stop()方法被调用，开始取消下载进程...")
+        self.progress_signal.emit(t("🔴 stop()方法被调用，开始取消下载进程..."))
         cancel_signal_sent = False  # 标记是否已发送取消信号
         # 设置取消标志，让run方法中的循环能够检测到
         self._cancelled = True
@@ -6253,14 +6254,14 @@ class DownloadThread(QThread):
         
         try:
             if self.process:
-                self.progress_signal.emit("正在停止下载进程...")
+                self.progress_signal.emit(t("正在停止下载进程..."))
                 process_pid = self.process.pid
                 
                 # 对于并发片段下载，直接使用最强力的终止方式
                 if os.name == 'nt':
                     # Windows系统：使用taskkill强制终止进程树
                     try:
-                        self.progress_signal.emit("检测到并发下载，使用强制终止模式...")
+                        self.progress_signal.emit(t("检测到并发下载，使用强制终止模式..."))
                         creationflags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
                         startupinfo = None
                         if hasattr(subprocess, "STARTUPINFO"):
@@ -6277,17 +6278,17 @@ class DownloadThread(QThread):
                             startupinfo=startupinfo
                         )
                         if result.returncode == 0:
-                            self.progress_signal.emit("✓ 已成功终止下载进程及所有子进程")
+                            self.progress_signal.emit(t("✓ 已成功终止下载进程及所有子进程"))
                         else:
                             self.progress_signal.emit(f"taskkill返回码: {result.returncode}, 错误: {result.stderr}")
                     except subprocess.TimeoutExpired:
-                        self.progress_signal.emit("⚠️ taskkill命令超时，进程可能已被终止")
+                        self.progress_signal.emit(t("⚠️ taskkill命令超时，进程可能已被终止"))
                     except Exception as e:
                         self.progress_signal.emit(f"taskkill执行失败: {str(e)}")
                         # 备用方案：直接kill
                         try:
                             self.process.kill()
-                            self.progress_signal.emit("已使用备用方案终止进程")
+                            self.progress_signal.emit(t("已使用备用方案终止进程"))
                         except:
                             pass
                 else:
@@ -6299,7 +6300,7 @@ class DownloadThread(QThread):
                         time.sleep(1)
                         # 然后使用SIGKILL确保终止
                         os.killpg(os.getpgid(process_pid), signal.SIGKILL)
-                        self.progress_signal.emit("✓ 已终止进程组")
+                        self.progress_signal.emit(t("✓ 已终止进程组"))
                     except Exception as e:
                         self.progress_signal.emit(f"终止进程组失败: {str(e)}")
                         try:
@@ -6310,9 +6311,9 @@ class DownloadThread(QThread):
                 # 等待进程确实终止
                 try:
                     self.process.wait(timeout=2)
-                    self.progress_signal.emit("✓ 进程已确认终止")
+                    self.progress_signal.emit(t("✓ 进程已确认终止"))
                 except subprocess.TimeoutExpired:
-                    self.progress_signal.emit("⚠️ 进程终止确认超时，但应该已被强制终止")
+                    self.progress_signal.emit(t("⚠️ 进程终止确认超时，但应该已被强制终止"))
                 except:
                     pass
                 
@@ -6326,7 +6327,7 @@ class DownloadThread(QThread):
                 if not cancel_signal_sent:
                     self.cancel_signal.emit()
                     cancel_signal_sent = True
-                    self.progress_signal.emit("✓ 下载取消完成")
+                    self.progress_signal.emit(t("✓ 下载取消完成"))
                     
         except Exception as e:
             self.progress_signal.emit(f"停止进程时发生错误: {str(e)}")
@@ -6334,7 +6335,7 @@ class DownloadThread(QThread):
             try:
                 if self.process and self.process.poll() is None:
                     self.process.kill()
-                    self.progress_signal.emit("已使用最后备用方案终止进程")
+                    self.progress_signal.emit(t("已使用最后备用方案终止进程"))
                 # 清理下载残余文件
                 self._cleanup_partial_downloads()
                 # 确保发送取消信号
@@ -6355,7 +6356,7 @@ class DownloadThread(QThread):
     def _cleanup_partial_downloads(self):
         """清理取消下载后的残余文件"""
         try:
-            self.progress_signal.emit("🧹 开始清理残余文件...")
+            self.progress_signal.emit(t("🧹 开始清理残余文件..."))
             cleaned_files = []
             
             # 【新增】首先删除正在下载的文件（这些是被中断的实际视频文件）
@@ -6441,7 +6442,7 @@ class DownloadThread(QThread):
             if cleaned_files:
                 self.progress_signal.emit(f"✓ 共清理了 {len(cleaned_files)} 个残余文件")
             else:
-                self.progress_signal.emit("✓ 未发现需要清理的残余文件")
+                self.progress_signal.emit(t("✓ 未发现需要清理的残余文件"))
                 
         except Exception as e:
             self.progress_signal.emit(f"清理残余文件时发生错误: {str(e)}")

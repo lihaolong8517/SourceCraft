@@ -15,6 +15,7 @@ import signal
 import threading
 import time
 from PyQt5.QtCore import QThread, pyqtSignal
+from i18n import t, t_format
 
 
 class TranscodeThread(QThread):
@@ -244,7 +245,7 @@ class TranscodeThread(QThread):
     def detect_gpu_type(self):
         """检测系统中可用的GPU类型，返回适合的GPU加速选项"""
         try:
-            self.progress_signal.emit("正在检测系统GPU类型...")
+            self.progress_signal.emit(t("正在检测系统GPU类型..."))
             # 使用更全面的GPU检测方法
             # 首先检查ffmpeg支持的编码器
             encoders_cmd = [FFMPEG_CMD, "-hide_banner", "-encoders"]
@@ -324,22 +325,22 @@ class TranscodeThread(QThread):
             
             # 根据检测结果确定GPU类型
             if nvenc_available and (has_cuda or "nvidia" in gpu_info.lower()):
-                self.progress_signal.emit("检测到NVIDIA GPU，支持NVENC硬件加速编码，并已验证可用")
+                self.progress_signal.emit(t("检测到NVIDIA GPU，支持NVENC硬件加速编码，并已验证可用"))
                 return "NVIDIA (NVENC)"
             elif amf_available and (has_d3d11va or "amd" in gpu_info.lower() or "radeon" in gpu_info.lower()):
-                self.progress_signal.emit("检测到AMD GPU，支持AMF硬件加速编码，并已验证可用")
+                self.progress_signal.emit(t("检测到AMD GPU，支持AMF硬件加速编码，并已验证可用"))
                 return "AMD (AMF)"
             
             # 如果没有明确检测到支持的GPU，但有硬件加速选项，尝试自动选择
             if has_nvenc and "cuda" in hwaccel_output.lower():
-                self.progress_signal.emit("检测到CUDA/NVENC支持，但未验证可用性，将尝试使用NVIDIA硬件加速")
+                self.progress_signal.emit(t("检测到CUDA/NVENC支持，但未验证可用性，将尝试使用NVIDIA硬件加速"))
                 return "NVIDIA (NVENC)"
             elif has_amf:
-                self.progress_signal.emit("检测到AMF支持，但未验证可用性，将尝试使用AMD硬件加速")
+                self.progress_signal.emit(t("检测到AMF支持，但未验证可用性，将尝试使用AMD硬件加速"))
                 return "AMD (AMF)"
             
             # 如果没有检测到支持的GPU，返回None
-            self.progress_signal.emit("未检测到支持的GPU硬件加速编码器，将使用CPU编码")
+            self.progress_signal.emit(t("未检测到支持的GPU硬件加速编码器，将使用CPU编码"))
             return None
         except Exception as e:
             self.progress_signal.emit(f"GPU检测出错: {str(e)}，将使用CPU编码")
@@ -463,20 +464,20 @@ class TranscodeThread(QThread):
                                     
                                     # 性能建议
                                     if avg_usage < 5:
-                                        self.progress_signal.emit("⚠️ 建议: GPU使用率较低，考虑检查NVENC参数")
+                                        self.progress_signal.emit(t("⚠️ 建议: GPU使用率较低，考虑检查NVENC参数"))
                                     elif avg_usage > 80:
-                                        self.progress_signal.emit("🔥 优秀: NVIDIA GPU利用率非常高！")
+                                        self.progress_signal.emit(t("🔥 优秀: NVIDIA GPU利用率非常高！"))
                                 else:
                                     self.progress_signal.emit(f"NVIDIA GPU加速状态: ❌ 未激活 (平均使用率: {avg_usage:.1f}%)")
                                     if check_count > 10:  # 10次检查后仍未激活
-                                        self.progress_signal.emit("⚠️ 警告: NVENC编码器可能未正常工作")
+                                        self.progress_signal.emit(t("⚠️ 警告: NVENC编码器可能未正常工作"))
                     except Exception as e:
                         self.progress_signal.emit(f"监控NVIDIA GPU使用率出错: {str(e)}")
                     # 每2秒更新一次
                     self.gpu_usage_stop_event.wait(2)
             elif "AMD" in self.gpu_type:
                 # 使用简化的AMD GPU监控方法
-                self.progress_signal.emit("启动AMD GPU使用率监控...")
+                self.progress_signal.emit(t("启动AMD GPU使用率监控..."))
                 encoder_detected = False
                 check_count = 0
                 ffmpeg_process_detected = False
@@ -501,7 +502,7 @@ class TranscodeThread(QThread):
                         # 检查是否有ffmpeg进程在运行AMF编码
                         if ffmpeg_running:
                             if not ffmpeg_process_detected:
-                                self.progress_signal.emit("检测到ffmpeg进程正在运行")
+                                self.progress_signal.emit(t("检测到ffmpeg进程正在运行"))
                                 ffmpeg_process_detected = True
                             
                         # 方法2: 使用改进的AMD GPU使用率检测
@@ -619,13 +620,13 @@ class TranscodeThread(QThread):
                                 
                                 # 性能建议
                                 if avg_usage < 5:
-                                    self.progress_signal.emit("⚠️ 建议: GPU使用率较住，考虑检查编码参数")
+                                    self.progress_signal.emit(t("⚠️ 建议: GPU使用率较住，考虑检查编码参数"))
                                 elif avg_usage > 80:
-                                    self.progress_signal.emit("🔥 优秀: GPU利用率非常高！")
+                                    self.progress_signal.emit(t("🔥 优秀: GPU利用率非常高！"))
                             else:
                                 self.progress_signal.emit(f"AMD GPU加速状态: ❌ 未激活 (平均使用率: {avg_usage:.1f}%)")
                                 if check_count > 10:  # 10次检查后仍未激活
-                                    self.progress_signal.emit("⚠️ 警告: GPU编码器可能未正常工作")
+                                    self.progress_signal.emit(t("⚠️ 警告: GPU编码器可能未正常工作"))
                     except Exception as e:
                         self.progress_signal.emit(f"监控AMD GPU使用率出错: {str(e)}")
                         import traceback
@@ -665,12 +666,12 @@ class TranscodeThread(QThread):
             output_ext = os.path.splitext(self.output_file)[1].lower()
 
             if self.use_gpu and (not self.gpu_type or self.gpu_type == "自动检测"):
-                self.progress_signal.emit("正在自动检测可用的 GPU 硬件加速类型...")
+                self.progress_signal.emit(t("正在自动检测可用的 GPU 硬件加速类型..."))
                 self.gpu_type = self.detect_gpu_type()
                 if self.gpu_type:
                     self.progress_signal.emit(f"自动检测到 GPU 类型: {self.gpu_type}")
                 else:
-                    self.progress_signal.emit("未检测到可用的 GPU 硬件编码器，自动回退到 CPU 编码")
+                    self.progress_signal.emit(t("未检测到可用的 GPU 硬件编码器，自动回退到 CPU 编码"))
                     self.use_gpu = False
              
             # 记录转码开始信息
@@ -733,7 +734,7 @@ class TranscodeThread(QThread):
             # 特殊处理webm格式的额外参数
             webm_extra_opts = []
             if input_ext == '.webm':
-                self.progress_signal.emit("检测到webm格式文件，应用特殊处理...")
+                self.progress_signal.emit(t("检测到webm格式文件，应用特殊处理..."))
                 
                 # 确保视频编码器设置正确
                 if "-c:v" not in ' '.join(transcode_opts):
@@ -786,11 +787,11 @@ class TranscodeThread(QThread):
             
             # 启动GPU使用率监控线程
             if self.use_gpu and self.gpu_type:
-                self.progress_signal.emit("正在检测系统GPU类型...")
+                self.progress_signal.emit(t("正在检测系统GPU类型..."))
                 self.progress_signal.emit(f"启动GPU使用率监控，类型: {self.gpu_type}")
                 # 确保在启动新的监控线程前停止旧的监控线程
                 if hasattr(self, 'gpu_usage_monitor') and self.gpu_usage_monitor and self.gpu_usage_monitor.is_alive():
-                    self.progress_signal.emit("停止旧的GPU监控线程...")
+                    self.progress_signal.emit(t("停止旧的GPU监控线程..."))
                     self.gpu_usage_stop_event.set()
                     self.gpu_usage_monitor.join(1)
                 
@@ -804,7 +805,7 @@ class TranscodeThread(QThread):
                 self.gpu_usage_monitor = threading.Thread(target=self._monitor_gpu_usage)
                 self.gpu_usage_monitor.daemon = True
                 self.gpu_usage_monitor.start()
-                self.progress_signal.emit("GPU监控线程已启动，将实时监测GPU使用率")
+                self.progress_signal.emit(t("GPU监控线程已启动，将实时监测GPU使用率"))
                 
                 # 短暂延迟，确保监控线程有足够时间初始化
                 time.sleep(0.5)
@@ -844,7 +845,7 @@ class TranscodeThread(QThread):
             if self.use_gpu and self.gpu_type:
                 # 根据GPU类型添加特定的硬件加速参数
                 if self.gpu_type == "NVIDIA (NVENC)":
-                    self.progress_signal.emit("尝试使用NVIDIA GPU硬件加速编码...")
+                    self.progress_signal.emit(t("尝试使用NVIDIA GPU硬件加速编码..."))
                     
                     # 首先测试NVIDIA GPU是否可用
                     try:
@@ -855,7 +856,7 @@ class TranscodeThread(QThread):
                                 reason += f"。FFmpeg反馈: {nvenc_error}"
                             self._fallback_to_cpu(reason)
                         else:
-                            self.progress_signal.emit("NVIDIA GPU可用，启用硬件加速编码")
+                            self.progress_signal.emit(t("NVIDIA GPU可用，启用硬件加速编码"))
                     except Exception as e:
                         self._fallback_to_cpu(f"NVIDIA GPU测试失败: {str(e)}，回退到CPU编码模式")
                     
@@ -875,14 +876,14 @@ class TranscodeThread(QThread):
                          
                          # 3. 添加 NVENC 编码器参数（必须在输入文件之后）
                          if requested_video_codec == "h265":
-                             self.progress_signal.emit("使用hevc_nvenc编码器")
+                             self.progress_signal.emit(t("使用hevc_nvenc编码器"))
                              new_cmd.extend(["-c:v", "hevc_nvenc"])
                          else:
-                             self.progress_signal.emit("使用h264_nvenc编码器")
+                             self.progress_signal.emit(t("使用h264_nvenc编码器"))
                              new_cmd.extend(["-c:v", "h264_nvenc"])
                     
                          # 4. 添加兼容性优先的 NVENC 参数，避免不同代际显卡/驱动因高级选项直接退出
-                         self.progress_signal.emit("配置NVENC优化参数（兼容优先模式）...")
+                         self.progress_signal.emit(t("配置NVENC优化参数（兼容优先模式）..."))
                          new_cmd.extend(["-preset", "p4"])
                          new_cmd.extend(["-rc", "vbr"])
                          new_cmd.extend(["-cq", "19"])
@@ -911,15 +912,15 @@ class TranscodeThread(QThread):
                          self.progress_signal.emit(f"已重构NVENC命令，确保GPU资源被充分利用: {' '.join(cmd)}")
                          
                          # 记录NVENC参数设置
-                         self.progress_signal.emit("已添加NVENC优化参数，强制使用GPU编码器并优化性能设置")
-                         self.progress_signal.emit("已添加高级NVENC质量优化参数，确保GPU资源被充分利用")
+                         self.progress_signal.emit(t("已添加NVENC优化参数，强制使用GPU编码器并优化性能设置"))
+                         self.progress_signal.emit(t("已添加高级NVENC质量优化参数，确保GPU资源被充分利用"))
                     
                 elif self.gpu_type == "AMD (AMF)":
-                    self.progress_signal.emit("尝试使用AMD GPU硬件加速编码...")
+                    self.progress_signal.emit(t("尝试使用AMD GPU硬件加速编码..."))
 
                     if self.use_gpu and self.gpu_type == "AMD (AMF)":
                         # 完全重构AMD GPU命令，使用最简单有效的配置
-                        self.progress_signal.emit("配置AMD GPU加速参数（优化模式）...")
+                        self.progress_signal.emit(t("配置AMD GPU加速参数（优化模式）..."))
                         
                         # 创建全新的命令，确保参数顺序正确
                         new_cmd = [FFMPEG_CMD]
@@ -973,7 +974,7 @@ class TranscodeThread(QThread):
                         # 使用新构建的命令
                         cmd = new_cmd
                         self.progress_signal.emit(f"AMD GPU优化配置完成: {' '.join(cmd)[:100]}...")
-                        self.progress_signal.emit("使用优化的AMD AMF参数，确保GPU硬件加速真正激活")
+                        self.progress_signal.emit(t("使用优化的AMD AMF参数，确保GPU硬件加速真正激活"))
                         
                         # AMD GPU命令已完整构建，跳过后续通用参数添加
                         skip_common_params = True
@@ -1008,17 +1009,17 @@ class TranscodeThread(QThread):
                     # 根据输出文件格式选择合适的编码器
                     output_ext = os.path.splitext(self.output_file)[1].lower()
                     if output_ext == '.mp4' or output_ext == '.mkv':
-                        self.progress_signal.emit("自动选择libx264编码器")
+                        self.progress_signal.emit(t("自动选择libx264编码器"))
                         cmd.extend(["-c:v", "libx264", "-preset", "faster", "-crf", "23"])
                     elif output_ext == '.hevc' or output_ext == '.h265':
-                        self.progress_signal.emit("自动选择libx265编码器")
+                        self.progress_signal.emit(t("自动选择libx265编码器"))
                         cmd.extend(["-c:v", "libx265", "-preset", "faster", "-crf", "28"])
                     elif output_ext == '.webm':
-                        self.progress_signal.emit("自动选择libvpx-vp9编码器")
+                        self.progress_signal.emit(t("自动选择libvpx-vp9编码器"))
                         cmd.extend(["-c:v", "libvpx-vp9", "-crf", "30", "-b:v", "0"])
                     else:
                         # 默认使用libx264
-                        self.progress_signal.emit("默认使用libx264编码器")
+                        self.progress_signal.emit(t("默认使用libx264编码器"))
                         cmd.extend(["-c:v", "libx264", "-preset", "faster", "-crf", "23"])
                 
                 # 添加音频编码优化
@@ -1095,9 +1096,9 @@ class TranscodeThread(QThread):
                 self.progress_signal.emit(f"使用GPU加速模式，执行命令: {' '.join(final_cmd)}")
                 # 记录GPU加速模式信息
                 if "NVIDIA" in self.gpu_type:
-                    self.progress_signal.emit("NVIDIA GPU加速已正确配置，硬件加速参数已放置在输入文件之前，编码器参数已放置在输入文件之后")
+                    self.progress_signal.emit(t("NVIDIA GPU加速已正确配置，硬件加速参数已放置在输入文件之前，编码器参数已放置在输入文件之后"))
                 elif "AMD" in self.gpu_type:
-                    self.progress_signal.emit("AMD GPU加速已正确配置")
+                    self.progress_signal.emit(t("AMD GPU加速已正确配置"))
                 
                 # 启动GPU使用率监控线程
                 if self.gpu_usage_monitor is None or not self.gpu_usage_monitor.is_alive():
@@ -1106,7 +1107,7 @@ class TranscodeThread(QThread):
                     self.gpu_usage_monitor = threading.Thread(target=self._monitor_gpu_usage)
                     self.gpu_usage_monitor.daemon = True
                     self.gpu_usage_monitor.start()
-                    self.progress_signal.emit("GPU监控线程已启动，将实时监测GPU使用率")
+                    self.progress_signal.emit(t("GPU监控线程已启动，将实时监测GPU使用率"))
             else:
                 final_cmd = self._sanitize_command_for_cpu(cmd)
                 # 记录命令信息用于调试
@@ -1173,7 +1174,7 @@ class TranscodeThread(QThread):
             warning_pattern = re.compile(r'\[\w+\]\s+Warning:')
             error_pattern = re.compile(r'\[\w+\]\s+Error:')
             
-            self.progress_signal.emit("初始化进度解析模式，准备开始转码...")
+            self.progress_signal.emit(t("初始化进度解析模式，准备开始转码..."))
             duration_seconds = 0
             
             # 发送初始进度信号，并确保它能被显示
@@ -1185,7 +1186,7 @@ class TranscodeThread(QThread):
             
             # 首先使用ffprobe获取视频总时长，这是最可靠的方法
             try:
-                self.progress_signal.emit("使用ffprobe获取视频时长信息...")
+                self.progress_signal.emit(t("使用ffprobe获取视频时长信息..."))
                 # 使用ffprobe获取视频时长
                 metadata_cmd = ["ffprobe.exe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration,r_frame_rate,nb_frames", "-show_entries", "format=duration", "-of", "json", self.input_file]
                 metadata_process = subprocess.Popen(
@@ -1234,7 +1235,7 @@ class TranscodeThread(QThread):
             
             # 如果ffprobe无法获取时长，尝试从ffmpeg输出中解析
             if duration_seconds <= 0:
-                self.progress_signal.emit("从ffmpeg输出中解析视频时长...")
+                self.progress_signal.emit(t("从ffmpeg输出中解析视频时长..."))
                 # 读取ffmpeg输出的前几行，尝试获取时长信息
                 line_count = 0
                 while line_count < 50:  # 只读取前50行，避免无限循环
@@ -1267,7 +1268,7 @@ class TranscodeThread(QThread):
             
             # 如果仍然无法获取时长，使用备用方法
             if duration_seconds <= 0:
-                self.progress_signal.emit("警告: 无法获取视频时长，转码进度可能不准确")
+                self.progress_signal.emit(t("警告: 无法获取视频时长，转码进度可能不准确"))
                 # 设置一个默认值，避免除以零错误
                 duration_seconds = 1000  # 设置一个较大的默认值
             
@@ -1301,7 +1302,7 @@ class TranscodeThread(QThread):
                             # 如果GPU使用率大于5%但编码器未激活，尝试标记为激活
                             if not self.gpu_encoder_active and self.gpu_usage > 10:
                                 self.gpu_encoder_active = True
-                                self.progress_signal.emit("检测到GPU活动，标记GPU编码器为已激活")
+                                self.progress_signal.emit(t("检测到GPU活动，标记GPU编码器为已激活"))
                         else:
                             self.progress_signal.emit(f"GPU加速状态: 未检测到活动 - {self.gpu_type}，当前使用率: {self.gpu_usage:.1f}%")
                     
@@ -1486,7 +1487,7 @@ class TranscodeThread(QThread):
                             
                             # 如果错误太多，可能需要终止转码
                             if error_line_count > 10:
-                                self.progress_signal.emit("⚠️ 检测到过多错误，转码可能失败")
+                                self.progress_signal.emit(t("⚠️ 检测到过多错误，转码可能失败"))
                         
                         # 如果找到了进度信息，更新UI和计算剩余时间
                         if progress_found and duration_seconds > 0:
@@ -1562,7 +1563,7 @@ class TranscodeThread(QThread):
                         
                         # 如果停滞次数过多，可能需要采取行动
                         if progress_stall_count >= 3:  # 3次停滞后采取行动
-                            self.progress_signal.emit("❌ 进度长时间停滞，可能出现问题")
+                            self.progress_signal.emit(t("❌ 进度长时间停滞，可能出现问题"))
                             # 可以选择终止进程或继续等待
                             # 这里选择继续等待，但给出警告
                             
@@ -1618,7 +1619,7 @@ class TranscodeThread(QThread):
                 self.progress_signal.emit("转码完成，进度100%")
                 
                 # 增强的输出文件验证
-                self.progress_signal.emit("验证输出文件有效性...")
+                self.progress_signal.emit(t("验证输出文件有效性..."))
                 validation_success = False
                 validation_message = ""
                 
@@ -1629,7 +1630,7 @@ class TranscodeThread(QThread):
                     if file_size > 1024:  # 至少需要有1KB
                         # 使用ffprobe验证文件完整性
                         try:
-                            self.progress_signal.emit("使用ffprobe验证文件完整性...")
+                            self.progress_signal.emit(t("使用ffprobe验证文件完整性..."))
                             verify_cmd = ["ffprobe.exe", "-v", "error", "-select_streams", "v:0", 
                                         "-show_entries", "stream=duration,codec_name", "-of", "json", self.output_file]
                             verify_result = subprocess.run(
@@ -1674,12 +1675,12 @@ class TranscodeThread(QThread):
                     self.progress_signal.emit("转码结果不完整，进度未达到100%")
                     self.progress_percent_signal.emit(-1.0)  # 发送错误状态
                     self.progress_signal.emit("收到转码进度信号: -1.00%")
-                    self.progress_signal.emit("错误: 转码失败，显示错误状态")
+                    self.progress_signal.emit(t("错误: 转码失败，显示错误状态"))
                     self.finished_signal.emit(False, f"转码结果不完整，进度未达到100%，耗时: {time_str}")
             else:
                 # 处理特定错误码
                 if self.process.returncode == 4294967274 or self.process.returncode == -22:  # 0xFFFFFF6A 或 -22
-                    self.progress_signal.emit("检测到内存缓冲区不足错误(4294967274)，正在尝试使用安全参数重新转码...")
+                    self.progress_signal.emit(t("检测到内存缓冲区不足错误(4294967274)，正在尝试使用安全参数重新转码..."))
                     # 不再发送90.5%的进度信号，而是保持当前进度值
                     # 记录当前进度值，以便在重试时能够平滑过渡
                     current_progress = self.last_progress_value
@@ -1695,12 +1696,12 @@ class TranscodeThread(QThread):
                         error_msg += "3. 确保视频文件未损坏\n"
                         error_msg += "4. 关闭其他占用内存的应用程序"
                         # 发送转码失败信号，但不使用负值
-                        self.progress_signal.emit("转码失败，但保持进度条显示")
+                        self.progress_signal.emit(t("转码失败，但保持进度条显示"))
                         self.finished_signal.emit(False, error_msg)
                 else:
                     ffmpeg_error_excerpt = "\n".join(recent_ffmpeg_output).strip()
                     if ffmpeg_error_excerpt:
-                        self.progress_signal.emit("FFmpeg最近输出（失败诊断）:")
+                        self.progress_signal.emit(t("FFmpeg最近输出（失败诊断）:"))
                         for excerpt_line in ffmpeg_error_excerpt.splitlines():
                             self.progress_signal.emit(excerpt_line[:500])
 
@@ -1712,7 +1713,7 @@ class TranscodeThread(QThread):
                         self.progress_signal.emit(error_msg)
                         
                         # 增强的输出文件验证
-                        self.progress_signal.emit("验证输出文件有效性...")
+                        self.progress_signal.emit(t("验证输出文件有效性..."))
                         validation_success = False
                         validation_message = ""
                         
@@ -1723,7 +1724,7 @@ class TranscodeThread(QThread):
                             if file_size > 1024:  # 至少需要有1KB
                                 # 使用ffprobe验证文件完整性
                                 try:
-                                    self.progress_signal.emit("使用ffprobe验证文件完整性...")
+                                    self.progress_signal.emit(t("使用ffprobe验证文件完整性..."))
                                     verify_cmd = ["ffprobe.exe", "-v", "error", "-select_streams", "v:0", 
                                                 "-show_entries", "stream=duration,codec_name", "-of", "json", self.output_file]
                                     verify_result = subprocess.run(
@@ -1790,7 +1791,7 @@ class TranscodeThread(QThread):
             self._stop_gpu_monitor_thread()
 
             if had_gpu_monitor:
-                self.progress_signal.emit("GPU监控已停止")
+                self.progress_signal.emit(t("GPU监控已停止"))
 
                 # 输出增强的GPU性能总结报告
                 if original_gpu_active:
@@ -1809,20 +1810,20 @@ class TranscodeThread(QThread):
 
                     # 性能分析和建议
                     if avg_gpu_usage < 2:
-                        self.progress_signal.emit("⚠️ 性能警告: GPU使用率极低，可能未真正启用硬件加速")
-                        self.progress_signal.emit("💡 建议: 检查GPU驱动程序和编码器设置")
+                        self.progress_signal.emit(t("⚠️ 性能警告: GPU使用率极低，可能未真正启用硬件加速"))
+                        self.progress_signal.emit(t("💡 建议: 检查GPU驱动程序和编码器设置"))
                     elif avg_gpu_usage < 10:
-                        self.progress_signal.emit("🟡 性能提示: GPU使用率较低，还有优化空间")
-                        self.progress_signal.emit("💡 建议: 尝试调整编码参数或提高视频质量")
+                        self.progress_signal.emit(t("🟡 性能提示: GPU使用率较低，还有优化空间"))
+                        self.progress_signal.emit(t("💡 建议: 尝试调整编码参数或提高视频质量"))
                     elif avg_gpu_usage < 30:
-                        self.progress_signal.emit("🟠 性能状态: GPU使用率中等，硬件加速正常工作")
-                        self.progress_signal.emit("💡 建议: 可以考虑进一步优化参数提高效率")
+                        self.progress_signal.emit(t("🟠 性能状态: GPU使用率中等，硬件加速正常工作"))
+                        self.progress_signal.emit(t("💡 建议: 可以考虑进一步优化参数提高效率"))
                     elif avg_gpu_usage < 60:
-                        self.progress_signal.emit("🟢 性能良好: GPU使用率较高，硬件加速效果显著")
-                        self.progress_signal.emit("✨ 表现优秀: 当前设置已达到良好效果")
+                        self.progress_signal.emit(t("🟢 性能良好: GPU使用率较高，硬件加速效果显著"))
+                        self.progress_signal.emit(t("✨ 表现优秀: 当前设置已达到良好效果"))
                     else:
-                        self.progress_signal.emit("🔥 性能卓越: GPU使用率非常高，硬件加速充分利用")
-                        self.progress_signal.emit("🏆 完美表现: GPU硬件加速已达到最佳状态")
+                        self.progress_signal.emit(t("🔥 性能卓越: GPU使用率非常高，硬件加速充分利用"))
+                        self.progress_signal.emit(t("🏆 完美表现: GPU硬件加速已达到最佳状态"))
 
                     # 记录GPU使用率历史分布
                     if len(usage_history) > 0:
@@ -1856,17 +1857,17 @@ class TranscodeThread(QThread):
 
                     # 分析可能的原因
                     if original_max_usage < 5:
-                        self.progress_signal.emit("可能原因: GPU编码器未被正确初始化或不支持当前视频格式")
+                        self.progress_signal.emit(t("可能原因: GPU编码器未被正确初始化或不支持当前视频格式"))
                     elif original_max_usage >= 5 and original_max_usage < 20:
-                        self.progress_signal.emit("可能原因: GPU编码器被初始化但未被充分利用，或与当前视频格式兼容性不佳")
+                        self.progress_signal.emit(t("可能原因: GPU编码器被初始化但未被充分利用，或与当前视频格式兼容性不佳"))
                     else:
-                        self.progress_signal.emit("可能原因: 虽然GPU有一定活动，但编码工作可能主要由CPU完成")
-                    self.progress_signal.emit("建议检查GPU驱动是否最新，或尝试不同的编码器设置")
+                        self.progress_signal.emit(t("可能原因: 虽然GPU有一定活动，但编码工作可能主要由CPU完成"))
+                    self.progress_signal.emit(t("建议检查GPU驱动是否最新，或尝试不同的编码器设置"))
     
     def _retry_with_cpu_mode(self):
         """使用CPU模式重新尝试转码，适用于AMD GPU加速错误"""
         try:
-            self.progress_signal.emit("使用CPU模式重新尝试转码...")
+            self.progress_signal.emit(t("使用CPU模式重新尝试转码..."))
             self.progress_percent_signal.emit(0.0)  # 重置进度条
             
             # 构建CPU模式的ffmpeg命令
@@ -1998,7 +1999,7 @@ class TranscodeThread(QThread):
     def _retry_with_safe_params(self):
         """使用更保守的参数重新尝试转码，适用于内存缓冲区不足错误"""
         try:
-            self.progress_signal.emit("使用安全参数重新尝试转码...")
+            self.progress_signal.emit(t("使用安全参数重新尝试转码..."))
             
             # 构建更保守的ffmpeg命令
             cmd = [FFMPEG_CMD, "-i", self.input_file]
@@ -2009,7 +2010,7 @@ class TranscodeThread(QThread):
             
             # 检查输入文件是否存在且可读
             if not os.path.exists(self.input_file) or os.path.getsize(self.input_file) <= 0:
-                self.progress_signal.emit("错误: 输入文件不存在或为空文件")
+                self.progress_signal.emit(t("错误: 输入文件不存在或为空文件"))
                 return False
                 
             # 尝试创建临时输出文件，确保输出路径可写
@@ -2047,7 +2048,7 @@ class TranscodeThread(QThread):
                 # MP3转码使用最保守的设置
                 cmd.extend(["-c:a", "libmp3lame", "-q:a", "4", "-ar", "44100", "-ac", "2"])
                 # 不使用固定比特率，使用VBR质量模式避免内存问题
-                self.progress_signal.emit("MP3安全模式：使用VBR质量4（中等质量）避免内存问题")
+                self.progress_signal.emit(t("MP3安全模式：使用VBR质量4（中等质量）避免内存问题"))
             
             # 降低分辨率以减少内存使用 - 使用更低的分辨率
             cmd.extend(["-vf", "scale=854:-2"])  # 480p分辨率，更保守
@@ -2063,7 +2064,7 @@ class TranscodeThread(QThread):
                 # MP3转码使用最小缓冲区设置
                 cmd.extend(["-max_muxing_queue_size", "256"])  # 最小队列大小
                 cmd.extend(["-probesize", "1M", "-analyzeduration", "1M"])  # 最小分析缓冲区
-                self.progress_signal.emit("MP3安全模式：使用最小缓冲区设置")
+                self.progress_signal.emit(t("MP3安全模式：使用最小缓冲区设置"))
             else:
                 cmd.extend(["-max_muxing_queue_size", "1024"])  # 降低缓冲区大小，减少内存使用
                 cmd.extend(["-probesize", "5M", "-analyzeduration", "5M"])  # 降低分析缓冲区大小
@@ -2107,7 +2108,7 @@ class TranscodeThread(QThread):
             last_progress_value = 0
             
             # 发送初始进度信号
-            self.progress_signal.emit("开始安全模式转码，发送初始进度信号")
+            self.progress_signal.emit(t("开始安全模式转码，发送初始进度信号"))
             self.progress_percent_signal.emit(0.1)
             
             # 添加超时检测
@@ -2180,7 +2181,7 @@ class TranscodeThread(QThread):
                 time.sleep(0.5)
             
             # 确保在转码完成时发送100%的进度信号
-            self.progress_signal.emit("转码进程已结束，检查结果")
+            self.progress_signal.emit(t("转码进程已结束，检查结果"))
             
             # 计算总耗时
             total_time = time.time() - start_time
@@ -2191,7 +2192,7 @@ class TranscodeThread(QThread):
             
             if self.process.returncode == 0 and output_file_valid:
                 # 验证输出文件是否可以播放
-                self.progress_signal.emit("验证输出文件有效性...")
+                self.progress_signal.emit(t("验证输出文件有效性..."))
                 try:
                     # 使用ffprobe验证文件
                     probe_cmd = ["ffprobe.exe", "-v", "error", "-select_streams", "v:0", "-show_entries", 
@@ -2208,7 +2209,7 @@ class TranscodeThread(QThread):
                     probe_output, probe_error = probe_process.communicate(timeout=10)
                     
                     if probe_process.returncode == 0 and "codec_type" in probe_output:
-                        self.progress_signal.emit("输出文件验证成功，包含有效视频流")
+                        self.progress_signal.emit(t("输出文件验证成功，包含有效视频流"))
                         # 只有在重试转码真正成功时才发送100%的进度信号
                         self.progress_percent_signal.emit(100.0)
                         self.progress_signal.emit("转码完成，进度100%")
@@ -2227,7 +2228,7 @@ class TranscodeThread(QThread):
                     # 继续执行，不因验证失败而判定转码失败
                     if output_file_valid:
                         self.progress_percent_signal.emit(100.0)
-                        self.progress_signal.emit("转码可能成功，但验证过程出错")
+                        self.progress_signal.emit(t("转码可能成功，但验证过程出错"))
                         self.finished_signal.emit(True, f"使用安全参数重试转码可能成功，但无法验证文件完整性。总耗时: {time_str}")
                         return True
             else:
@@ -2304,7 +2305,7 @@ class TranscodeThread(QThread):
         cancel_signal_sent = False  # 标记是否已发送取消信号
         try:
             if self.process:
-                self.progress_signal.emit("正在停止进程...")
+                self.progress_signal.emit(t("正在停止进程..."))
                 # 首先尝试温和地终止进程
                 self.process.terminate()
                 
@@ -2313,9 +2314,9 @@ class TranscodeThread(QThread):
                     self.process.wait(timeout=3)
                 except subprocess.TimeoutExpired:
                     # 如果等待超时，强制终止进程
-                    self.progress_signal.emit("进程未响应，正在强制终止...")
+                    self.progress_signal.emit(t("进程未响应，正在强制终止..."))
                     self.process.kill()
-                    self.progress_signal.emit("已强制终止进程")
+                    self.progress_signal.emit(t("已强制终止进程"))
                 
                 # 再次检查进程状态
                 if self.process and self.process.poll() is None:
@@ -2333,11 +2334,11 @@ class TranscodeThread(QThread):
                         else:
                             # 在类Unix系统上使用SIGKILL信号
                             os.kill(self.process.pid, signal.SIGKILL)
-                        self.progress_signal.emit("已强制终止进程及其子进程")
+                        self.progress_signal.emit(t("已强制终止进程及其子进程"))
                     except Exception as kill_error:
                         self.progress_signal.emit(f"强制终止进程失败: {str(kill_error)}")
                 else:
-                    self.progress_signal.emit("进程已正常终止")
+                    self.progress_signal.emit(t("进程已正常终止"))
                 
                 # 标记进程为None，避免重复终止
                 self.process = None
@@ -2442,7 +2443,7 @@ class TranscodeThread(QThread):
                 # 后处理错误（合并失败）情况下，使用更严格的格式限制
                 # 1. 尝试下载已合并的单文件
                 # 2. 如果需要合并，确保使用高兼容性的编解码器和容器格式
-                self.progress_signal.emit("使用高兼容性格式重试下载，确保视频和音频能够成功合并...")
+                self.progress_signal.emit(t("使用高兼容性格式重试下载，确保视频和音频能够成功合并..."))
                 
                 # 优先选择已合并的mp4文件，或确保视频和音频格式高度兼容
                 cmd.extend(["-f", "best[ext=mp4]/best[ext=mkv]/best[ext=webm]/"
@@ -2462,7 +2463,7 @@ class TranscodeThread(QThread):
                 cmd.extend(["--verbose"])
             else:
                 # 格式不可用的情况，使用更通用的格式选项
-                self.progress_signal.emit("使用通用格式重试下载...")
+                self.progress_signal.emit(t("使用通用格式重试下载..."))
                 
                 # 优先选择高质量的mp4格式和h264编码
                 cmd.extend(["-f", "bestvideo[vcodec^=avc1][ext=mp4]+bestaudio[ext=m4a][acodec!=opus]/"
@@ -2535,10 +2536,10 @@ class TranscodeThread(QThread):
             for line in self.process.stdout:
                 # 检查进程是否被外部终止
                 if self.process and self.process.poll() is not None:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                 elif not self.process:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                     
                 stripped_line = line.strip()
@@ -2561,17 +2562,17 @@ class TranscodeThread(QThread):
                     
                     # 如果是播放列表下载，不要中断进程，让yt-dlp的--ignore-errors自动跳过
                     if self.playlist_enabled:
-                        self.progress_signal.emit("⚠️ 检测到年龄/地理限制，播放列表模式下将自动跳过该视频继续下载")
+                        self.progress_signal.emit(t("⚠️ 检测到年龄/地理限制，播放列表模式下将自动跳过该视频继续下载"))
                         continue  # 继续处理后续输出，不中断进程
                     
                     # 只在单个视频下载时才尝试使用增强认证参数重试
                     if not self.age_restriction_retry_attempted:
-                        self.progress_signal.emit("检测到年龄限制或地理位置限制错误（单个视频），正在尝试使用增强认证参数重试...")
+                        self.progress_signal.emit(t("检测到年龄限制或地理位置限制错误（单个视频），正在尝试使用增强认证参数重试..."))
                         self.process.terminate()
                         self._retry_with_enhanced_auth()
                         return
                     else:
-                        self.progress_signal.emit("增强认证重试失败，停止下载")
+                        self.progress_signal.emit(t("增强认证重试失败，停止下载"))
                         self.process.terminate()
                         # 提供更详细的错误信息和解决方案
                         error_message = self._generate_age_restriction_error_message(stripped_line)
@@ -2636,13 +2637,13 @@ class TranscodeThread(QThread):
                     self.progress_signal.emit("重试下载成功，进度100%")
                     self.finished_signal.emit(True, "下载完成！")
                 else:
-                    self.progress_signal.emit("警告：重试下载过程完成但未找到输出文件")
+                    self.progress_signal.emit(t("警告：重试下载过程完成但未找到输出文件"))
                     self.finished_signal.emit(False, "重试下载失败：未找到输出文件")
             else:
                 # 如果重试也失败了
                 if postprocessing_error:
                     # 如果是后处理错误的重试失败，尝试使用单一格式下载
-                    self.progress_signal.emit("合并格式重试失败，尝试使用单一格式下载...")
+                    self.progress_signal.emit(t("合并格式重试失败，尝试使用单一格式下载..."))
                     self._retry_with_single_format()
                 else:
                     # 其他错误，直接报告失败
@@ -2659,7 +2660,7 @@ class TranscodeThread(QThread):
             cmd = ["yt-dlp.exe"]
             
             # 使用单一格式，避免需要合并
-            self.progress_signal.emit("使用单一格式下载，避免后处理合并步骤...")
+            self.progress_signal.emit(t("使用单一格式下载，避免后处理合并步骤..."))
             cmd.extend(["-f", "best[ext=mp4]/best[ext=mkv]/best[ext=webm]/best"])
             
             # 添加排序参数
@@ -2712,10 +2713,10 @@ class TranscodeThread(QThread):
             for line in self.process.stdout:
                 # 检查进程是否被外部终止
                 if self.process and self.process.poll() is not None:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                 elif not self.process:
-                    self.progress_signal.emit("检测到进程已终止，退出下载循环")
+                    self.progress_signal.emit(t("检测到进程已终止，退出下载循环"))
                     break
                     
                 stripped_line = line.strip()
@@ -2738,17 +2739,17 @@ class TranscodeThread(QThread):
                     
                     # 如果是播放列表下载，不要中断进程，让yt-dlp的--ignore-errors自动跳过
                     if self.playlist_enabled:
-                        self.progress_signal.emit("⚠️ 检测到年龄/地理限制，播放列表模式下将自动跳过该视频继续下载")
+                        self.progress_signal.emit(t("⚠️ 检测到年龄/地理限制，播放列表模式下将自动跳过该视频继续下载"))
                         continue  # 继续处理后续输出，不中断进程
                     
                     # 只在单个视频下载时才尝试使用增强认证参数重试
                     if not self.age_restriction_retry_attempted:
-                        self.progress_signal.emit("检测到年龄限制或地理位置限制错误（单个视频），正在尝试使用增强认证参数重试...")
+                        self.progress_signal.emit(t("检测到年龄限制或地理位置限制错误（单个视频），正在尝试使用增强认证参数重试..."))
                         self.process.terminate()
                         self._retry_with_enhanced_auth()
                         return
                     else:
-                        self.progress_signal.emit("增强认证重试失败，停止下载")
+                        self.progress_signal.emit(t("增强认证重试失败，停止下载"))
                         self.process.terminate()
                         # 提供更详细的错误信息和解决方案
                         error_message = self._generate_age_restriction_error_message(stripped_line)
@@ -2763,7 +2764,7 @@ class TranscodeThread(QThread):
             self.process.wait()
             
             # 不要无条件显示100%，先检查下载是否成功
-            self.progress_signal.emit("进程完成，检查下载结果...")
+            self.progress_signal.emit(t("进程完成，检查下载结果..."))
             
             if self.process.returncode == 0:
                 if self._staging_output_dir:
@@ -2787,7 +2788,7 @@ class TranscodeThread(QThread):
         cancel_signal_sent = False  # 标记是否已发送取消信号
         try:
             if self.process:
-                self.progress_signal.emit("正在停止进程...")
+                self.progress_signal.emit(t("正在停止进程..."))
                 # 首先尝试温和地终止进程
                 self.process.terminate()
                 
@@ -2796,9 +2797,9 @@ class TranscodeThread(QThread):
                     self.process.wait(timeout=3)
                 except subprocess.TimeoutExpired:
                     # 如果等待超时，强制终止进程
-                    self.progress_signal.emit("进程未响应，正在强制终止...")
+                    self.progress_signal.emit(t("进程未响应，正在强制终止..."))
                     self.process.kill()
-                    self.progress_signal.emit("已强制终止进程")
+                    self.progress_signal.emit(t("已强制终止进程"))
                 
                 # 再次检查进程状态
                 if self.process and self.process.poll() is None:
@@ -2812,11 +2813,11 @@ class TranscodeThread(QThread):
                         else:
                             # 在类Unix系统上使用SIGKILL信号
                             os.kill(self.process.pid, signal.SIGKILL)
-                        self.progress_signal.emit("已强制终止进程及其子进程")
+                        self.progress_signal.emit(t("已强制终止进程及其子进程"))
                     except Exception as kill_error:
                         self.progress_signal.emit(f"强制终止进程失败: {str(kill_error)}")
                 else:
-                    self.progress_signal.emit("进程已正常终止")
+                    self.progress_signal.emit(t("进程已正常终止"))
                 
                 # 标记进程为None，避免重复终止
                 self.process = None

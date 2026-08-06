@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QLineEdit, QMessageBox, QSizePolicy)
 from PyQt5.QtCore import Qt
 import re
+from i18n import t, t_format
 
 class PlaylistRangeDialog(QDialog):
     """播放列表范围选择对话框"""
@@ -151,7 +152,7 @@ class PlaylistRangeDialog(QDialog):
                     item.setSelected(True)
                     
         except Exception as e:
-            QMessageBox.warning(self, "错误", f"范围格式错误: {str(e)}")
+            QMessageBox.warning(self, t("错误"), f"范围格式错误: {str(e)}")
             
     def parse_range(self, range_text):
         """解析范围字符串"""

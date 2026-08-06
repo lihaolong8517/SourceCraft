@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QFrame, QMessageBox
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QCheckBox, QScrollArea, QWidget)
 from PyQt5.QtCore import Qt
+from i18n import t, t_format
 
 class XVideoSelectionDialog(QDialog):
     """X平台（Twitter）多视频推文 - 视频选择对话框"""
@@ -126,7 +127,7 @@ class XVideoSelectionDialog(QDialog):
             i + 1 for i, cb in enumerate(self._checkboxes) if cb.isChecked()
         ]
         if not self.selected_indices:
-            QMessageBox.warning(self, "提示", "请至少选择一个视频")
+            QMessageBox.warning(self, t("提示"), t("请至少选择一个视频"))
             return
         self.accept()
 
