@@ -76,7 +76,7 @@ def main():
 
     # 语言清单：以 i18n.py 的 SUPPORTED_LANGUAGES 为准
     i18n_path = os.path.join(ROOT, "i18n.py")
-    lang_order = ["en_US", "zh_CN", "ja_JP", "ko_KR", "es_ES", "fr_FR", "de_DE", "ru_RU"]
+    lang_order = ["en_US", "zh_CN", "zh_TW", "ja_JP", "ko_KR", "es_ES", "fr_FR", "de_DE", "ru_RU"]
     with open(i18n_path, encoding="utf-8") as fp:
         i18n_src = fp.read()
     langs = [code for code in lang_order if code in i18n_src]

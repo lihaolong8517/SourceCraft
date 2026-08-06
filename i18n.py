@@ -43,6 +43,7 @@ import sys
 SUPPORTED_LANGUAGES = [
     ("en_US", "English"),
     ("zh_CN", "中文（简体）"),
+    ("zh_TW", "繁體中文"),
     ("ja_JP", "日本語"),
     ("ko_KR", "한국어"),
     ("es_ES", "Español"),
