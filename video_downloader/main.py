@@ -119,23 +119,23 @@ def main():
             sys.exit(0)
         
         print("[App] 许可证验证通过")
-        print(f"[Startup] 授权阶段耗时: {time.perf_counter() - startup_begin:.2f}s")
+        print(t_format("[Startup] 授权阶段耗时: {:.2f}s", time.perf_counter() - startup_begin))
     except ImportError as e:
         if getattr(sys, "frozen", False):
-            QMessageBox.critical(None, "授权错误", f"授权模块缺失或损坏，请重新安装：\n{str(e)}")
+            QMessageBox.critical(None, "授权错误", t_format("授权模块缺失或损坏，请重新安装：\n{}", str(e)))
             sys.exit(1)
         # 开发模式允许无授权模块启动，便于调试
-        print(f"[App] 许可证模块未加载（开发模式）: {e}")
+        print(t_format("[App] 许可证模块未加载（开发模式）: {}", e))
     except Exception as e:
-        print(f"[App] 许可证检查异常: {e}")
-        QMessageBox.critical(None, "授权错误", f"程序授权检查异常，请联系客服：\n{str(e)}")
+        print(t_format("[App] 许可证检查异常: {}", e))
+        QMessageBox.critical(None, "授权错误", t_format("程序授权检查异常，请联系客服：\n{}", str(e)))
         sys.exit(1)
     
     window_create_begin = time.perf_counter()
     window = VideoDownloaderApp(license_manager=license_manager)
     if not app_icon.isNull():
         window.setWindowIcon(app_icon)
-    print(f"[Startup] 主窗口构建耗时: {time.perf_counter() - window_create_begin:.2f}s")
+    print(t_format("[Startup] 主窗口构建耗时: {:.2f}s", time.perf_counter() - window_create_begin))
     window.show()
     sys.exit(app.exec_())
 

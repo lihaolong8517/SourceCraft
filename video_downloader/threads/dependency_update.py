@@ -118,9 +118,9 @@ class DependencyUpdateThread(QThread):
             if not self.perform_update:
                 if updates_available:
                     names = [u[0] for u in updates_available]
-                    self.finished_signal.emit(True, f"发现 {len(updates_available)} 个组件可更新: {', '.join(names)}")
+                    self.finished_signal.emit(True, t_format("发现 {} 个组件可更新: {}", len(updates_available), ', '.join(names)))
                 elif updates_performed:
-                    self.finished_signal.emit(True, f"已自动更新: {', '.join(updates_performed)}")
+                    self.finished_signal.emit(True, t_format("已自动更新: {}", ', '.join(updates_performed)))
                 else:
                     self.finished_signal.emit(True, "所有组件已是最新版本")
                 return
@@ -147,17 +147,17 @@ class DependencyUpdateThread(QThread):
             
             # 汇总结果
             if updates_performed:
-                msg = f"✅ 成功更新: {', '.join(updates_performed)}"
+                msg = t_format("✅ 成功更新: {}", ', '.join(updates_performed))
                 if errors:
-                    msg += f"\n❌ 更新失败: {', '.join(errors)}"
+                    msg += t_format("\n❌ 更新失败: {}", ', '.join(errors))
                 self.finished_signal.emit(True, msg)
             elif errors:
-                self.finished_signal.emit(False, f"更新失败: {', '.join(errors)}")
+                self.finished_signal.emit(False, t_format("更新失败: {}", ', '.join(errors)))
             else:
                 self.finished_signal.emit(True, "没有需要更新的组件")
                 
         except Exception as e:
-            self.finished_signal.emit(False, f"更新过程出错: {str(e)}")
+            self.finished_signal.emit(False, t_format("更新过程出错: {}", str(e)))
     
     def _get_current_version(self, config):
         """获取组件当前版本"""
@@ -232,7 +232,7 @@ class DependencyUpdateThread(QThread):
                 
                 return tag, download_url
         except Exception as e:
-            self.progress_signal.emit(f"获取版本信息失败: {str(e)}")
+            self.progress_signal.emit(t_format("获取版本信息失败: {}", str(e)))
         return None, None
 
     

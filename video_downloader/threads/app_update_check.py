@@ -74,6 +74,6 @@ class AppUpdateCheckThread(QThread):
         if "ssl" in lower_text or "certificate" in lower_text:
             return "官网连接的证书校验失败，请检查系统时间、证书环境或网络代理。"
 
-        return f"获取网站版本失败: {text}" if text else "获取网站版本失败"
+        return t_format("获取网站版本失败: {}", text) if text else "获取网站版本失败"
 
 

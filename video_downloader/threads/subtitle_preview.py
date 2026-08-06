@@ -188,7 +188,7 @@ class SubtitlePreviewThread(QThread):
 
             if process.returncode != 0:
                 error_text = (stderr or stdout or "").strip()
-                raise RuntimeError(error_text or f"yt-dlp.exe 执行失败，退出码: {process.returncode}")
+                raise RuntimeError(error_text or t_format("yt-dlp.exe 执行失败，退出码: {}", process.returncode))
 
             lines = [line.strip() for line in (stdout or "").splitlines() if line.strip()]
             json_line = ""

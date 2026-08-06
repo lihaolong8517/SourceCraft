@@ -72,7 +72,7 @@ if __name__ == '__main__':
                 _load_playwright_browser_module().run_launcher()
         except Exception as e:
             try:
-                print(f"[BROWSER] ERROR: BROWSER_UNKNOWN|启动子进程失败: {e}", flush=True)
+                print(t_format("[BROWSER] ERROR: BROWSER_UNKNOWN|启动子进程失败: {}", e), flush=True)
             except:
                 pass
         sys.exit(0)

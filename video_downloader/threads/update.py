@@ -72,7 +72,7 @@ class UpdateThread(QThread):
                             self.finished_signal.emit(True, f"success|{self.before_update_version}|{new_version}", "")
                         else:
                             # 版本没有改变，更新实际失败
-                            reason = f"更新命令执行完成，但版本未发生变化（仍为 {current_version}）。可能原因：\n1. 当前已是最新版本\n2. 更新包下载失败\n3. 权限不足无法替换文件"
+                            reason = t_format("更新命令执行完成，但版本未发生变化（仍为 {}）。可能原因：\n1. 当前已是最新版本\n2. 更新包下载失败\n3. 权限不足无法替换文件", current_version)
                             self.finished_signal.emit(False, reason, "")
                     else:
                         self.finished_signal.emit(False, error_msg, "")
@@ -90,7 +90,7 @@ class UpdateThread(QThread):
                 self.finished_signal.emit(True, f"update_available|{current_version}|{latest_version}|{changelog}", changelog)
                 
         except Exception as e:
-            self.finished_signal.emit(False, f"检查过程中发生错误: {str(e)}", "")
+            self.finished_signal.emit(False, t_format("检查过程中发生错误: {}", str(e)), "")
     
     def get_current_version(self):
         """获取当前yt-dlp版本"""
@@ -281,7 +281,7 @@ class UpdateThread(QThread):
             return ("文件错误", "找不到所需文件或程序")
         
         # 未知错误
-        return (f"{context}失败" if context else "错误", error_text.strip()[:200])
+        return (t_format("{}失败", context) if context else "错误", error_text.strip()[:200])
     
     def manual_download_update(self):
         """手动下载yt-dlp最新版本（Windows），返回 (success, error_message)"""
@@ -309,7 +309,7 @@ class UpdateThread(QThread):
                 error_type, error_detail = self._classify_error(str(url_error), "GitHub下载")
                 return False, f"{error_type}: {error_detail}"
             except urllib.error.HTTPError as http_error:
-                return False, f"网络错误: HTTP {http_error.code} - {http_error.reason}\n建议：检查网络连接，如访问外网需配置代理"
+                return False, t_format("网络错误: HTTP {} - {}\n建议：检查网络连接，如访问外网需配置代理", http_error.code, http_error.reason)
             except socket.timeout:
                 return False, "网络错误: 下载超时\n建议：检查网络连接速度，如访问外网需配置代理"
             except Exception as download_error:

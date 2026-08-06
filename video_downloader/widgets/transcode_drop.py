@@ -29,7 +29,7 @@ class TranscodeDropWidget(QWidget):
                             return
             event.ignore()
         except Exception as e:
-            print(f"转码Tab拖拽进入事件错误: {e}")
+            print(t_format("转码Tab拖拽进入事件错误: {}", e))
             event.ignore()
     
     def dragMoveEvent(self, event):
@@ -45,7 +45,7 @@ class TranscodeDropWidget(QWidget):
                             return
             event.ignore()
         except Exception as e:
-            print(f"转码Tab拖拽移动事件错误: {e}")
+            print(t_format("转码Tab拖拽移动事件错误: {}", e))
             event.ignore()
     
     def dropEvent(self, event):
@@ -62,7 +62,7 @@ class TranscodeDropWidget(QWidget):
                             return
             event.ignore()
         except Exception as e:
-            print(f"转码Tab拖拽放下事件错误: {e}")
+            print(t_format("转码Tab拖拽放下事件错误: {}", e))
             event.ignore()
 
 

@@ -29,7 +29,7 @@ class DownloadHistoryManager:
                 if isinstance(history, list):
                     return sorted(history, key=self._record_sort_time, reverse=True)
         except Exception as e:
-            print(f"加载历史记录失败: {e}")
+            print(t_format("加载历史记录失败: {}", e))
         return []
 
     @staticmethod
@@ -59,7 +59,7 @@ class DownloadHistoryManager:
             with open(self.settings_file, 'w', encoding='utf-8') as f:
                 json.dump(self.history, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"保存历史记录失败: {e}, 路径: {self.settings_file}")
+            print(t_format("保存历史记录失败: {}, 路径: {}", e, self.settings_file))
     
     def add_record(self, url, title, file_path, download_time=None, file_size=None, format_info=None):
         """添加下载记录"""
@@ -152,7 +152,7 @@ class DownloadHistoryManager:
         if len(input_files) == 1:
             title = os.path.basename(input_files[0])
         else:
-            title = f"{len(input_files)} 张图片"
+            title = t_format("{} 张图片", len(input_files))
         
         record = {
             "input_files": input_files[:10],  # 只保存前10个文件名，避免过长
@@ -188,7 +188,7 @@ class DownloadHistoryManager:
         if len(input_files) == 1:
             title = os.path.basename(input_files[0])
         else:
-            title = f"{len(input_files)} 个修复文件"
+            title = t_format("{} 个修复文件", len(input_files))
 
         record = {
             "input_files": input_files[:10],

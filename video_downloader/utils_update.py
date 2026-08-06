@@ -249,7 +249,7 @@ def _read_windows_exe_version(exe_path):
         if any((major, minor, patch)):
             return f"{major}.{minor}.{patch}"
     except Exception as e:
-        print(f"读取 exe 版本资源失败: {e}")
+        print(t_format("读取 exe 版本资源失败: {}", e))
 
     return None
 
@@ -305,7 +305,7 @@ def compare_version_text(version1, version2):
                 return 1
         return 0
     except Exception as e:
-        print(f"软件版本比较失败: {e}")
+        print(t_format("软件版本比较失败: {}", e))
         return 0
 
 

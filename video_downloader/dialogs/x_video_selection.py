@@ -26,7 +26,7 @@ class XVideoSelectionDialog(QDialog):
 
         # 顶部提示
         tip = QLabel(
-            f"<b>该推文包含 {len(self.video_entries)} 个视频</b>，请勾选要下载的视频："
+            t_format("<b>该推文包含 {} 个视频</b>，请勾选要下载的视频：", len(self.video_entries))
         )
         tip.setWordWrap(True)
         tip.setStyleSheet("font-size: 13px; padding: 6px 2px;")
@@ -87,12 +87,12 @@ class XVideoSelectionDialog(QDialog):
     @staticmethod
     def _build_entry_label(index, entry):
         """为每个视频条目构建可读标签"""
-        title = entry.get('title') or entry.get('fulltitle') or f"视频 {index}"
+        title = entry.get('title') or entry.get('fulltitle') or t_format("视频 {}", index)
         # 截断过长标题
         if len(title) > 60:
             title = title[:57] + "..."
 
-        parts = [f"视频 {index}: {title}"]
+        parts = [t_format("视频 {}: {}", index, title)]
 
         # 时长
         duration = entry.get('duration')

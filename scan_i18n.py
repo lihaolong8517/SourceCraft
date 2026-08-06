@@ -84,8 +84,8 @@ def main():
     if args.update_pending:
         pending = os.path.join(LOCALES, "_pending_zh_keys.txt")
         with open(pending, "w", encoding="utf-8") as fp:
-            fp.write("\n".join(keys))
-        print(f"已更新 {pending}")
+            json.dump(keys, fp, ensure_ascii=False, indent=0)
+        print(f"已更新 {pending}（JSON 格式，兼容含换行符的 key）")
 
     for lang in langs:
         table = load_table(lang)

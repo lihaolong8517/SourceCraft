@@ -23,12 +23,12 @@ class PlaylistRangeDialog(QDialog):
         layout = QVBoxLayout(self)
         
         # 播放列表信息
-        info_label = QLabel(f"播放列表: {self.playlist_info.get('title', '未知播放列表')}")
+        info_label = QLabel(t_format("播放列表: {}", self.playlist_info.get('title', '未知播放列表')))
         info_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 10px;")
         layout.addWidget(info_label)
         
         entries = self.playlist_info.get('entries', [])
-        count_label = QLabel(f"总共 {len(entries)} 个视频")
+        count_label = QLabel(t_format("总共 {} 个视频", len(entries)))
         layout.addWidget(count_label)
         
         # 快速选择按钮
@@ -63,7 +63,7 @@ class PlaylistRangeDialog(QDialog):
             self.video_list.addItem(debug_item)
         else:
             for i, entry in enumerate(entries):
-                title = entry.get('title', f'视频 #{i+1}')
+                title = entry.get('title', t_format("视频 #{}", i + 1))
                 duration = entry.get('duration_string', entry.get('duration', ''))
                 
                 # 构建显示文本
@@ -152,7 +152,7 @@ class PlaylistRangeDialog(QDialog):
                     item.setSelected(True)
                     
         except Exception as e:
-            QMessageBox.warning(self, t("错误"), f"范围格式错误: {str(e)}")
+            QMessageBox.warning(self, t("错误"), t_format("范围格式错误: {}", str(e)))
             
     def parse_range(self, range_text):
         """解析范围字符串"""

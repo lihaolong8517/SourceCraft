@@ -102,9 +102,8 @@ class FailedVideosDialog(QDialog):
             
             # 【简化】只显示用户要求的4个核心信息：预计下载数、成功下载数、失败下载数、失败详情
             stats_text = (
-                f"🎯 <b>预计下载:</b> {expected_count} 个视频<br>"
-                f"✅ <b>成功下载:</b> {actual_successful} 个视频<br>"
-                f"❌ <b>下载失败:</b> {actual_failed} 个视频"
+                t_format("🎯 <b>预计下载:</b> {} 个视频<br>✅ <b>成功下载:</b> {} 个视频<br>❌ <b>下载失败:</b> {} 个视频", expected_count, actual_successful, actual_failed)
+
             )
             
         else:
@@ -130,9 +129,8 @@ class FailedVideosDialog(QDialog):
                 
                 # 【简化】只显示用户要求的4个核心信息
                 stats_text = (
-                    f"🎯 <b>预计下载:</b> {expected_count} 个视频<br>"
-                    f"✅ <b>成功下载:</b> {actual_successful} 个视频<br>"
-                    f"❌ <b>下载失败:</b> {actual_failed} 个视频"
+                    t_format("🎯 <b>预计下载:</b> {} 个视频<br>✅ <b>成功下载:</b> {} 个视频<br>❌ <b>下载失败:</b> {} 个视频", expected_count, actual_successful, actual_failed)
+
                 )
             else:
                 # 没有过滤的情况，正常显示
@@ -151,9 +149,8 @@ class FailedVideosDialog(QDialog):
                 
                 # 【简化】只显示用户要求的4个核心信息
                 stats_text = (
-                    f"🎯 <b>预计下载:</b> {expected_count} 个视频<br>"
-                    f"✅ <b>成功下载:</b> {actual_successful} 个视频<br>"
-                    f"❌ <b>下载失败:</b> {actual_failed} 个视频"
+                    t_format("🎯 <b>预计下载:</b> {} 个视频<br>✅ <b>成功下载:</b> {} 个视频<br>❌ <b>下载失败:</b> {} 个视频", expected_count, actual_successful, actual_failed)
+
                 )
         
         stats_info = QLabel(stats_text)
@@ -170,7 +167,7 @@ class FailedVideosDialog(QDialog):
         # 失败视频列表标题（只在有失败视频时显示）
         if self.failed_videos:
             # 【简化】只显示"失败视频详情"，因为跳过的视频不再显示在这里
-            list_title = QLabel(f"⚠️ 失败视频详情 ({len(self.failed_videos)} 个):")
+            list_title = QLabel(t_format("⚠️ 失败视频详情 ({} 个):", len(self.failed_videos)))
                 
             list_title.setStyleSheet(
                 "font-size: 16px; "
@@ -370,17 +367,17 @@ class FailedVideosDialog(QDialog):
                     # 统计信息
                     has_range_set = self.expected_downloads > 0 and self.expected_downloads < self.total_videos
                     if has_range_set:
-                        f.write(f"播放列表总数: {self.total_videos}\n")
-                        f.write(f"设置范围: {self.expected_downloads} 个视频\n")
+                        f.write(t_format("播放列表总数: {}\n", self.total_videos))
+                        f.write(t_format("设置范围: {} 个视频\n", self.expected_downloads))
                     else:
                         if self.expected_downloads > 0:
-                            f.write(f"预计下载数量: {self.expected_downloads}\n")
+                            f.write(t_format("预计下载数量: {}\n", self.expected_downloads))
                         if self.total_videos > 0:
-                            f.write(f"总视频数: {self.total_videos}\n")
+                            f.write(t_format("总视频数: {}\n", self.total_videos))
                     
                     if self.successful_downloads > 0:
-                        f.write(f"成功下载: {self.successful_downloads}\n")
-                    f.write(f"下载失败: {len(self.failed_videos)}\n")
+                        f.write(t_format("成功下载: {}\n", self.successful_downloads))
+                    f.write(t_format("下载失败: {}\n", len(self.failed_videos)))
                     
                     # 统计因限制失败的视频数
                     restriction_failed = sum(1 for v in self.failed_videos 
@@ -388,7 +385,7 @@ class FailedVideosDialog(QDialog):
                                                  for keyword in ['限制', '年龄', '地区', '会员', 'restricted', 
                                                                 'age', 'geo', 'membership', 'premium']))
                     if restriction_failed > 0:
-                        f.write(f"  - 其中因限制失败: {restriction_failed}\n")
+                        f.write(t_format("  - 其中因限制失败: {}\n", restriction_failed))
                     
                     f.write("\n")
                     
@@ -397,21 +394,21 @@ class FailedVideosDialog(QDialog):
                     f.write("-" * 60 + "\n\n")
                     
                     for i, video in enumerate(self.failed_videos, 1):
-                        f.write(f"{i}. {video.get('title', '未知视频')}\n")
-                        f.write(f"   原因: {video.get('reason', '未知错误')}\n")
+                        f.write(t_format("{}. {}\n", i, video.get('title', '未知视频')))
+                        f.write(t_format("   原因: {}\n", video.get('reason', '未知错误')))
                         if video.get('full_error'):
-                            f.write(f"   详情: {video.get('full_error')}\n")
+                            f.write(t_format("   详情: {}\n", video.get('full_error')))
                         f.write("\n")
                 
                 QMessageBox.information(
                     self,
                     "导出成功",
-                    f"失败视频列表已成功导出到:\n{filename}"
+                    t_format("失败视频列表已成功导出到:\n{}", filename)
                 )
             except Exception as e:
                 QMessageBox.warning(
                     self,
                     "导出失败",
-                    f"导出文件时出错:\n{str(e)}"
+                    t_format("导出文件时出错:\n{}", str(e))
                 )
 

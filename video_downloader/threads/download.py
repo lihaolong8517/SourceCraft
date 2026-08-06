@@ -59,7 +59,7 @@ class DownloadThread(QThread):
         self.video_info = None
         
         # 【调试】打印接收到的additional_options
-        print(f"[调试] DownloadThread.__init__ 接收到的additional_options: {additional_options}")
+        print(t_format("[调试] DownloadThread.__init__ 接收到的additional_options: {}", additional_options))
         self.process = None
         self._cancelled = False  # 取消标志，用于控制下载线程的停止
         self.progress_sent = False  # 跟踪是否已发送过进度信号
@@ -151,7 +151,7 @@ class DownloadThread(QThread):
         if process.returncode != 0:
             err_lines = [line.strip() for line in (stderr or "").splitlines() if line.strip()]
             if err_lines:
-                self.progress_signal.emit(f"⚠️ 预取视频标题失败: {err_lines[-1]}")
+                self.progress_signal.emit(t_format("⚠️ 预取视频标题失败: {}", err_lines[-1]))
             return ""
 
         title_lines = [line.strip() for line in (stdout or "").splitlines() if line.strip()]
@@ -355,17 +355,17 @@ class DownloadThread(QThread):
                 new_path = os.path.join(directory, new_filename)
                 if not os.path.exists(new_path):
                     self.progress_signal.emit(
-                        f"📝 检测到重复文件名，已重命名: {filename} → {new_filename}"
+                        t_format("📝 检测到重复文件名，已重命名: {} → {}", filename, new_filename)
                     )
                     return new_path
                 counter += 1
                 if counter > 1000:  # 防止无限循环
                     self.progress_signal.emit(
-                        f"⚠️ 无法为文件 {filename} 生成唯一文件名（已尝试1000次）"
+                        t_format("⚠️ 无法为文件 {} 生成唯一文件名（已尝试1000次）", filename)
                     )
                     return file_path  # 返回原路径，让yt-dlp自己处理
         except Exception as e:
-            self.progress_signal.emit(f"⚠️ 生成唯一文件名时出错: {str(e)}")
+            self.progress_signal.emit(t_format("⚠️ 生成唯一文件名时出错: {}", str(e)))
             return file_path  # 出错时返回原路径
 
     def _build_preferred_output_path(self, target_dir, name):
@@ -456,7 +456,7 @@ class DownloadThread(QThread):
             cmd.extend(["--paths", f"temp:{self._yt_dlp_temp_dir}"])
             self.progress_signal.emit(t("✓ 临时分片已重定向到系统临时目录（下载目录仅保留最终文件）"))
         except Exception as e:
-            self.progress_signal.emit(f"⚠️ 临时目录重定向失败，继续默认模式: {str(e)}")
+            self.progress_signal.emit(t_format("⚠️ 临时目录重定向失败，继续默认模式: {}", str(e)))
 
     def _cleanup_yt_dlp_temp_path(self):
         """清理 yt-dlp 临时目录。"""
@@ -548,7 +548,7 @@ class DownloadThread(QThread):
 
             return moved_files
         except Exception as e:
-            self.progress_signal.emit(f"⚠️ 搬运下载结果失败: {str(e)}")
+            self.progress_signal.emit(t_format("⚠️ 搬运下载结果失败: {}", str(e)))
             return moved_files
 
     def _cleanup_staging_output_dir(self):
@@ -629,7 +629,7 @@ class DownloadThread(QThread):
                 )
                 if fast_proc.returncode == 0 and os.path.exists(fast_out) and os.path.getsize(fast_out) > 0:
                     os.replace(fast_out, src_path)
-                    self.progress_signal.emit(f"✓ 直接修复完成: {os.path.basename(src_path)}")
+                    self.progress_signal.emit(t_format("✓ 直接修复完成: {}", os.path.basename(src_path)))
                     continue
                 if os.path.exists(fast_out):
                     try:
@@ -638,7 +638,7 @@ class DownloadThread(QThread):
                         pass
 
                 # 第二阶段：重编码兜底（仅在直修失败时）
-                self.progress_signal.emit(f"↪ 直接修复失败，回退重编码: {os.path.basename(src_path)}")
+                self.progress_signal.emit(t_format("↪ 直接修复失败，回退重编码: {}", os.path.basename(src_path)))
                 tmp_out = src_path + ".timeline_fix.mp4"
                 ff_cmd = [
                     ffmpeg_bin,
@@ -669,21 +669,21 @@ class DownloadThread(QThread):
                 if proc.returncode == 0 and os.path.exists(tmp_out) and os.path.getsize(tmp_out) > 0:
                     # 覆盖原文件，保持最终文件名不变
                     os.replace(tmp_out, src_path)
-                    self.progress_signal.emit(f"✓ 稳定化完成: {os.path.basename(src_path)}")
+                    self.progress_signal.emit(t_format("✓ 稳定化完成: {}", os.path.basename(src_path)))
                 else:
                     if os.path.exists(tmp_out):
                         try:
                             os.remove(tmp_out)
                         except Exception:
                             pass
-                    self.progress_signal.emit(f"⚠️ 稳定化失败，保留原文件: {os.path.basename(src_path)}")
+                    self.progress_signal.emit(t_format("⚠️ 稳定化失败，保留原文件: {}", os.path.basename(src_path)))
             except Exception as e:
-                self.progress_signal.emit(f"⚠️ 稳定化处理异常: {str(e)}")
+                self.progress_signal.emit(t_format("⚠️ 稳定化处理异常: {}", str(e)))
     
     def _calculate_expected_download_count(self):
 
         """从additional_options中解析用户设置的预期下载数量"""
-        print(f"[调试] _calculate_expected_download_count 开始, additional_options: {self.additional_options}")
+        print(t_format("[调试] _calculate_expected_download_count 开始, additional_options: {}", self.additional_options))
         
         # 【关键修复】即使additional_options为空，也检查主应用程序的UI状态
         playlist_items_from_ui = None
@@ -692,10 +692,10 @@ class DownloadThread(QThread):
             playlist_range_text = self.main_app.playlist_range.text().strip()
             if playlist_range_text:
                 playlist_items_from_ui = playlist_range_text
-                print(f"[调试] 从主应用程序UI获取到播放列表范围: {playlist_items_from_ui}")
+                print(t_format("[调试] 从主应用程序UI获取到播放列表范围: {}", playlist_items_from_ui))
         
         if not self.additional_options and not playlist_items_from_ui:
-            print(f"[调试] additional_options 为空且UI中没有范围，返回")
+            print(t("[调试] additional_options 为空且UI中没有范围，返回"))
             return
         
         try:
@@ -707,10 +707,10 @@ class DownloadThread(QThread):
                     try:
                         self.expected_download_count = int(max_downloads)
                         # 注意：这里不发送信号，因为可能在__init__中调用，信号可能还未连接
-                        print(f"[调试] 检测到 --max-downloads: {max_downloads}, 设置预期下载数: {self.expected_download_count}")
+                        print(t_format("[调试] 检测到 --max-downloads: {}, 设置预期下载数: {}", max_downloads, self.expected_download_count))
                         return  # 如果设置了最大下载数量，优先使用它
                     except ValueError:
-                        print(f"[调试] --max-downloads 参数值无效: {max_downloads}")
+                        print(t_format("[调试] --max-downloads 参数值无效: {}", max_downloads))
                         pass
             
             # 检查 --playlist-items 参数（从additional_options或UI获取）
@@ -721,12 +721,12 @@ class DownloadThread(QThread):
                 idx = self.additional_options.index("--playlist-items")
                 if idx + 1 < len(self.additional_options):
                     playlist_items = self.additional_options[idx + 1]
-                    print(f"[调试] 从additional_options获取到 --playlist-items: {playlist_items}")
+                    print(t_format("[调试] 从additional_options获取到 --playlist-items: {}", playlist_items))
             
             # 如果additional_options中没有，但UI中有，使用UI中的值
             if not playlist_items and playlist_items_from_ui:
                 playlist_items = playlist_items_from_ui
-                print(f"[调试] 使用从UI获取的播放列表范围: {playlist_items}")
+                print(t_format("[调试] 使用从UI获取的播放列表范围: {}", playlist_items))
             
             if playlist_items:
                 self.has_playlist_items_set = True  # 标记用户设置了范围
@@ -735,20 +735,20 @@ class DownloadThread(QThread):
                     count = self._parse_playlist_items_count(playlist_items)
                     if count > 0:
                         self.expected_download_count = count
-                        print(f"[调试] 检测到 --playlist-items: {playlist_items}, 计算预期下载数: {count}")
+                        print(t_format("[调试] 检测到 --playlist-items: {}, 计算预期下载数: {}", playlist_items, count))
                         # 注意：这里不发送信号，因为可能在__init__中调用，信号可能还未连接
                     else:
-                        print(f"[调试] --playlist-items 参数解析失败: {playlist_items}")
+                        print(t_format("[调试] --playlist-items 参数解析失败: {}", playlist_items))
                 except Exception as e:
-                    print(f"[调试] --playlist-items 参数解析异常: {e}")
+                    print(t_format("[调试] --playlist-items 参数解析异常: {}", e))
                     pass
             else:
-                print(f"[调试] 未检测到 --playlist-items 参数")
+                print(t("[调试] 未检测到 --playlist-items 参数"))
                 
-            print(f"[调试] 最终预期下载数: {self.expected_download_count}, 范围设置标志: {self.has_playlist_items_set}")
+            print(t_format("[调试] 最终预期下载数: {}, 范围设置标志: {}", self.expected_download_count, self.has_playlist_items_set))
         except Exception as e:
             # 解析失败不影响下载，只是无法准确显示预期数量
-            print(f"[调试] 预期下载数计算异常: {e}")
+            print(t_format("[调试] 预期下载数计算异常: {}", e))
             pass
 
     def _url_looks_like_playlist(self, url):
@@ -1048,7 +1048,7 @@ class DownloadThread(QThread):
                             self.playlist_video_map[video_id] = video_title
                     
                     if self.playlist_video_map:
-                        self.progress_signal.emit(f"✅ 成功获取 {len(self.playlist_video_map)} 个视频的标题信息")
+                        self.progress_signal.emit(t_format("✅ 成功获取 {} 个视频的标题信息", len(self.playlist_video_map)))
                     else:
                         self.progress_signal.emit(t("⚠️ 未能获取视频标题映射，将使用实时提取的标题"))
                 else:
@@ -1059,7 +1059,7 @@ class DownloadThread(QThread):
                 self.progress_signal.emit(t("⚠️ 获取播放列表信息超时，将使用实时提取的标题"))
                 
         except Exception as e:
-            self.progress_signal.emit(f"⚠️ 获取播放列表信息出错: {str(e)}，将使用实时提取的标题")
+            self.progress_signal.emit(t_format("⚠️ 获取播放列表信息出错: {}，将使用实时提取的标题", str(e)))
         
     def _apply_base_yt_dlp_safety(self, cmd_list):
         """统一追加yt-dlp基础安全与兼容参数。"""
@@ -1248,7 +1248,7 @@ class DownloadThread(QThread):
                 if e.code in [301, 302, 307, 308, 403, 404]:
                     test_success = True
                 else:
-                    test_error = f"HTTP错误 {e.code}"
+                    test_error = t_format("HTTP错误 {}", e.code)
                     
             except urllib.error.URLError as e:
                 error_str = str(e.reason) if hasattr(e, 'reason') else str(e)
@@ -1257,13 +1257,13 @@ class DownloadThread(QThread):
                 elif 'timeout' in error_str.lower():
                     test_error = "代理连接超时"
                 else:
-                    test_error = f"连接错误: {error_str}"
+                    test_error = t_format("连接错误: {}", error_str)
                     
             except socket.timeout:
                 test_error = "代理连接超时"
                 
             except Exception as e:
-                test_error = f"测试失败: {str(e)}"
+                test_error = t_format("测试失败: {}", str(e))
             
             # 显示测试结果
             self.progress_signal.emit("-" * 60)
@@ -1285,8 +1285,8 @@ class DownloadThread(QThread):
             # 代理测试失败不应该中断下载流程
             # 捕获所有异常，确保不会导致程序崩溃
             import traceback
-            self.progress_signal.emit(f"⚠️ 代理连接测试时出现异常: {str(e)}")
-            self.progress_signal.emit(f"⚠️ 异常类型: {type(e).__name__}")
+            self.progress_signal.emit(t_format("⚠️ 代理连接测试时出现异常: {}", str(e)))
+            self.progress_signal.emit(t_format("⚠️ 异常类型: {}", type(e).__name__))
             # 在调试模式下显示详细的堆栈跟踪
             # self.progress_signal.emit(f"堆栈跟踪:\n{traceback.format_exc()}")
             self.progress_signal.emit(t("将继续执行下载任务..."))
@@ -1304,9 +1304,9 @@ class DownloadThread(QThread):
                 return
                 
             self.progress_signal.emit(t("ℹ 开始执行下载任务..."))
-            self.progress_signal.emit(f"目标URL: {self.url}")
-            self.progress_signal.emit(f"输出路径: {self.output_path}")
-            self.progress_signal.emit(f"格式选项: {self.format_option}")
+            self.progress_signal.emit(t_format("目标URL: {}", self.url))
+            self.progress_signal.emit(t_format("输出路径: {}", self.output_path))
+            self.progress_signal.emit(t_format("格式选项: {}", self.format_option))
             
             # 检查是否启用了代理并进行连接测试
             self._test_proxy_before_download()
@@ -1357,8 +1357,8 @@ class DownloadThread(QThread):
                 )
             except Exception as e:
                 import traceback
-                print(f"Cookie加载出错: {e}")
-                print(f"详细错误: {traceback.format_exc()}")
+                print(t_format("Cookie加载出错: {}", e))
+                print(t_format("详细错误: {}", traceback.format_exc()))
             
             # 添加简化的绕过参数（如果启用）
             # 旧的简化绕过模式已移除，现在使用高级选项中的限制绕过设置
@@ -1371,7 +1371,7 @@ class DownloadThread(QThread):
                         cmd.extend(["--hls-use-mpegts"])
                 elif self.media_capture_format_id and self.media_capture_format_id.lower() != "best":
                     cmd.extend(["-f", self.media_capture_format_id])
-                    self.progress_signal.emit(f"✓ 媒体捕获下载使用捕获面板所选格式: {self.media_capture_format_id}")
+                    self.progress_signal.emit(t_format("✓ 媒体捕获下载使用捕获面板所选格式: {}", self.media_capture_format_id))
                     cmd.extend(["--merge-output-format", "mp4"])
                 else:
                     cmd.extend(["-f", "best"])
@@ -1434,7 +1434,7 @@ class DownloadThread(QThread):
                         # 自定义格式选择器
                         cmd.extend(["-f", self.format_option])
                     
-                    self.progress_signal.emit(f"✓ 视频格式: {self.format_option}")
+                    self.progress_signal.emit(t_format("✓ 视频格式: {}", self.format_option))
                     
                     # 简化的兼容性处理：使用后处理确保mp4容器
                     # yt-dlp会自动使用最合适的编码器，我们只需确保输出为mp4容器
@@ -1775,7 +1775,7 @@ class DownloadThread(QThread):
             
             if metadata_options:
                 cmd.extend(metadata_options)
-                self.progress_signal.emit(f"✓ 已应用 {len(metadata_options)} 个元数据选项")
+                self.progress_signal.emit(t_format("✓ 已应用 {} 个元数据选项", len(metadata_options)))
             
             # 添加SponsorBlock支持 - 与官方yt-dlp完全一致
             if advanced_enabled and self.main_app and hasattr(self.main_app, 'sponsorblock_check') and self.main_app.sponsorblock_check.isChecked():
@@ -1811,14 +1811,14 @@ class DownloadThread(QThread):
                 # 应用SponsorBlock选项
                 if sponsorblock_remove_categories:
                     cmd.extend(["--sponsorblock-remove", ','.join(sponsorblock_remove_categories)])
-                    self.progress_signal.emit(f"✓ SponsorBlock移除类型: {', '.join(sponsorblock_remove_categories)}")
+                    self.progress_signal.emit(t_format("✓ SponsorBlock移除类型: {}", ', '.join(sponsorblock_remove_categories)))
                 
                 # 检查是否需要标记章节（而不是移除）
                 if hasattr(self.main_app, 'sponsorblock_mark_chapters') and self.main_app.sponsorblock_mark_chapters.isChecked():
                     if sponsorblock_remove_categories:
                         # 为标记使用相同的类别
                         cmd.extend(["--sponsorblock-mark", ','.join(sponsorblock_remove_categories)])
-                        self.progress_signal.emit(f"✓ SponsorBlock标记章节: {', '.join(sponsorblock_remove_categories)}")
+                        self.progress_signal.emit(t_format("✓ SponsorBlock标记章节: {}", ', '.join(sponsorblock_remove_categories)))
                     else:
                         # 默认标记所有类别
                         cmd.extend(["--sponsorblock-mark", "all"])
@@ -2091,9 +2091,9 @@ class DownloadThread(QThread):
             # 添加URL
             cmd.append(self.url)
             
-            self.progress_signal.emit(f"执行命令: {' '.join(cmd)}")
-            self.progress_signal.emit(f"命令参数数量: {len(cmd)}")
-            self.progress_signal.emit(f"输出路径: {self.output_path}")
+            self.progress_signal.emit(t_format("执行命令: {}", ' '.join(cmd)))
+            self.progress_signal.emit(t_format("命令参数数量: {}", len(cmd)))
+            self.progress_signal.emit(t_format("输出路径: {}", self.output_path))
             
             # 记录下载开始前的文件列表（用于准确统计实际下载的文件）
             try:
@@ -2108,7 +2108,7 @@ class DownloadThread(QThread):
                                 if not file.endswith(('.part', '.ytdl', '.temp')):
                                     file_path = os.path.join(root, file)
                                     self.download_start_files.add(file_path)
-                    self.progress_signal.emit(f"📊 检测到现有文件: {len(self.download_start_files)} 个")
+                    self.progress_signal.emit(t_format("📊 检测到现有文件: {} 个", len(self.download_start_files)))
             except Exception as e:
                 self.progress_signal.emit(t_format("⚠️ 记录现有文件时出错: {}", e))
             
@@ -2124,8 +2124,8 @@ class DownloadThread(QThread):
                 )
                 self.progress_signal.emit(t("✓ 进程启动成功，开始监控输出..."))
             except Exception as e:
-                self.progress_signal.emit(f"✗ 启动进程失败: {str(e)}")
-                self.finished_signal.emit(False, f"启动下载进程失败: {str(e)}")
+                self.progress_signal.emit(t_format("✗ 启动进程失败: {}", str(e)))
+                self.finished_signal.emit(False, t_format("启动下载进程失败: {}", str(e)))
                 return
             
             # 读取输出并检测格式错误
@@ -2184,7 +2184,7 @@ class DownloadThread(QThread):
                             self.progress_signal.emit(t("⚠️ 进程终止超时，使用强制终止"))
                             self.process.kill()
                         except Exception as e:
-                            self.progress_signal.emit(f"⚠️ 终止进程时出错: {str(e)}")
+                            self.progress_signal.emit(t_format("⚠️ 终止进程时出错: {}", str(e)))
                     self.progress_signal.emit(t("✅ 下载进程已终止"))
                     self.cancel_signal.emit()
                     return
@@ -2237,7 +2237,7 @@ class DownloadThread(QThread):
                     match = re.search(r'Downloading\s+(\d+)\s+items?\s+of\s+(\d+)', stripped_line)
                     if match:
                         self.playlist_total_count = int(match.group(2))
-                        self.progress_signal.emit(f"📊 检测到播放列表总共 {self.playlist_total_count} 个视频")
+                        self.progress_signal.emit(t_format("📊 检测到播放列表总共 {} 个视频", self.playlist_total_count))
                 
                 # 提取当前视频ID
                 if "[youtube] Extracting URL:" in stripped_line or re.match(r'\[youtube\]\s+[a-zA-Z0-9_-]+:', stripped_line):
@@ -2284,10 +2284,10 @@ class DownloadThread(QThread):
                             if self.expected_download_count == 0:
                                 # 用户没有设置范围，使用总数
                                 self.expected_download_count = total
-                                self.progress_signal.emit(f"📊 更新预期下载数量: {self.expected_download_count} (从播放列表解析)")
+                                self.progress_signal.emit(t_format("📊 更新预期下载数量: {} (从播放列表解析)", self.expected_download_count))
                             elif self.expected_download_count != total and total > 0 and not self.has_playlist_items_set:
                                 # 只有当用户没有设置--playlist-items时，才记录警告
-                                self.progress_signal.emit(f"📊 注意：用户设置预期数量 {self.expected_download_count}，实际播放列表有 {total} 个视频")
+                                self.progress_signal.emit(t_format("📊 注意：用户设置预期数量 {}，实际播放列表有 {} 个视频", self.expected_download_count, total))
                         
                         # 【关键修复】显示进度时，使用用户设置的范围作为总数
                         display_total = self.expected_download_count if self.has_playlist_items_set and self.expected_download_count > 0 else total
@@ -2479,13 +2479,13 @@ class DownloadThread(QThread):
                                 video_title_clean = self.playlist_video_map[video_id]
                                 self.progress_signal.emit(t_format("✅ 从播放列表映射中获取到失败视频标题: {}", video_title_clean))
                             elif video_id:
-                                video_title_clean = f"[ID: {video_id}] - 无法获取标题"
+                                video_title_clean = t_format("[ID: {}] - 无法获取标题", video_id)
                             else:
                                 # 尝试从错误原因构造描述
-                                video_title_clean = f"未知视频 - {error_reason}"
+                                video_title_clean = t_format("未知视频 - {}", error_reason)
                         
                         # 优先使用清理后的标题，如果没有则使用视频ID
-                        video_identifier = video_title_clean if video_title_clean else (video_id if video_id else f"未知视频 (#{len(self.failed_videos) + 1})")
+                        video_identifier = video_title_clean if video_title_clean else (video_id if video_id else t_format("未知视频 (#{})", len(self.failed_videos) + 1))
                         
                         failed_video = {
                             'id': video_id,
@@ -2496,12 +2496,12 @@ class DownloadThread(QThread):
                         
                         # 避免重复记录同一个视频（使用视频ID去重）
                         if video_id:
-                            print(f"[调试] 检查失败视频重复性 - video_id: {video_id}, 当前失败列表: {[v.get('id') for v in self.failed_videos]}")
+                            print(t_format("[调试] 检查失败视频重复性 - video_id: {}, 当前失败列表: {}", video_id, [v.get('id') for v in self.failed_videos]))
                             is_duplicate = any(v.get('id') == video_id for v in self.failed_videos)
                             if not is_duplicate:
                                 self.failed_videos.append(failed_video)
-                                print(f"[调试] 添加失败视频到列表 - ID: {video_id}, 标题: {video_identifier}, 原因: {error_reason}")
-                                print(f"[调试] 当前失败列表长度: {len(self.failed_videos)}")
+                                print(t_format("[调试] 添加失败视频到列表 - ID: {}, 标题: {}, 原因: {}", video_id, video_identifier, error_reason))
+                                print(t_format("[调试] 当前失败列表长度: {}", len(self.failed_videos)))
                                 self.playlist_processed_count += 1  # 失败的视频也算作已处理
                                 # 【精准统计修复】如果标识符已经包含ID信息，不再重复附加
                                 if f"(ID: {video_id})" in video_identifier or video_identifier.startswith("视频 (ID:"):
@@ -2514,18 +2514,18 @@ class DownloadThread(QThread):
                                 if self.expected_download_count > 0 and not time_section_download_enabled:
                                     progress_percent = (self.playlist_processed_count / self.expected_download_count) * 100
                                     self.progress_percent_signal.emit(progress_percent)
-                                    self.progress_signal.emit(f"📊 播放列表进度: {self.playlist_processed_count}/{self.expected_download_count} ({progress_percent:.1f}%)")
+                                    self.progress_signal.emit(t_format("📊 播放列表进度: {}/{} ({:.1f}%)", self.playlist_processed_count, self.expected_download_count, progress_percent))
                             else:
                                 self.progress_signal.emit(t_format("📊 跳过重复失败记录: {} (ID: {})", video_identifier, video_id))
-                                print(f"[调试] 跳过重复失败记录 - video_id: {video_id} 已存在")
+                                print(t_format("[调试] 跳过重复失败记录 - video_id: {} 已存在", video_id))
                         else:
                             # 如果没有ID，使用标题和原因去重
-                            print(f"[调试] 检查失败视频重复性 - 无video_id, video_identifier: {video_identifier}, 当前失败列表标题: {[v.get('title') for v in self.failed_videos]}")
+                            print(t_format("[调试] 检查失败视频重复性 - 无video_id, video_identifier: {}, 当前失败列表标题: {}", video_identifier, [v.get('title') for v in self.failed_videos]))
                             is_duplicate = any(v['title'] == video_identifier and v['reason'] == error_reason for v in self.failed_videos)
                             if not is_duplicate:
                                 self.failed_videos.append(failed_video)
-                                print(f"[调试] 添加失败视频到列表 - 无ID, 标题: {video_identifier}, 原因: {error_reason}")
-                                print(f"[调试] 当前失败列表长度: {len(self.failed_videos)}")
+                                print(t_format("[调试] 添加失败视频到列表 - 无ID, 标题: {}, 原因: {}", video_identifier, error_reason))
+                                print(t_format("[调试] 当前失败列表长度: {}", len(self.failed_videos)))
                                 self.playlist_processed_count += 1  # 失败的视频也算作已处理
                                 self.progress_signal.emit(t_format("⚠️ 记录失败视频: {} - {}", video_identifier, error_reason))
                                 
@@ -2534,10 +2534,10 @@ class DownloadThread(QThread):
                                 if self.expected_download_count > 0 and not time_section_download_enabled:
                                     progress_percent = (self.playlist_processed_count / self.expected_download_count) * 100
                                     self.progress_percent_signal.emit(progress_percent)
-                                    self.progress_signal.emit(f"📊 播放列表进度: {self.playlist_processed_count}/{self.expected_download_count} ({progress_percent:.1f}%)")
+                                    self.progress_signal.emit(t_format("📊 播放列表进度: {}/{} ({:.1f}%)", self.playlist_processed_count, self.expected_download_count, progress_percent))
                             else:
                                 self.progress_signal.emit(t_format("📊 跳过重复失败记录: {}", video_identifier))
-                                print(f"[调试] 跳过重复失败记录 - 标题: '{video_identifier}' 已存在")
+                                print(t_format("[调试] 跳过重复失败记录 - 标题: '{}' 已存在", video_identifier))
                 
                 # 检测下载成功 - 改为基于实际文件名来去重统计
                 if "[download] 100%" in stripped_line or "has already been downloaded" in stripped_line:
@@ -2580,21 +2580,21 @@ class DownloadThread(QThread):
                                     
                                     if matched:
                                         self.failed_videos.pop(i)
-                                        self.progress_signal.emit(f"✅ 修正: '{video_identifier}' 实际下载成功，从失败列表移除")
+                                        self.progress_signal.emit(t_format("✅ 修正: '{}' 实际下载成功，从失败列表移除", video_identifier))
                             
                             # 使用当前视频标题作为唯一标识
                             if self.current_video_title and self.current_video_title not in self.downloaded_files:
                                 self.downloaded_files.add(self.current_video_title)
                                 # 【修复】不再在这里更新successful_downloads，只在下载结束时统一统计
                                 self.playlist_processed_count += 1  # 成功下载也算作已处理
-                                self.progress_signal.emit(f"✅ 成功下载: {video_identifier} (已记录: {len(self.downloaded_files)})")
+                                self.progress_signal.emit(t_format("✅ 成功下载: {} (已记录: {})", video_identifier, len(self.downloaded_files)))
                                 
                                 # 【关键修复】计算并发送播放列表进度百分比
                                 # 【修复】时间片段下载模式下不发送播放列表进度，因为进度已经在别处处理
                                 if self.expected_download_count > 0 and not time_section_download_enabled:
                                     progress_percent = (self.playlist_processed_count / self.expected_download_count) * 100
                                     self.progress_percent_signal.emit(progress_percent)
-                                    self.progress_signal.emit(f"📊 播放列表进度: {self.playlist_processed_count}/{self.expected_download_count} ({progress_percent:.1f}%)")
+                                    self.progress_signal.emit(t_format("📊 播放列表进度: {}/{} ({:.1f}%)", self.playlist_processed_count, self.expected_download_count, progress_percent))
                     except Exception as e:
                         # 如果提取失败，使用旧的计数方法
                         pass
@@ -2732,9 +2732,9 @@ class DownloadThread(QThread):
                                 video_title_clean = self.playlist_video_map[video_id]
                                 self.progress_signal.emit(t_format("✅ 从播放列表映射中获取到跳过视频标题: {}", video_title_clean))
                             elif video_id:
-                                video_title_clean = f"[ID: {video_id}] - 无法获取标题（{restriction_type}）"
+                                video_title_clean = t_format("[ID: {}] - 无法获取标题（{}）", video_id, restriction_type)
                             else:
-                                video_title_clean = f"未知视频 - {restriction_type}"
+                                video_title_clean = t_format("未知视频 - {}", restriction_type)
                         
                         skipped_video = {
                             'id': video_id,
@@ -2772,7 +2772,7 @@ class DownloadThread(QThread):
                                 if self.expected_download_count > 0 and should_count and not time_section_download_enabled:
                                     progress_percent = (self.playlist_processed_count / self.expected_download_count) * 100
                                     self.progress_percent_signal.emit(progress_percent)
-                                    self.progress_signal.emit(f"📊 播放列表进度: {self.playlist_processed_count}/{self.expected_download_count} ({progress_percent:.1f}%)")
+                                    self.progress_signal.emit(t_format("📊 播放列表进度: {}/{} ({:.1f}%)", self.playlist_processed_count, self.expected_download_count, progress_percent))
                         else:
                             # 如果没有ID，使用标题去重
                             if not any(v['title'] == video_title_clean and v['reason'] == error_reason for v in self.skipped_videos):
@@ -2787,7 +2787,7 @@ class DownloadThread(QThread):
                                 if self.expected_download_count > 0 and not time_section_download_enabled:
                                     progress_percent = (self.playlist_processed_count / self.expected_download_count) * 100
                                     self.progress_percent_signal.emit(progress_percent)
-                                    self.progress_signal.emit(f"📊 播放列表进度: {self.playlist_processed_count}/{self.expected_download_count} ({progress_percent:.1f}%)")
+                                    self.progress_signal.emit(t_format("📊 播放列表进度: {}/{} ({:.1f}%)", self.playlist_processed_count, self.expected_download_count, progress_percent))
                         
                         # 不要终止进程，让yt-dlp自动跳过并继续下载播放列表中的其他视频
                         continue  # 继续处理后续输出
@@ -2926,7 +2926,7 @@ class DownloadThread(QThread):
                                 # 输出调试信息
                                 self.progress_signal.emit(t_format("进度更新: {:.2f}%", percent))
                     except (ValueError, IndexError) as e:
-                        self.progress_signal.emit(f"解析进度出错: {str(e)}")
+                        self.progress_signal.emit(t_format("解析进度出错: {}", str(e)))
                 
                 # 解析已下载/总大小信息
                 downloaded_match = downloaded_pattern.search(stripped_line)
@@ -2934,7 +2934,7 @@ class DownloadThread(QThread):
                 if not downloaded_match:
                     downloaded_match = alt_downloaded_pattern.search(stripped_line)
                     if downloaded_match:
-                        self.progress_signal.emit(f"使用备用模式匹配到下载信息: {downloaded_match.group(1)}/{downloaded_match.group(2)}")
+                        self.progress_signal.emit(t_format("使用备用模式匹配到下载信息: {}/{}", downloaded_match.group(1), downloaded_match.group(2)))
                         
                 # 如果检测到下载开始但还没有进度信息，发送一个初始进度信号
                 # 但只在尚未发送过进度信号时才发送，避免重置已有进度
@@ -3007,7 +3007,7 @@ class DownloadThread(QThread):
                                 last_percent = percent
                                 self.progress_sent = True
                     except (ValueError, IndexError) as e:
-                        self.progress_signal.emit(f"解析下载信息出错: {str(e)}")
+                        self.progress_signal.emit(t_format("解析下载信息出错: {}", str(e)))
                         # 记录更详细的错误信息，帮助调试
                         import traceback
                         self.progress_signal.emit(traceback.format_exc())
@@ -3035,7 +3035,7 @@ class DownloadThread(QThread):
                 if self._staging_output_dir:
                     moved = self._move_staging_outputs_to_target()
                     if moved:
-                        self.progress_signal.emit(f"✓ 已将 {len(moved)} 个文件从暂存目录写入目标目录")
+                        self.progress_signal.emit(t_format("✓ 已将 {} 个文件从暂存目录写入目标目录", len(moved)))
                     else:
                         self.progress_signal.emit(t("⚠️ 暂存目录未检测到可搬运的最终文件"))
                 # 检查是否真的有文件被下载
@@ -3081,7 +3081,7 @@ class DownloadThread(QThread):
                             # 记录下载开始时间（从进程启动开始计算）
                             if hasattr(self, 'process_start_time'):
                                 download_start_time_record = self.process_start_time
-                                self.progress_signal.emit(f"📊 使用进程开始时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(download_start_time_record))}")
+                                self.progress_signal.emit(t_format("📊 使用进程开始时间: {}", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(download_start_time_record))))
                             
                             for root, dirs, files in os.walk(self.output_path):
                                 for file in files:
@@ -3108,9 +3108,9 @@ class DownloadThread(QThread):
                                 # 【修复】使用实际新增文件数作为成功下载数，不再重复设置
                                 actual_success_count = len(new_files)
                                 self.progress_signal.emit(t_format("📊 实际统计: 成功下载 {} 个新文件", actual_success_count))
-                                self.progress_signal.emit(f"   开始前文件数: {len(self.download_start_files)}")
-                                self.progress_signal.emit(f"   结束后文件数: {len(current_files)}")
-                                self.progress_signal.emit(f"   新增文件数: {len(new_files)}")
+                                self.progress_signal.emit(t_format("   开始前文件数: {}", len(self.download_start_files)))
+                                self.progress_signal.emit(t_format("   结束后文件数: {}", len(current_files)))
+                                self.progress_signal.emit(t_format("   新增文件数: {}", len(new_files)))
                                 
                                 # 检查是否启用了时间片段或章节功能
                                 time_sections_enabled = self._time_section_mode_active()
@@ -3137,18 +3137,18 @@ class DownloadThread(QThread):
                                             main_files.append(filename)
                                     
                                     if time_sections_enabled and segment_files:
-                                        self.progress_signal.emit(f"   ⏱️ 时间片段文件: {len(segment_files)} 个")
+                                        self.progress_signal.emit(t_format("   ⏱️ 时间片段文件: {} 个", len(segment_files)))
                                         for seg_file in segment_files[:3]:  # 显示前3个
                                             self.progress_signal.emit(f"      └─ {seg_file}")
                                         if len(segment_files) > 3:
-                                            self.progress_signal.emit(f"      └─ ... 还有 {len(segment_files) - 3} 个片段文件")
+                                            self.progress_signal.emit(t_format("      └─ ... 还有 {} 个片段文件", len(segment_files) - 3))
                                     
                                     if split_chapters_enabled and chapter_files:
-                                        self.progress_signal.emit(f"   📑 章节分割文件: {len(chapter_files)} 个")
+                                        self.progress_signal.emit(t_format("   📑 章节分割文件: {} 个", len(chapter_files)))
                                         for chap_file in chapter_files[:3]:  # # 显示前3个
                                             self.progress_signal.emit(f"      └─ {chap_file}")
                                         if len(chapter_files) > 3:
-                                            self.progress_signal.emit(f"      └─ ... 还有 {len(chapter_files) - 3} 个章节文件")
+                                            self.progress_signal.emit(t_format("      └─ ... 还有 {} 个章节文件", len(chapter_files) - 3))
                             else:
                                 # 如果没有新增文件，检查是否有文件存在
                                 if len(current_files) > 0 and len(self.download_start_files) == 0:
@@ -3190,7 +3190,7 @@ class DownloadThread(QThread):
                                         name_without_ext.replace('_', ' ') in failed_title_clean or
                                         failed_title_clean.replace('_', ' ') in name_without_ext):
                                         file_exists = True
-                                        self.progress_signal.emit(f"✅ 修正: '{failed_title}' 实际已下载，从失败列表移除")
+                                        self.progress_signal.emit(t_format("✅ 修正: '{}' 实际已下载，从失败列表移除", failed_title))
                                         break
                             
                             # 如果在上一步没找到，再检查整个输出目录
@@ -3227,7 +3227,7 @@ class DownloadThread(QThread):
                                                             
                                                             if mtime >= download_start_time - 300:
                                                                 file_exists = True
-                                                                self.progress_signal.emit(f"✅ 修正: '{failed_title}' 实际已下载，从失败列表移除")
+                                                                self.progress_signal.emit(t_format("✅ 修正: '{}' 实际已下载，从失败列表移除", failed_title))
                                                                 break
                                                         except:
                                                             file_exists = True  # 如果无法获取时间，假设文件存在
@@ -3242,7 +3242,7 @@ class DownloadThread(QThread):
                         
                         # 更新失败视频列表
                         self.failed_videos = actual_failed_videos
-                        self.progress_signal.emit(f"📊 修正后统计: {len(self.failed_videos)} 个真正失败的视频")
+                        self.progress_signal.emit(t_format("📊 修正后统计: {} 个真正失败的视频", len(self.failed_videos)))
                         
                         # 【关键修复】在修正失败列表后，设置最终的成功下载数
                         # 确保成功下载数 = 实际新文件数（已经计算好的actual_success_count）
@@ -3251,7 +3251,7 @@ class DownloadThread(QThread):
                             if self.has_playlist_items_set and self.expected_download_count > 0:
                                 # 检查新增文件是否对应范围内的视频
                                 range_aware_files = []
-                                self.progress_signal.emit(f"📊 开始范围感知文件统计，新增文件数: {len(new_files)}")
+                                self.progress_signal.emit(t_format("📊 开始范围感知文件统计，新增文件数: {}", len(new_files)))
                                 for file_path in new_files:
                                     filename = os.path.basename(file_path)
                                     self.progress_signal.emit(t_format("📁 检查文件: {}", filename))
@@ -3272,28 +3272,28 @@ class DownloadThread(QThread):
                                         self.progress_signal.emit(t_format("   ⚠️ 未提取到索引，默认包含", ))
                                 
                                 self.successful_downloads = len(range_aware_files)
-                                self.progress_signal.emit(f"📊 最终成功下载数（范围感知）: {self.successful_downloads} (范围内)")
+                                self.progress_signal.emit(t_format("📊 最终成功下载数（范围感知）: {} (范围内)", self.successful_downloads))
                             else:
                                 # 没有设置范围，使用所有新文件
                                 self.successful_downloads = actual_success_count
-                                self.progress_signal.emit(f"📊 最终成功下载数: {self.successful_downloads}")
+                                self.progress_signal.emit(t_format("📊 最终成功下载数: {}", self.successful_downloads))
                         elif len(current_files) > 0 and len(self.download_start_files) == 0:
                             # 如果开始时目录为空，现在有文件，说明都下载成功了
                             if self.has_playlist_items_set and self.expected_download_count > 0:
                                 # 设置了范围，但无法确定具体索引，使用预期数量作为上限
                                 self.successful_downloads = min(len(current_files), self.expected_download_count)
-                                self.progress_signal.emit(f"📊 最终成功下载数（范围感知，保守估计）: {self.successful_downloads}")
+                                self.progress_signal.emit(t_format("📊 最终成功下载数（范围感知，保守估计）: {}", self.successful_downloads))
                             else:
                                 self.successful_downloads = actual_success_count
-                                self.progress_signal.emit(f"📊 最终成功下载数（起始目录为空）: {self.successful_downloads}")
+                                self.progress_signal.emit(t_format("📊 最终成功下载数（起始目录为空）: {}", self.successful_downloads))
                         else:
                             # 其他情况，使用计算好的数量
                             self.successful_downloads = actual_success_count
                         
                         # 【最终确认】确保成功下载数与实际新增文件数一致
-                        self.progress_signal.emit(f"📊 最终确认: 实际新增文件数 = {actual_success_count}, 成功下载数 = {self.successful_downloads}")
+                        self.progress_signal.emit(t_format("📊 最终确认: 实际新增文件数 = {}, 成功下载数 = {}", actual_success_count, self.successful_downloads))
                         if self.successful_downloads != actual_success_count:
-                            self.progress_signal.emit(f"⚠️ 注意：范围过滤导致成功下载数从 {actual_success_count} 调整为 {self.successful_downloads}")
+                            self.progress_signal.emit(t_format("⚠️ 注意：范围过滤导致成功下载数从 {} 调整为 {}", actual_success_count, self.successful_downloads))
                         
                         # 【精准统计修复】确保预计下载数和总计处理数准确
                         # 预计下载数：优先使用用户设置的expected_download_count，如果没有则使用total_videos
@@ -3310,7 +3310,7 @@ class DownloadThread(QThread):
                         if self.playlist_skipped_count > 0 and actual_expected == self.total_videos and self.total_videos > 0:
                             # 如果有跳过的视频，但预计数还等于总数，说明需要从预计数中扣除跳过的
                             # 但更准确的方法是使用实际处理数作为预计数（因为跳过的视频已经被yt-dlp排除了）
-                            self.progress_signal.emit(f"📊 检测到日期过滤跳过了 {self.playlist_skipped_count} 个视频，实际预计下载数应为尝试下载的数量")
+                            self.progress_signal.emit(t_format("📊 检测到日期过滤跳过了 {} 个视频，实际预计下载数应为尝试下载的数量", self.playlist_skipped_count))
                         
                         # 预计下载数应该反映实际会尝试下载的数量
                         # 如果有日期过滤，yt-dlp会跳过不满足条件的视频
@@ -3348,23 +3348,23 @@ class DownloadThread(QThread):
                         sections_summary = self._get_download_sections_summary()
                         
                         if has_range_set:
-                            self.progress_signal.emit(f"   播放列表总数: {self.total_videos}")
-                            self.progress_signal.emit(f"   设置范围: {self.expected_download_count} 个视频")
+                            self.progress_signal.emit(t_format("   播放列表总数: {}", self.total_videos))
+                            self.progress_signal.emit(t_format("   设置范围: {} 个视频", self.expected_download_count))
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
-                            self.progress_signal.emit(f"   ✅ 成功下载: {self.successful_downloads} (基于实际文件统计)")
-                            self.progress_signal.emit(f"   ❌ 下载失败: {len(self.failed_videos)} (已移除误报)")
+                            self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
                                 self.progress_signal.emit(t_format("   ⏭️ 因限制跳过: {} 个", restriction_skipped))
                             self.progress_signal.emit(t_format("   📹 范围内处理: {}", total_processed))
                         else:
-                            self.progress_signal.emit(f"   预计下载: {self.expected_download_count if self.expected_download_count > 0 else self.total_videos}")
+                            self.progress_signal.emit(t_format("   预计下载: {}", self.expected_download_count if self.expected_download_count > 0 else self.total_videos))
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
-                            self.progress_signal.emit(f"   ✅ 成功下载: {self.successful_downloads} (基于实际文件统计)")
-                            self.progress_signal.emit(f"   ❌ 下载失败: {len(self.failed_videos)} (已移除误报)")
+                            self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
@@ -3423,7 +3423,7 @@ class DownloadThread(QThread):
                                 # 转换元数据文件为可读格式
                                 self._convert_metadata_files_to_readable()
                                 skip_count = len(self.failed_videos) if hasattr(self, 'failed_videos') and self.failed_videos else "部分"
-                                success_message = f"下载完成！\n\n✓ 已成功下载可用的视频\n⚠️ {skip_count} 个视频因限制被跳过"
+                                success_message = t_format("下载完成！\n\n✓ 已成功下载可用的视频\n⚠️ {} 个视频因限制被跳过", skip_count)
                                 self.progress_signal.emit(t_format("✓ 播放列表下载完成（部分视频因限制跳过）", ))
                                 self.finished_signal.emit(True, success_message)
                             else:
@@ -3523,18 +3523,18 @@ class DownloadThread(QThread):
                                     main_files.append(filename)
                             
                             if time_sections_enabled and segment_files:
-                                self.progress_signal.emit(f"   ⏱️ 时间片段文件: {len(segment_files)} 个")
+                                self.progress_signal.emit(t_format("   ⏱️ 时间片段文件: {} 个", len(segment_files)))
                                 for seg_file in segment_files[:3]:  # 显示前3个
                                     self.progress_signal.emit(f"      └─ {seg_file}")
                                 if len(segment_files) > 3:
-                                    self.progress_signal.emit(f"      └─ ... 还有 {len(segment_files) - 3} 个片段文件")
+                                    self.progress_signal.emit(t_format("      └─ ... 还有 {} 个片段文件", len(segment_files) - 3))
                             
                             if split_chapters_enabled and chapter_files:
-                                self.progress_signal.emit(f"   📑 章节分割文件: {len(chapter_files)} 个")
+                                self.progress_signal.emit(t_format("   📑 章节分割文件: {} 个", len(chapter_files)))
                                 for chap_file in chapter_files[:3]:  # # 显示前3个
                                     self.progress_signal.emit(f"      └─ {chap_file}")
                                 if len(chapter_files) > 3:
-                                    self.progress_signal.emit(f"      └─ ... 还有 {len(chapter_files) - 3} 个章节文件")
+                                    self.progress_signal.emit(t_format("      └─ ... 还有 {} 个章节文件", len(chapter_files) - 3))
                         
                         # 【精准统计修复】修正失败视频列表 - 移除实际已下载成功的视频
                         if self.failed_videos:
@@ -3559,7 +3559,7 @@ class DownloadThread(QThread):
                                             name_without_ext.replace('_', ' ') in failed_title_clean or
                                             failed_title_clean.replace('_', ' ') in name_without_ext):
                                             file_exists = True
-                                            self.progress_signal.emit(f"✅ 修正: '{failed_title}' 实际已下载，从失败列表移除")
+                                            self.progress_signal.emit(t_format("✅ 修正: '{}' 实际已下载，从失败列表移除", failed_title))
                                             break
                                 
                                 # 如果在上一步没找到，再检查整个输出目录
@@ -3596,7 +3596,7 @@ class DownloadThread(QThread):
                                                                 
                                                                 if mtime >= download_start_time - 300:
                                                                     file_exists = True
-                                                                    self.progress_signal.emit(f"✅ 修正: '{failed_title}' 实际已下载，从失败列表移除")
+                                                                    self.progress_signal.emit(t_format("✅ 修正: '{}' 实际已下载，从失败列表移除", failed_title))
                                                                     break
                                                             except:
                                                                 file_exists = True  # 如果无法获取时间，假设文件存在
@@ -3611,12 +3611,12 @@ class DownloadThread(QThread):
                             
                             # 更新失败视频列表
                             self.failed_videos = actual_failed_videos
-                            self.progress_signal.emit(f"📊 修正后统计: {len(self.failed_videos)} 个真正失败的视频")
+                            self.progress_signal.emit(t_format("📊 修正后统计: {} 个真正失败的视频", len(self.failed_videos)))
                         
                         # 【关键修复】在修正失败列表后，确保成功下载数准确
                         # actual_success_count 已经基于实际文件统计，但需要确保与修正后的失败列表一致
                         self.successful_downloads = actual_success_count
-                        self.progress_signal.emit(f"📊 确认成功下载数（基于实际文件）: {self.successful_downloads}")
+                        self.progress_signal.emit(t_format("📊 确认成功下载数（基于实际文件）: {}", self.successful_downloads))
                         
                         # 【精准统计修复】确保预计下载数和总计处理数准确
                         # 预计下载数：优先使用用户设置的expected_download_count，如果没有则使用total_videos
@@ -3636,7 +3636,7 @@ class DownloadThread(QThread):
                             # 如果总数很大但处理数很小，说明有很多视频被过滤了
                             if actual_expected > total_processed + self.playlist_skipped_count:
                                 # 预计下载数应该调整为：实际处理数（这是最准确的）
-                                self.progress_signal.emit(f"📊 预计下载数调整为实际尝试下载数（考虑日期过滤，跳过了 {self.playlist_skipped_count} 个视频）")
+                                self.progress_signal.emit(t_format("📊 预计下载数调整为实际尝试下载数（考虑日期过滤，跳过了 {} 个视频）", self.playlist_skipped_count))
                                 self.expected_download_count = total_processed
                             else:
                                 # 如果预计数合理，保持不变
@@ -3664,23 +3664,23 @@ class DownloadThread(QThread):
                         sections_summary = self._get_download_sections_summary()
                         
                         if has_range_set:
-                            self.progress_signal.emit(f"   播放列表总数: {self.total_videos}")
-                            self.progress_signal.emit(f"   设置范围: {self.expected_download_count} 个视频")
+                            self.progress_signal.emit(t_format("   播放列表总数: {}", self.total_videos))
+                            self.progress_signal.emit(t_format("   设置范围: {} 个视频", self.expected_download_count))
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
-                            self.progress_signal.emit(f"   ✅ 成功下载: {self.successful_downloads} (基于实际文件统计)")
-                            self.progress_signal.emit(f"   ❌ 下载失败: {len(self.failed_videos)} (已移除误报)")
+                            self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
                                 self.progress_signal.emit(t_format("   ⏭️ 因限制跳过: {} 个", restriction_skipped))
                             self.progress_signal.emit(t_format("   📹 范围内处理: {}", total_processed))
                         else:
-                            self.progress_signal.emit(f"   预计下载: {self.expected_download_count if self.expected_download_count > 0 else self.total_videos}")
+                            self.progress_signal.emit(t_format("   预计下载: {}", self.expected_download_count if self.expected_download_count > 0 else self.total_videos))
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
-                            self.progress_signal.emit(f"   ✅ 成功下载: {self.successful_downloads} (基于实际文件统计)")
-                            self.progress_signal.emit(f"   ❌ 下载失败: {len(self.failed_videos)} (已移除误报)")
+                            self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
@@ -3696,11 +3696,11 @@ class DownloadThread(QThread):
                         self._convert_metadata_files_to_readable()
                         
                         # 构建更详细的完成消息
-                        success_message = f"下载完成！\n\n✓ 已成功下载 {actual_success_count} 个视频"
+                        success_message = t_format("下载完成！\n\n✓ 已成功下载 {} 个视频", actual_success_count)
                         if len(self.failed_videos) > 0:
-                            success_message += f"\n⚠️ {len(self.failed_videos)} 个视频下载失败"
+                            success_message += t_format("\n⚠️ {} 个视频下载失败", len(self.failed_videos))
                             if restriction_failed > 0:
-                                success_message += f"（其中 {restriction_failed} 个因限制失败）"
+                                success_message += t_format("（其中 {} 个因限制失败）", restriction_failed)
                         self.finished_signal.emit(True, success_message)
                         return  # 重要：直接返回，不再执行后续的错误处理逻辑
                     else:
@@ -3781,7 +3781,7 @@ class DownloadThread(QThread):
                     self.finished_signal.emit(False, error_message)
                 
         except Exception as e:
-            self.finished_signal.emit(False, f"程序异常: {str(e)}")
+            self.finished_signal.emit(False, t_format("程序异常: {}", str(e)))
         finally:
             self._cleanup_yt_dlp_temp_path()
             self._cleanup_staging_output_dir()
@@ -4020,43 +4020,26 @@ class DownloadThread(QThread):
         if matched_error:
             error_msg = f"{matched_error['title']}\n"
             error_msg += f"{'='*50}\n"
-            error_msg += f"📋 问题描述：{matched_error['description']}\n\n"
-            error_msg += f"💡 解决方案：\n"
+            error_msg += t_format("📋 问题描述：{}\n\n", matched_error['description'])
+            error_msg += t("💡 解决方案：\n")
             for solution in matched_error['solutions']:
                 error_msg += f"   {solution}\n"
-            error_msg += f"\n🔧 技术细节：{matched_error['technical']}\n"
+            error_msg += t_format("\n🔧 技术细节：{}\n", matched_error['technical'])
             
             # 添加原始错误的关键部分（如果有）
             key_error_line = self._extract_key_error_line(error_output)
             if key_error_line:
-                error_msg += f"\n📝 原始错误：{key_error_line}"
+                error_msg += t_format("\n📝 原始错误：{}", key_error_line)
             
             return error_msg
         
         # 如果没有匹配到特定模式，尝试提取并格式化关键错误信息
         key_error = self._extract_key_error_line(error_output)
         if key_error:
-            return (f"❌ 下载失败\n"
-                   f"{'='*50}\n"
-                   f"📋 错误信息：{key_error}\n\n"
-                   f"💡 建议：\n"
-                   f"   1. 检查网络连接是否正常\n"
-                   f"   2. 确认视频链接是否有效\n"
-                   f"   3. 查看进度窗口中的详细日志\n"
-                   f"   4. 尝试选择不同的视频格式\n"
-                   f"   5. 更新yt-dlp到最新版本")
+            return (t_format("❌ 下载失败\n{}\n📋 错误信息：{}\n\n💡 建议：\n   1. 检查网络连接是否正常\n   2. 确认视频链接是否有效\n   3. 查看进度窗口中的详细日志\n   4. 尝试选择不同的视频格式\n   5. 更新yt-dlp到最新版本", '=' * 50, key_error))
         
         # 默认通用错误信息
-        return (f"❌ 下载失败\n"
-               f"{'='*50}\n"
-               f"📋 未能识别具体错误类型\n\n"
-               f"💡 通用解决方案：\n"
-               f"   1. 检查网络连接和防火墙设置\n"
-               f"   2. 确认视频链接是否正确完整\n"
-               f"   3. 尝试更换下载格式或分辨率\n"
-               f"   4. 查看进度窗口中的详细错误日志\n"
-               f"   5. 更新yt-dlp和ffmpeg到最新版本\n"
-               f"   6. 如问题持续，尝试使用代理或VPN")
+        return (t_format("❌ 下载失败\n{}\n📋 未能识别具体错误类型\n\n💡 通用解决方案：\n   1. 检查网络连接和防火墙设置\n   2. 确认视频链接是否正确完整\n   3. 尝试更换下载格式或分辨率\n   4. 查看进度窗口中的详细错误日志\n   5. 更新yt-dlp和ffmpeg到最新版本\n   6. 如问题持续，尝试使用代理或VPN", '=' * 50))
     
     def _extract_key_error_line(self, error_output):
         """从错误输出中提取关键错误信息"""
@@ -4132,7 +4115,7 @@ class DownloadThread(QThread):
                                     f.write("=" * 60 + "\n\n")
                                     f.write(description_content)
                                 
-                                self.progress_signal.emit(f"📄 已转换描述文件: {os.path.basename(txt_path)}")
+                                self.progress_signal.emit(t_format("📄 已转换描述文件: {}", os.path.basename(txt_path)))
                                 converted_count += 1
                         except Exception as e:
                             self.progress_signal.emit(t_format("⚠️ 转换描述文件时出错: {}", e))
@@ -4162,20 +4145,20 @@ class DownloadThread(QThread):
                                         f.write("=" * 60 + "\n")
                                         f.write("视频信息 (Video Information)\n")
                                         f.write("=" * 60 + "\n\n")
-                                        f.write(f"标题: {title}\n")
-                                        f.write(f"作者: {uploader}\n")
+                                        f.write(t_format("标题: {}\n", title))
+                                        f.write(t_format("作者: {}\n", uploader))
                                         if upload_date:
-                                            f.write(f"发布日期: {upload_date}\n")
+                                            f.write(t_format("发布日期: {}\n", upload_date))
                                         if view_count:
-                                            f.write(f"观看次数: {view_count:,}\n")
+                                            f.write(t_format("观看次数: {:,}\n", view_count))
                                         if like_count:
-                                            f.write(f"点赞次数: {like_count:,}\n")
+                                            f.write(t_format("点赞次数: {:,}\n", like_count))
                                         f.write("\n" + "-" * 60 + "\n")
                                         f.write("视频描述:\n")
                                         f.write("-" * 60 + "\n\n")
                                         f.write(description)
                                     
-                                    self.progress_signal.emit(f"📄 已生成描述文件: {os.path.basename(description_txt_path)}")
+                                    self.progress_signal.emit(t_format("📄 已生成描述文件: {}", os.path.basename(description_txt_path)))
                                     converted_count += 1
                             
                             # 提取评论
@@ -4187,9 +4170,9 @@ class DownloadThread(QThread):
                                     
                                     with open(comments_txt_path, 'w', encoding='utf-8') as f:
                                         f.write("=" * 60 + "\n")
-                                        f.write(f"视频评论 (Video Comments)\n")
-                                        f.write(f"视频标题: {title}\n")
-                                        f.write(f"评论数量: {len(comments)}\n")
+                                        f.write(t("视频评论 (Video Comments)\n"))
+                                        f.write(t_format("视频标题: {}\n", title))
+                                        f.write(t_format("评论数量: {}\n", len(comments)))
                                         f.write("=" * 60 + "\n\n")
                                         
                                         for i, comment in enumerate(comments, 1):
@@ -4207,12 +4190,12 @@ class DownloadThread(QThread):
                                                 except:
                                                     time_str = str(timestamp)
                                             
-                                            f.write(f"【评论 #{i}】\n")
-                                            f.write(f"用户: {author}\n")
+                                            f.write(t_format("【评论 #{}】\n", i))
+                                            f.write(t_format("用户: {}\n", author))
                                             if time_str:
-                                                f.write(f"时间: {time_str}\n")
+                                                f.write(t_format("时间: {}\n", time_str))
                                             if like_count:
-                                                f.write(f"点赞: {like_count}\n")
+                                                f.write(t_format("点赞: {}\n", like_count))
                                             f.write(f"\n{text}\n")
                                             f.write("\n" + "-" * 40 + "\n\n")
                                             
@@ -4223,12 +4206,12 @@ class DownloadThread(QThread):
                                                 reply_text = reply.get('text', '')
                                                 reply_likes = reply.get('like_count', 0)
                                                 
-                                                f.write(f"  └─ 回复 #{j}: {reply_author}\n")
+                                                f.write(t_format("  └─ 回复 #{}: {}\n", j, reply_author))
                                                 if reply_likes:
-                                                    f.write(f"     点赞: {reply_likes}\n")
+                                                    f.write(t_format("     点赞: {}\n", reply_likes))
                                                 f.write(f"     {reply_text}\n\n")
                                     
-                                    self.progress_signal.emit(f"💬 已生成评论文件: {os.path.basename(comments_txt_path)} ({len(comments)} 条评论)")
+                                    self.progress_signal.emit(t_format("💬 已生成评论文件: {} ({} 条评论)", os.path.basename(comments_txt_path), len(comments)))
                                     converted_count += 1
                         except Exception as e:
                             self.progress_signal.emit(t_format("⚠️ 处理JSON元数据时出错: {}", e))
@@ -4348,7 +4331,7 @@ class DownloadThread(QThread):
             # 添加URL
             cmd.append(self.url)
             
-            self.progress_signal.emit(f"执行增强认证重试命令: {' '.join(cmd)}")
+            self.progress_signal.emit(t_format("执行增强认证重试命令: {}", ' '.join(cmd)))
             
             # 增加IP位置重试计数
             self.ip_location_retry_count += 1
@@ -4540,7 +4523,7 @@ class DownloadThread(QThread):
                 if self._staging_output_dir:
                     moved = self._move_staging_outputs_to_target()
                     if moved:
-                        self.progress_signal.emit(f"✓ 增强重试已搬运 {len(moved)} 个结果文件")
+                        self.progress_signal.emit(t_format("✓ 增强重试已搬运 {} 个结果文件", len(moved)))
                 self.progress_signal.emit(t("✓ 下载成功完成"))
                 self.finished_signal.emit(True, "下载完成")
             else:
@@ -4553,7 +4536,7 @@ class DownloadThread(QThread):
                 self.finished_signal.emit(False, error_msg)
             
         except Exception as e:
-            self.finished_signal.emit(False, f"重试失败: {str(e)}")
+            self.finished_signal.emit(False, t_format("重试失败: {}", str(e)))
     
 
     
@@ -4801,7 +4784,7 @@ class DownloadThread(QThread):
                 selected_media = self._pick_best_captured_media(list(media_candidates))
 
             if not selected_media and capture_logs:
-                self.progress_signal.emit(f"⚠️ 媒体嗅探未命中可下载资源，最后日志: {capture_logs[-1]}")
+                self.progress_signal.emit(t_format("⚠️ 媒体嗅探未命中可下载资源，最后日志: {}", capture_logs[-1]))
 
             return selected_media
         except Exception as e:
@@ -4824,7 +4807,7 @@ class DownloadThread(QThread):
                 self.current_video_title = resolved_media_title
 
             self.progress_signal.emit(t_format("✅ 嗅探到媒体直链，类型: {}", media_type))
-            self.progress_signal.emit(f"🔁 使用媒体直链重试下载: {direct_url[:160]}")
+            self.progress_signal.emit(t_format("🔁 使用媒体直链重试下载: {}", direct_url[:160]))
 
             cmd = ["yt-dlp.exe"]
             self._apply_base_yt_dlp_safety(cmd)
@@ -4902,7 +4885,7 @@ class DownloadThread(QThread):
             cmd.extend(["--progress-template", "download:[%(progress.downloaded_bytes)s/%(progress.total_bytes)s] %(progress.percent)s 速度:%(progress.speed)s ETA:%(progress.eta)s"])
             cmd.append(direct_url)
 
-            self.progress_signal.emit(f"执行媒体直链重试命令: {' '.join(cmd)}")
+            self.progress_signal.emit(t_format("执行媒体直链重试命令: {}", ' '.join(cmd)))
 
             creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             self.process = subprocess.Popen(
@@ -4956,7 +4939,7 @@ class DownloadThread(QThread):
                 if self._staging_output_dir:
                     moved = self._move_staging_outputs_to_target()
                     if moved:
-                        self.progress_signal.emit(f"✓ 媒体直链重试已搬运 {len(moved)} 个结果文件")
+                        self.progress_signal.emit(t_format("✓ 媒体直链重试已搬运 {} 个结果文件", len(moved)))
                 success_title = choose_better_download_title(self.current_video_title, media_title) or "媒体直链"
                 self.finished_signal.emit(True, t_format("下载完成（已自动从网页中嗅探真实媒体地址）\n\n来源: {}", success_title))
                 return
@@ -4996,7 +4979,7 @@ class DownloadThread(QThread):
         try:
             # 检查输出目录是否存在
             if not os.path.exists(self.output_path):
-                self.progress_signal.emit(f"输出目录不存在: {self.output_path}")
+                self.progress_signal.emit(t_format("输出目录不存在: {}", self.output_path))
                 return False
             
             # 查找最近创建的文件（5分钟内）
@@ -5025,21 +5008,21 @@ class DownloadThread(QThread):
                 # 按时间排序，选择最新的文件
                 recent_files.sort(key=lambda x: x[2], reverse=True)
                 latest_file = recent_files[0]
-                self.progress_signal.emit(f"验证成功：找到下载文件 {latest_file[0]}")
+                self.progress_signal.emit(t_format("验证成功：找到下载文件 {}", latest_file[0]))
                 return True
             else:
                 self.progress_signal.emit(t("验证失败：未找到最近下载的文件"))
                 return False
                 
         except Exception as e:
-            self.progress_signal.emit(f"验证下载时出错: {str(e)}")
+            self.progress_signal.emit(t_format("验证下载时出错: {}", str(e)))
             return False
     
     def _extract_video_info(self):
         """提取视频信息而不下载"""
         try:
             # 使用更详细的日志输出
-            self.progress_signal.emit(f"正在获取视频信息: {self.url}")
+            self.progress_signal.emit(t_format("正在获取视频信息: {}", self.url))
             
             # 首先尝试使用标准JSON方法获取信息，同时获取字幕信息
             cmd = ["yt-dlp.exe", "--dump-json", "--list-subs", "--no-playlist", self.url]
@@ -5056,7 +5039,7 @@ class DownloadThread(QThread):
                 self._apply_base_yt_dlp_safety(cmd)
             except Exception:
                 pass
-            self.progress_signal.emit(f"执行命令: {' '.join(cmd)}")
+            self.progress_signal.emit(t_format("执行命令: {}", ' '.join(cmd)))
             
             process = subprocess.Popen(
                 cmd,
@@ -5100,7 +5083,7 @@ class DownloadThread(QThread):
                     return
                 except json.JSONDecodeError as json_err:
                     # JSON解析失败，记录详细错误
-                    self.progress_signal.emit(f"JSON解析错误: {str(json_err)}")
+                    self.progress_signal.emit(t_format("JSON解析错误: {}", str(json_err)))
                     self.progress_signal.emit(t("尝试使用备用方法获取信息..."))
                     
                     # 检查是否是播放列表，只有在用户启用播放列表功能时才处理
@@ -5114,7 +5097,7 @@ class DownloadThread(QThread):
                     return
             else:
                 # 命令执行失败，记录错误代码和输出
-                self.progress_signal.emit(f"命令执行失败，返回码: {process.returncode}")
+                self.progress_signal.emit(t_format("命令执行失败，返回码: {}", process.returncode))
                 if stderr:
                     self.progress_signal.emit(t_format("错误详情: {}", stderr))
                 
@@ -5122,7 +5105,7 @@ class DownloadThread(QThread):
                 self.progress_signal.emit(t("尝试使用备用方法获取信息..."))
                 self._extract_info_fallback()
         except Exception as e:
-            self.progress_signal.emit(f"获取视频信息时出错: {str(e)}")
+            self.progress_signal.emit(t_format("获取视频信息时出错: {}", str(e)))
             self.progress_signal.emit(t("尝试使用备用方法..."))
             self._extract_info_fallback()
     
@@ -5144,7 +5127,7 @@ class DownloadThread(QThread):
                 self._apply_base_yt_dlp_safety(cmd)
             except Exception:
                 pass
-            self.progress_signal.emit(f"尝试备用命令: {' '.join(cmd)}")
+            self.progress_signal.emit(t_format("尝试备用命令: {}", ' '.join(cmd)))
             
             process = subprocess.Popen(
                 cmd,
@@ -5169,7 +5152,7 @@ class DownloadThread(QThread):
             # 如果备用JSON方法也失败，尝试使用-F选项获取基本信息
             self._extract_basic_info()
         except Exception as e:
-            self.progress_signal.emit(f"备用方法出错: {str(e)}")
+            self.progress_signal.emit(t_format("备用方法出错: {}", str(e)))
             self._extract_basic_info()
     
     def _extract_basic_info(self):
@@ -5190,7 +5173,7 @@ class DownloadThread(QThread):
                 self._apply_base_yt_dlp_safety(cmd)
             except Exception:
                 pass
-            self.progress_signal.emit(f"尝试获取基本信息: {' '.join(cmd)}")
+            self.progress_signal.emit(t_format("尝试获取基本信息: {}", ' '.join(cmd)))
             
             process = subprocess.Popen(
                 cmd,
@@ -5272,11 +5255,11 @@ class DownloadThread(QThread):
             self.info_signal.emit(minimal_info)
             self.finished_signal.emit(False, "无法获取完整视频信息，仅返回基本URL信息")
         except Exception as e:
-            self.progress_signal.emit(f"获取基本信息时出错: {str(e)}")
+            self.progress_signal.emit(t_format("获取基本信息时出错: {}", str(e)))
             # 创建一个最小的信息对象，至少包含URL
             minimal_info = {"url": self.url, "title": "未知标题", "_type": "video"}
             self.info_signal.emit(minimal_info)
-            self.finished_signal.emit(False, f"所有获取方法均失败: {str(e)}")
+            self.finished_signal.emit(False, t_format("所有获取方法均失败: {}", str(e)))
     
     def _extract_playlist_info(self):
         """提取播放列表信息"""
@@ -5310,7 +5293,7 @@ class DownloadThread(QThread):
                 self._apply_base_yt_dlp_safety(cmd)
             except Exception:
                 pass
-            self.progress_signal.emit(f"尝试获取播放列表信息: {' '.join(cmd)}")
+            self.progress_signal.emit(t_format("尝试获取播放列表信息: {}", ' '.join(cmd)))
             
             process = subprocess.Popen(
                 cmd,
@@ -5340,7 +5323,7 @@ class DownloadThread(QThread):
                                 try:
                                     entry = json.loads(line)
                                     if 'title' not in entry and 'id' in entry:
-                                        entry['title'] = f"视频 {entry['id']}"
+                                        entry['title'] = t_format("视频 {}", entry['id'])
                                     playlist_info["entries"].append(entry)
                                 except json.JSONDecodeError:
                                     continue
@@ -5358,10 +5341,10 @@ class DownloadThread(QThread):
                                 playlist_info["title"] = "未知播放列表"
                         
                         self.info_signal.emit(playlist_info)
-                        self.finished_signal.emit(True, f"成功获取播放列表信息，包含 {len(playlist_info['entries'])} 个视频")
+                        self.finished_signal.emit(True, t_format("成功获取播放列表信息，包含 {} 个视频", len(playlist_info['entries'])))
                         return
                 except Exception as parse_err:
-                    self.progress_signal.emit(f"解析播放列表详细信息出错: {str(parse_err)}")
+                    self.progress_signal.emit(t_format("解析播放列表详细信息出错: {}", str(parse_err)))
             
             # 如果详细信息提取失败，尝试使用flat-playlist模式并输出单个JSON
             self.progress_signal.emit(t("尝试使用简化模式获取播放列表信息..."))
@@ -5405,9 +5388,9 @@ class DownloadThread(QThread):
                                 try:
                                     entry = json.loads(line)
                                     if 'title' not in entry and 'id' in entry:
-                                        entry['title'] = f"视频 {entry['id']}"
+                                        entry['title'] = t_format("视频 {}", entry['id'])
                                     elif 'title' not in entry:
-                                        entry['title'] = f"视频 #{len(playlist_info['entries'])+1}"
+                                        entry['title'] = t_format("视频 #{}", len(playlist_info['entries']) + 1)
                                     playlist_info["entries"].append(entry)
                                 except json.JSONDecodeError:
                                     continue
@@ -5423,16 +5406,16 @@ class DownloadThread(QThread):
                                 playlist_info["title"] = "未知播放列表"
                         
                         self.info_signal.emit(playlist_info)
-                        self.finished_signal.emit(True, f"成功获取播放列表信息，包含 {len(playlist_info['entries'])} 个视频")
+                        self.finished_signal.emit(True, t_format("成功获取播放列表信息，包含 {} 个视频", len(playlist_info['entries'])))
                         return
                 except Exception as parse_err:
-                    self.progress_signal.emit(f"解析播放列表信息出错: {str(parse_err)}")
+                    self.progress_signal.emit(t_format("解析播放列表信息出错: {}", str(parse_err)))
             
             # 如果播放列表提取失败，回退到基本信息提取
             self.progress_signal.emit(t("播放列表信息提取失败，尝试获取基本信息..."))
             self._extract_basic_info()
         except Exception as e:
-            self.progress_signal.emit(f"提取播放列表信息时出错: {str(e)}")
+            self.progress_signal.emit(t_format("提取播放列表信息时出错: {}", str(e)))
             self._extract_basic_info()
             
     def _list_formats(self):
@@ -5467,7 +5450,7 @@ class DownloadThread(QThread):
                 pass
             
             self.progress_signal.emit(t("正在获取可用格式列表..."))
-            self.progress_signal.emit(f"[日志] 格式列表请求使用URL: {self.url}")
+            self.progress_signal.emit(t_format("[日志] 格式列表请求使用URL: {}", self.url))
             try:
                 vp = subprocess.Popen(["yt-dlp.exe", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, creationflags=subprocess.CREATE_NO_WINDOW)
                 v = vp.communicate()[0].strip()
@@ -5560,7 +5543,7 @@ class DownloadThread(QThread):
                             'size_display': sd or '/',
                         })
                     self.formats_signal.emit(parsed)
-                    self.finished_signal.emit(True, f"格式列表获取成功，找到 {len(parsed)} 个可用格式")
+                    self.finished_signal.emit(True, t_format("格式列表获取成功，找到 {} 个可用格式", len(parsed)))
                     return
                 except json.JSONDecodeError:
                     pass
@@ -5579,7 +5562,7 @@ class DownloadThread(QThread):
             except Exception:
                 pass
             
-            self.progress_signal.emit(f"[日志] Fallback格式列表请求使用URL: {self.url}")
+            self.progress_signal.emit(t_format("[日志] Fallback格式列表请求使用URL: {}", self.url))
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -5676,12 +5659,12 @@ class DownloadThread(QThread):
                         seen.add(f['format_id'])
                         unique.append(f)
                 self.formats_signal.emit(unique)
-                self.finished_signal.emit(True, f"格式列表获取成功，找到 {len(unique)} 个可用格式")
+                self.finished_signal.emit(True, t_format("格式列表获取成功，找到 {} 个可用格式", len(unique)))
             else:
                 self.progress_signal.emit(output)
                 self.finished_signal.emit(False, "获取格式列表失败")
         except Exception as e:
-            self.finished_signal.emit(False, f"获取格式列表时出错: {str(e)}")
+            self.finished_signal.emit(False, t_format("获取格式列表时出错: {}", str(e)))
     
     def _parse_format_line_text(self, line):
         try:
@@ -5842,19 +5825,19 @@ class DownloadThread(QThread):
             self.progress_signal.emit(t_format("无单位: 假设为字节 -> {:.2f} 字节", value))
             return value
         except Exception as e:
-            self.progress_signal.emit(f"解析大小出错: {str(e)}")
+            self.progress_signal.emit(t_format("解析大小出错: {}", str(e)))
             return 0
             return value
         except Exception as e:
-            self.progress_signal.emit(f"解析大小出错: {str(e)}")
+            self.progress_signal.emit(t_format("解析大小出错: {}", str(e)))
             return 0
             
         except Exception as e:
             # 出错时记录错误并返回0
-            print(f"解析大小字符串出错: {str(e)}, 原始字符串: {size_str}")
+            print(t_format("解析大小字符串出错: {}, 原始字符串: {}", str(e), size_str))
             return 0
         except (ValueError, TypeError) as e:
-            print(f"解析大小字符串出错: {size_str}, 错误: {str(e)}")
+            print(t_format("解析大小字符串出错: {}, 错误: {}", size_str, str(e)))
             return 0
     
     def _retry_with_best_format(self, postprocessing_error=False):
@@ -5946,7 +5929,7 @@ class DownloadThread(QThread):
             cmd.append(self.url)
             
             # 记录完整命令用于调试
-            self.progress_signal.emit(f"执行重试命令: {' '.join(cmd)}")
+            self.progress_signal.emit(t_format("执行重试命令: {}", ' '.join(cmd)))
             
             # 执行命令
             self.process = subprocess.Popen(
@@ -6034,7 +6017,7 @@ class DownloadThread(QThread):
                             last_percent = percent
                             self.progress_sent = True
                     except (ValueError, IndexError) as e:
-                        self.progress_signal.emit(f"解析进度出错: {str(e)}")
+                        self.progress_signal.emit(t_format("解析进度出错: {}", str(e)))
                 
                 # 收集错误信息
                 if "ERROR" in stripped_line or "Error" in stripped_line or "error" in stripped_line:
@@ -6068,7 +6051,7 @@ class DownloadThread(QThread):
                 if self._staging_output_dir:
                     moved = self._move_staging_outputs_to_target()
                     if moved:
-                        self.progress_signal.emit(f"✓ 重试流程已搬运 {len(moved)} 个结果文件")
+                        self.progress_signal.emit(t_format("✓ 重试流程已搬运 {} 个结果文件", len(moved)))
                 # 检查是否真的有文件被下载
                 download_success = self._verify_download_success()
                 if download_success:
@@ -6087,11 +6070,11 @@ class DownloadThread(QThread):
                     self._retry_with_single_format()
                 else:
                     # 其他错误，直接报告失败
-                    self.finished_signal.emit(False, f"重试下载失败，返回码：{self.process.returncode}\n{error_output}")
+                    self.finished_signal.emit(False, t_format("重试下载失败，返回码：{}\n{}", self.process.returncode, error_output))
         
         except Exception as e:
-            self.progress_signal.emit(f"重试下载时发生错误: {str(e)}")
-            self.finished_signal.emit(False, f"重试下载时发生错误: {str(e)}")
+            self.progress_signal.emit(t_format("重试下载时发生错误: {}", str(e)))
+            self.finished_signal.emit(False, t_format("重试下载时发生错误: {}", str(e)))
     
     def _retry_with_single_format(self):
         """当合并格式也失败时，尝试使用单一格式下载（不需要合并的格式）"""
@@ -6143,7 +6126,7 @@ class DownloadThread(QThread):
             # 添加URL
             cmd.append(self.url)
             
-            self.progress_signal.emit(f"执行单一格式命令: {' '.join(cmd)}")
+            self.progress_signal.emit(t_format("执行单一格式命令: {}", ' '.join(cmd)))
             
             # 执行命令
             self.process = subprocess.Popen(
@@ -6216,18 +6199,18 @@ class DownloadThread(QThread):
                 if self._staging_output_dir:
                     moved = self._move_staging_outputs_to_target()
                     if moved:
-                        self.progress_signal.emit(f"✓ 单一格式重试已搬运 {len(moved)} 个结果文件")
+                        self.progress_signal.emit(t_format("✓ 单一格式重试已搬运 {} 个结果文件", len(moved)))
                 # 确保在下载完成时发送100%的进度信号
                 self.progress_percent_signal.emit(100.0)
                 self.progress_signal.emit("单一格式下载成功，进度100%")
                 self.finished_signal.emit(True, "下载完成！")
             else:
                 # 如果所有尝试都失败了
-                self.finished_signal.emit(False, f"所有下载尝试均失败，返回码：{self.process.returncode}\n{error_output}")
+                self.finished_signal.emit(False, t_format("所有下载尝试均失败，返回码：{}\n{}", self.process.returncode, error_output))
         
         except Exception as e:
-            self.progress_signal.emit(f"单一格式下载时发生错误: {str(e)}")
-            self.finished_signal.emit(False, f"单一格式下载时发生错误: {str(e)}")
+            self.progress_signal.emit(t_format("单一格式下载时发生错误: {}", str(e)))
+            self.finished_signal.emit(False, t_format("单一格式下载时发生错误: {}", str(e)))
     
     def _check_aria2c_available_in_thread(self):
         """在下载线程中检查aria2c是否可用"""
@@ -6250,7 +6233,7 @@ class DownloadThread(QThread):
         cancel_signal_sent = False  # 标记是否已发送取消信号
         # 设置取消标志，让run方法中的循环能够检测到
         self._cancelled = True
-        self.progress_signal.emit(f"⚙️ 设置取消标志: _cancelled = {self._cancelled}")
+        self.progress_signal.emit(t_format("⚙️ 设置取消标志: _cancelled = {}", self._cancelled))
         
         try:
             if self.process:
@@ -6280,11 +6263,11 @@ class DownloadThread(QThread):
                         if result.returncode == 0:
                             self.progress_signal.emit(t("✓ 已成功终止下载进程及所有子进程"))
                         else:
-                            self.progress_signal.emit(f"taskkill返回码: {result.returncode}, 错误: {result.stderr}")
+                            self.progress_signal.emit(t_format("taskkill返回码: {}, 错误: {}", result.returncode, result.stderr))
                     except subprocess.TimeoutExpired:
                         self.progress_signal.emit(t("⚠️ taskkill命令超时，进程可能已被终止"))
                     except Exception as e:
-                        self.progress_signal.emit(f"taskkill执行失败: {str(e)}")
+                        self.progress_signal.emit(t_format("taskkill执行失败: {}", str(e)))
                         # 备用方案：直接kill
                         try:
                             self.process.kill()
@@ -6302,7 +6285,7 @@ class DownloadThread(QThread):
                         os.killpg(os.getpgid(process_pid), signal.SIGKILL)
                         self.progress_signal.emit(t("✓ 已终止进程组"))
                     except Exception as e:
-                        self.progress_signal.emit(f"终止进程组失败: {str(e)}")
+                        self.progress_signal.emit(t_format("终止进程组失败: {}", str(e)))
                         try:
                             self.process.kill()
                         except:
@@ -6330,7 +6313,7 @@ class DownloadThread(QThread):
                     self.progress_signal.emit(t("✓ 下载取消完成"))
                     
         except Exception as e:
-            self.progress_signal.emit(f"停止进程时发生错误: {str(e)}")
+            self.progress_signal.emit(t_format("停止进程时发生错误: {}", str(e)))
             # 最后的备用方案
             try:
                 if self.process and self.process.poll() is None:
@@ -6361,28 +6344,28 @@ class DownloadThread(QThread):
             
             # 【新增】首先删除正在下载的文件（这些是被中断的实际视频文件）
             if hasattr(self, 'current_downloading_files') and self.current_downloading_files:
-                self.progress_signal.emit(f"🔍 检测到 {len(self.current_downloading_files)} 个正在下载的文件需要清理...")
+                self.progress_signal.emit(t_format("🔍 检测到 {} 个正在下载的文件需要清理...", len(self.current_downloading_files)))
                 for file_path in list(self.current_downloading_files):
                     try:
                         if file_path and os.path.exists(file_path):
                             # 验证文件确实是不完整的下载文件
                             os.remove(file_path)
                             cleaned_files.append(file_path)
-                            self.progress_signal.emit(f"  ✓ 已删除未完成的下载: {os.path.basename(file_path)}")
+                            self.progress_signal.emit(t_format("  ✓ 已删除未完成的下载: {}", os.path.basename(file_path)))
                         # 同时检查对应的.part文件（如果存在）
                         part_file = file_path + ".part"
                         if os.path.exists(part_file):
                             os.remove(part_file)
                             cleaned_files.append(part_file)
-                            self.progress_signal.emit(f"  ✓ 已删除: {os.path.basename(part_file)}")
+                            self.progress_signal.emit(t_format("  ✓ 已删除: {}", os.path.basename(part_file)))
                     except Exception as e:
-                        self.progress_signal.emit(f"  ⚠️ 删除文件失败 {os.path.basename(file_path)}: {str(e)}")
+                        self.progress_signal.emit(t_format("  ⚠️ 删除文件失败 {}: {}", os.path.basename(file_path), str(e)))
                 # 清空追踪列表
                 self.current_downloading_files.clear()
             
             if not self.output_path or not os.path.exists(self.output_path):
                 if cleaned_files:
-                    self.progress_signal.emit(f"✓ 共清理了 {len(cleaned_files)} 个残余文件")
+                    self.progress_signal.emit(t_format("✓ 共清理了 {} 个残余文件", len(cleaned_files)))
                 return
             
             
@@ -6421,9 +6404,9 @@ class DownloadThread(QThread):
                             
                             os.remove(file_path)
                             cleaned_files.append(file_path)
-                            self.progress_signal.emit(f"  ✓ 已删除: {os.path.basename(file_path)}")
+                            self.progress_signal.emit(t_format("  ✓ 已删除: {}", os.path.basename(file_path)))
                     except Exception as e:
-                        self.progress_signal.emit(f"  ⚠️ 删除文件失败 {os.path.basename(file_path)}: {str(e)}")
+                        self.progress_signal.emit(t_format("  ⚠️ 删除文件失败 {}: {}", os.path.basename(file_path), str(e)))
             
             # 清理空的子目录
             try:
@@ -6440,13 +6423,13 @@ class DownloadThread(QThread):
                 pass
             
             if cleaned_files:
-                self.progress_signal.emit(f"✓ 共清理了 {len(cleaned_files)} 个残余文件")
+                self.progress_signal.emit(t_format("✓ 共清理了 {} 个残余文件", len(cleaned_files)))
             else:
                 self.progress_signal.emit(t("✓ 未发现需要清理的残余文件"))
                 
         except Exception as e:
-            self.progress_signal.emit(f"清理残余文件时发生错误: {str(e)}")
+            self.progress_signal.emit(t_format("清理残余文件时发生错误: {}", str(e)))
             import traceback
-            self.progress_signal.emit(f"详细错误: {traceback.format_exc()}")
+            self.progress_signal.emit(t_format("详细错误: {}", traceback.format_exc()))
 
 
