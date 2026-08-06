@@ -1856,7 +1856,7 @@ class DownloadThread(QThread):
             stdout = decode_subprocess_bytes(stdout_bytes) if stdout_bytes else ""
             stderr = decode_subprocess_bytes(stderr_bytes) if stderr_bytes else ""
         except Exception as e:
-            self.progress_signal.emit(f"⚠️ 预取视频标题失败: {e}")
+            self.progress_signal.emit(t_format("⚠️ 预取视频标题失败: {}", e))
             return ""
 
         if process.returncode != 0:
@@ -1871,7 +1871,7 @@ class DownloadThread(QThread):
 
         resolved = self._remember_video_title(title_lines[-1])
         if resolved:
-            self.progress_signal.emit(f"✓ 已预取视频标题: {resolved}")
+            self.progress_signal.emit(t_format("✓ 已预取视频标题: {}", resolved))
         return resolved
 
     def _build_output_template(self, output_base_dir, suffix=""):
@@ -2809,7 +2809,7 @@ class DownloadThread(QThread):
                 archive_path = os.path.join(self.output_path, ".yt-dlp-archive")
                 if os.path.isfile(archive_path):
                     cmd_list.extend(["--download-archive", archive_path])
-                    self.progress_signal.emit(f"✓ 已启用下载存档：{archive_path}")
+                    self.progress_signal.emit(t_format("✓ 已启用下载存档：{}", archive_path))
         except Exception:
             pass
 
@@ -2883,7 +2883,7 @@ class DownloadThread(QThread):
                 # 还有下一个API模式可以尝试
                 next_mode = api_modes[current_index + 1]
                 self.x_api_retry_mode = next_mode
-                self.progress_signal.emit(f"🔄 尝试使用不同API模式: {next_mode}")
+                self.progress_signal.emit(t_format("🔄 尝试使用不同API模式: {}", next_mode))
                 self.progress_signal.emit(t("🔄 正在重新启动下载..."))
                 
                 # 重新调用run方法
@@ -2923,7 +2923,7 @@ class DownloadThread(QThread):
             # 显示代理信息
             self.progress_signal.emit("=" * 60)
             self.progress_signal.emit(t("🔐 检测到代理设置"))
-            self.progress_signal.emit(f"代理地址: {proxy_url}")
+            self.progress_signal.emit(t_format("代理地址: {}", proxy_url))
             self.progress_signal.emit(t("正在测试代理连接..."))
             self.progress_signal.emit("=" * 60)
             
@@ -2985,7 +2985,7 @@ class DownloadThread(QThread):
             else:
                 self.progress_signal.emit(t("⚠️ 代理连接测试失败"))
                 if test_error:
-                    self.progress_signal.emit(f"⚠️ 错误信息: {test_error}")
+                    self.progress_signal.emit(t_format("⚠️ 错误信息: {}", test_error))
                 self.progress_signal.emit(t("⚠️ 将继续尝试下载，但可能会失败"))
                 self.progress_signal.emit(t("💡 建议检查代理设置或点击'测试连接'按钮进行详细测试"))
             
@@ -3096,7 +3096,7 @@ class DownloadThread(QThread):
                 cmd.extend(["-f", auto_format])
                 cmd.extend(["-S", "res,fps,vcodec:h264:vp9,acodec:aac:m4a"])
                 cmd.extend(["--merge-output-format", "mp4"])
-                self.progress_signal.emit(f"✅ X平台自动选择格式: {auto_format}")
+                self.progress_signal.emit(t_format("✅ X平台自动选择格式: {}", auto_format))
             # 添加视频格式选项 - 与官方yt-dlp完全一致
             elif self.format_option:
                 # 特殊处理“仅缩略图”选项
@@ -3254,7 +3254,7 @@ class DownloadThread(QThread):
                 output_template = self._build_output_template(output_base_dir)
                 cmd.extend(["-o", output_template])
                 # 记录使用的输出模板，便于调试
-                self.progress_signal.emit(f"使用输出模板: {output_template}")
+                self.progress_signal.emit(t_format("使用输出模板: {}", output_template))
                 # 可选：输出目录若存在 .yt-dlp-archive 则启用跳过已下载
                 self._maybe_apply_download_archive(cmd)
 
@@ -3282,8 +3282,8 @@ class DownloadThread(QThread):
                 if has_resolution_limit or has_audio_lang:
                     # 用户指定了分辨率或音频语言，使用默认客户端以获取完整的格式列表
                     self.progress_signal.emit(t("✓ 检测到特定格式要求，使用默认客户端以确保格式可用性"))
-                    self.progress_signal.emit(f"  - 分辨率限制: {has_resolution_limit}")
-                    self.progress_signal.emit(f"  - 音频语言过滤: {has_audio_lang}")
+                    self.progress_signal.emit(t_format("  - 分辨率限制: {}", has_resolution_limit))
+                    self.progress_signal.emit(t_format("  - 音频语言过滤: {}", has_audio_lang))
                 else:
                     # 普通下载，也使用默认客户端，让yt-dlp自动优化
                     self.progress_signal.emit(t("✓ 使用默认客户端策略，确保最佳兼容性"))
@@ -3544,13 +3544,13 @@ class DownloadThread(QThread):
                 if hasattr(self.main_app, 'sponsorblock_api_url') and self.main_app.sponsorblock_api_url.text().strip():
                     api_url = self.main_app.sponsorblock_api_url.text().strip()
                     cmd.extend(["--sponsorblock-api", api_url])
-                    self.progress_signal.emit(f"✓ 自定义SponsorBlock API: {api_url}")
+                    self.progress_signal.emit(t_format("✓ 自定义SponsorBlock API: {}", api_url))
                 
                 # 添加章节标题模板（如果有自定义）
                 if hasattr(self.main_app, 'sponsorblock_chapter_title') and self.main_app.sponsorblock_chapter_title.text().strip():
                     title_template = self.main_app.sponsorblock_chapter_title.text().strip()
                     cmd.extend(["--sponsorblock-chapter-title", title_template])
-                    self.progress_signal.emit(f"✓ SponsorBlock章节标题模板: {title_template}")
+                    self.progress_signal.emit(t_format("✓ SponsorBlock章节标题模板: {}", title_template))
             
             # 添加章节支持选项 - 与官方yt-dlp完全一致
             if advanced_enabled and self.main_app:
@@ -3567,7 +3567,7 @@ class DownloadThread(QThread):
                     regex = "|".join(self.main_app.chapters_to_remove)
                     if regex:
                         cmd.extend(["--remove-chapters", regex])
-                        self.progress_signal.emit(f"✓ 移除匹配章节: {regex} (--remove-chapters)")
+                        self.progress_signal.emit(t_format("✓ 移除匹配章节: {} (--remove-chapters)", regex))
                 
                 # 在切割点强制关键帧
                 if hasattr(self.main_app, 'force_keyframes_check') and self.main_app.force_keyframes_check.isChecked():
@@ -3609,9 +3609,9 @@ class DownloadThread(QThread):
                         )
                         cmd.extend(["--wait-for-video", wait_time])
                         if "-" in wait_time:
-                            self.progress_signal.emit(f"✓ 等待视频可用（重试间隔 {wait_time} 秒）")
+                            self.progress_signal.emit(t_format("✓ 等待视频可用（重试间隔 {} 秒）", wait_time))
                         else:
-                            self.progress_signal.emit(f"✓ 等待视频可用（重试间隔 {wait_time} 秒）")
+                            self.progress_signal.emit(t_format("✓ 等待视频可用（重试间隔 {} 秒）", wait_time))
                     
                     # 忽略错误继续下载
                     if hasattr(self.main_app, 'ignore_errors_check') and self.main_app.ignore_errors_check.isChecked():
@@ -3656,9 +3656,9 @@ class DownloadThread(QThread):
                             )
                             if not has_sub_langs:
                                 cmd.extend(["--sub-langs", lang_pattern])
-                                self.progress_signal.emit(f"✓ 字幕语言: {normalized_lang} (匹配: {lang_pattern})")
+                                self.progress_signal.emit(t_format("✓ 字幕语言: {} (匹配: {})", normalized_lang, lang_pattern))
                             else:
-                                self.progress_signal.emit(f"✓ 字幕语言沿用预设参数: {normalized_lang}")
+                                self.progress_signal.emit(t_format("✓ 字幕语言沿用预设参数: {}", normalized_lang))
                         elif selected_lang == "all":
                             lang_pattern, _ = build_subtitle_lang_pattern("all", available_langs=preview_langs)
                             if not has_sub_langs:
@@ -3678,7 +3678,7 @@ class DownloadThread(QThread):
                         if hasattr(self.main_app, 'subtitle_langs') and self.main_app.subtitle_langs.text().strip():
                             langs = self.main_app.subtitle_langs.text().strip()
                             cmd.extend(["--sub-langs", langs])
-                            self.progress_signal.emit(f"✓ 字幕语言: {langs}")
+                            self.progress_signal.emit(t_format("✓ 字幕语言: {}", langs))
                         else:
                             default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
                             cmd.extend(["--sub-langs", default_langs])
@@ -3688,7 +3688,7 @@ class DownloadThread(QThread):
                     if hasattr(self.main_app, 'subtitle_format') and self.main_app.subtitle_format.currentData():
                         sub_format = self.main_app.subtitle_format.currentData()
                         cmd.extend(["--sub-format", sub_format])
-                        self.progress_signal.emit(f"✓ 字幕格式: {sub_format}")
+                        self.progress_signal.emit(t_format("✓ 字幕格式: {}", sub_format))
                     else:
                         # 默认优先srt格式
                         cmd.extend(["--sub-format", "srt/ass/vtt/best"])
@@ -3712,9 +3712,9 @@ class DownloadThread(QThread):
                                 )
                                 if not has_sub_langs:
                                     cmd.extend(["--sub-langs", lang_pattern])
-                                    self.progress_signal.emit(f"✓ 自动字幕语言: {normalized_lang} (匹配: {lang_pattern})")
+                                    self.progress_signal.emit(t_format("✓ 自动字幕语言: {} (匹配: {})", normalized_lang, lang_pattern))
                                 else:
-                                    self.progress_signal.emit(f"✓ 自动字幕语言沿用预设参数: {normalized_lang}")
+                                    self.progress_signal.emit(t_format("✓ 自动字幕语言沿用预设参数: {}", normalized_lang))
                             else:
                                 all_langs, _ = build_subtitle_lang_pattern("all", available_langs=preview_langs)
                                 if not has_sub_langs:
@@ -3770,14 +3770,14 @@ class DownloadThread(QThread):
                     thumb_format = self.main_app.thumbnail_format.currentText().lower()
                     if thumb_format != '默认':
                         cmd.extend(["--convert-thumbnails", thumb_format])
-                        self.progress_signal.emit(f"✓ 缩略图转换格式: {thumb_format}")
+                        self.progress_signal.emit(t_format("✓ 缩略图转换格式: {}", thumb_format))
             
             # 添加速度限制选项 - 与官方yt-dlp完全一致
             if advanced_enabled and self.main_app and hasattr(self.main_app, 'limit_speed_check') and self.main_app.limit_speed_check.isChecked():
                 if hasattr(self.main_app, 'speed_limit') and self.main_app.speed_limit.value() > 0:
                     speed_limit = f"{self.main_app.speed_limit.value()}K"
                     cmd.extend(["--limit-rate", speed_limit])
-                    self.progress_signal.emit(f"✓ 启用速度限制: {speed_limit}/s")
+                    self.progress_signal.emit(t_format("✓ 启用速度限制: {}/s", speed_limit))
             
             # 注意：播放列表选项已在 get_additional_options() 中统一处理
             # 这里不再重复添加，避免冲突
@@ -3821,7 +3821,7 @@ class DownloadThread(QThread):
                                     self.download_start_files.add(file_path)
                     self.progress_signal.emit(f"📊 检测到现有文件: {len(self.download_start_files)} 个")
             except Exception as e:
-                self.progress_signal.emit(f"⚠️ 记录现有文件时出错: {e}")
+                self.progress_signal.emit(t_format("⚠️ 记录现有文件时出错: {}", e))
             
             # 执行命令
             try:
@@ -3972,7 +3972,7 @@ class DownloadThread(QThread):
                     if self.playlist_enabled and self.expected_download_count > 0:
                         # 只有当预计下载数已经被设置且大于0时才调整
                         # 这样可以更准确地反映实际会尝试下载的视频数量
-                        self.progress_signal.emit(f"📊 日期过滤跳过的视频不计入预计下载数")
+                        self.progress_signal.emit(t_format("📊 日期过滤跳过的视频不计入预计下载数", ))
                 
                 # 捕获播放列表中视频的标题和错误信息
                 # 检测当前正在下载的视频
@@ -4002,7 +4002,7 @@ class DownloadThread(QThread):
                         
                         # 【关键修复】显示进度时，使用用户设置的范围作为总数
                         display_total = self.expected_download_count if self.has_playlist_items_set and self.expected_download_count > 0 else total
-                        self.progress_signal.emit(f"📹 正在下载第 {current}/{display_total} 个视频 (范围内)")
+                        self.progress_signal.emit(t_format("📹 正在下载第 {}/{} 个视频 (范围内)", current, display_total))
                 
                 # 检测视频标题
                 if "[download] Destination:" in stripped_line or "Destination:" in stripped_line:
@@ -4015,7 +4015,7 @@ class DownloadThread(QThread):
                             if dest_path != ts_last_destination:
                                 ts_last_destination = dest_path
                                 ts_stream_count += 1
-                                self.progress_signal.emit(f"⏱️ 时间片段下载: 检测到第 {ts_stream_count} 个流")
+                                self.progress_signal.emit(t_format("⏱️ 时间片段下载: 检测到第 {} 个流", ts_stream_count))
                     
                     # 从Destination行提取文件路径
                     try:
@@ -4188,7 +4188,7 @@ class DownloadThread(QThread):
                             # 首先尝试从播放列表映射中获取标题
                             if video_id and video_id in self.playlist_video_map:
                                 video_title_clean = self.playlist_video_map[video_id]
-                                self.progress_signal.emit(f"✅ 从播放列表映射中获取到失败视频标题: {video_title_clean}")
+                                self.progress_signal.emit(t_format("✅ 从播放列表映射中获取到失败视频标题: {}", video_title_clean))
                             elif video_id:
                                 video_title_clean = f"[ID: {video_id}] - 无法获取标题"
                             else:
@@ -4216,9 +4216,9 @@ class DownloadThread(QThread):
                                 self.playlist_processed_count += 1  # 失败的视频也算作已处理
                                 # 【精准统计修复】如果标识符已经包含ID信息，不再重复附加
                                 if f"(ID: {video_id})" in video_identifier or video_identifier.startswith("视频 (ID:"):
-                                    self.progress_signal.emit(f"⚠️ 记录失败视频: {video_identifier} - {error_reason}")
+                                    self.progress_signal.emit(t_format("⚠️ 记录失败视频: {} - {}", video_identifier, error_reason))
                                 else:
-                                    self.progress_signal.emit(f"⚠️ 记录失败视频: {video_identifier} (ID: {video_id}) - {error_reason}")
+                                    self.progress_signal.emit(t_format("⚠️ 记录失败视频: {} (ID: {}) - {}", video_identifier, video_id, error_reason))
                                 
                                 # 【关键修复】计算并发送播放列表进度百分比
                                 # 【修复】时间片段下载模式下不发送播放列表进度
@@ -4227,7 +4227,7 @@ class DownloadThread(QThread):
                                     self.progress_percent_signal.emit(progress_percent)
                                     self.progress_signal.emit(f"📊 播放列表进度: {self.playlist_processed_count}/{self.expected_download_count} ({progress_percent:.1f}%)")
                             else:
-                                self.progress_signal.emit(f"📊 跳过重复失败记录: {video_identifier} (ID: {video_id})")
+                                self.progress_signal.emit(t_format("📊 跳过重复失败记录: {} (ID: {})", video_identifier, video_id))
                                 print(f"[调试] 跳过重复失败记录 - video_id: {video_id} 已存在")
                         else:
                             # 如果没有ID，使用标题和原因去重
@@ -4238,7 +4238,7 @@ class DownloadThread(QThread):
                                 print(f"[调试] 添加失败视频到列表 - 无ID, 标题: {video_identifier}, 原因: {error_reason}")
                                 print(f"[调试] 当前失败列表长度: {len(self.failed_videos)}")
                                 self.playlist_processed_count += 1  # 失败的视频也算作已处理
-                                self.progress_signal.emit(f"⚠️ 记录失败视频: {video_identifier} - {error_reason}")
+                                self.progress_signal.emit(t_format("⚠️ 记录失败视频: {} - {}", video_identifier, error_reason))
                                 
                                 # 【关键修复】计算并发送播放列表进度百分比
                                 # 【修复】时间片段下载模式下不发送播放列表进度
@@ -4247,7 +4247,7 @@ class DownloadThread(QThread):
                                     self.progress_percent_signal.emit(progress_percent)
                                     self.progress_signal.emit(f"📊 播放列表进度: {self.playlist_processed_count}/{self.expected_download_count} ({progress_percent:.1f}%)")
                             else:
-                                self.progress_signal.emit(f"📊 跳过重复失败记录: {video_identifier}")
+                                self.progress_signal.emit(t_format("📊 跳过重复失败记录: {}", video_identifier))
                                 print(f"[调试] 跳过重复失败记录 - 标题: '{video_identifier}' 已存在")
                 
                 # 检测下载成功 - 改为基于实际文件名来去重统计
@@ -4257,13 +4257,13 @@ class DownloadThread(QThread):
                     if time_section_download_enabled:
                         # 记录流完成，递增完成计数
                         ts_stream_100_count += 1
-                        self.progress_signal.emit(f"⏱️ 时间片段下载: 第 {ts_stream_100_count} 个流下载完成 (100%)")
+                        self.progress_signal.emit(t_format("⏱️ 时间片段下载: 第 {} 个流下载完成 (100%)", ts_stream_100_count))
                         # 更新进度：每个流占40%
                         stream_progress = min(80, ts_stream_100_count * 40.0)
                         if stream_progress > last_percent:
                             self.progress_percent_signal.emit(stream_progress)
                             last_percent = stream_progress
-                            self.progress_signal.emit(f"⏱️ 时间片段进度: {stream_progress:.1f}% (已完成 {ts_stream_100_count} 个流)")
+                            self.progress_signal.emit(t_format("⏱️ 时间片段进度: {:.1f}% (已完成 {} 个流)", stream_progress, ts_stream_100_count))
                     
                     # 尝试从消息中提取文件名
                     # yt-dlp 通常会显示 "[download] 100% of 10.5MiB in 00:05" 或者 "Destination: xxx.mp4"
@@ -4403,7 +4403,7 @@ class DownloadThread(QThread):
                     
                     # 检查是否已被取消，如果是则不进行重试
                     if self._cancelled:
-                        self.progress_signal.emit(f"🔴 检测到{restriction_type}，但下载已被取消，不进行重试")
+                        self.progress_signal.emit(t_format("🔴 检测到{}，但下载已被取消，不进行重试", restriction_type))
                         if self.process:
                             self.process.terminate()
                         self.cancel_signal.emit()
@@ -4411,7 +4411,7 @@ class DownloadThread(QThread):
                     
                     # 如果是播放列表下载，不要中断进程，让yt-dlp的--ignore-errors自动跳过
                     if self.playlist_enabled:
-                        self.progress_signal.emit(f"⚠️ 检测到{restriction_type}，播放列表模式下将自动跳过该视频继续下载")
+                        self.progress_signal.emit(t_format("⚠️ 检测到{}，播放列表模式下将自动跳过该视频继续下载", restriction_type))
                         # 【关键修复】记录跳过的视频（而不是失败），优先从播放列表映射中获取标题
                         error_reason = restriction_type
                         video_id = self.current_video_id
@@ -4434,14 +4434,14 @@ class DownloadThread(QThread):
                         if video_id and not video_title_clean:
                             if video_id in self.playlist_video_map:
                                 video_title_clean = self.playlist_video_map[video_id]
-                                self.progress_signal.emit(f"✅ 从播放列表映射中获取到标题: {video_title_clean}")
+                                self.progress_signal.emit(t_format("✅ 从播放列表映射中获取到标题: {}", video_title_clean))
                         
                         # 如果还是没有标题但有ID，使用ID构造标识
                         if not video_title_clean or video_title_clean.endswith(('.m4a', '.mp4', '.webm', '.mkv', '.temp', '.part')):
                             # 首先尝试从播放列表映射中获取标题
                             if video_id and video_id in self.playlist_video_map:
                                 video_title_clean = self.playlist_video_map[video_id]
-                                self.progress_signal.emit(f"✅ 从播放列表映射中获取到跳过视频标题: {video_title_clean}")
+                                self.progress_signal.emit(t_format("✅ 从播放列表映射中获取到跳过视频标题: {}", video_title_clean))
                             elif video_id:
                                 video_title_clean = f"[ID: {video_id}] - 无法获取标题（{restriction_type}）"
                             else:
@@ -4465,7 +4465,7 @@ class DownloadThread(QThread):
                                     if current_index > 0:
                                         should_count = self._is_index_in_range(current_index)
                                         if not should_count:
-                                            self.progress_signal.emit(f"📊 跳过视频 {video_title_clean} 在范围外，不计入统计")
+                                            self.progress_signal.emit(t_format("📊 跳过视频 {} 在范围外，不计入统计", video_title_clean))
                                 
                                 if should_count:
                                     self.skipped_videos.append(skipped_video)
@@ -4474,9 +4474,9 @@ class DownloadThread(QThread):
                                 
                                 # 【精准统计修复】如果标题已经包含ID信息，不再重复附加
                                 if f"(ID: {video_id})" in video_title_clean or video_title_clean.startswith("视频 (ID:"):
-                                    self.progress_signal.emit(f"⏭️ 记录跳过视频: {video_title_clean} - {error_reason}")
+                                    self.progress_signal.emit(t_format("⏭️ 记录跳过视频: {} - {}", video_title_clean, error_reason))
                                 else:
-                                    self.progress_signal.emit(f"⏭️ 记录跳过视频: {video_title_clean} (ID: {video_id}) - {error_reason}")
+                                    self.progress_signal.emit(t_format("⏭️ 记录跳过视频: {} (ID: {}) - {}", video_title_clean, video_id, error_reason))
                                 
                                 # 【关键修复】计算并发送播放列表进度百分比
                                 # 【修复】时间片段下载模式下不发送播放列表进度
@@ -4491,7 +4491,7 @@ class DownloadThread(QThread):
                                 self.skipped_videos.append(skipped_video)
                                 self.playlist_restriction_skipped_count += 1
                                 self.playlist_processed_count += 1  # 跳过的视频也算作已处理
-                                self.progress_signal.emit(f"⏭️ 记录跳过视频: {video_title_clean} - {error_reason}")
+                                self.progress_signal.emit(t_format("⏭️ 记录跳过视频: {} - {}", video_title_clean, error_reason))
                                 
                                 # 【关键修复】计算并发送播放列表进度百分比
                                 # 【修复】时间片段下载模式下不发送播放列表进度
@@ -4505,7 +4505,7 @@ class DownloadThread(QThread):
                     
                     # 只在单个视频下载时才尝试使用增强认证参数重试
                     if not self.age_restriction_retry_attempted:
-                        self.progress_signal.emit(f"🔍 检测到{restriction_type}（单个视频），启动2024年最新绕过策略...")
+                        self.progress_signal.emit(t_format("🔍 检测到{}（单个视频），启动2024年最新绕过策略...", restriction_type))
                         if self.process:
                             self.process.terminate()
                         self._retry_with_enhanced_auth()
@@ -4540,7 +4540,7 @@ class DownloadThread(QThread):
                     
                     # 只有当新估算进度大于上次发送的进度时才更新
                     if new_estimated_progress > last_percent:
-                        self.progress_signal.emit(f"长时间无进度更新，发送估算进度: {new_estimated_progress:.1f}%")
+                        self.progress_signal.emit(t_format("长时间无进度更新，发送估算进度: {:.1f}%", new_estimated_progress))
                         self.progress_percent_signal.emit(new_estimated_progress)
                         last_progress_update = current_time
                         last_estimated_progress = new_estimated_progress
@@ -4568,7 +4568,7 @@ class DownloadThread(QThread):
                     
                     # 只有当新估算进度大于上次发送的进度时才更新
                     if new_estimated_progress > last_percent:
-                        self.progress_signal.emit(f"长时间无进度更新，发送估算进度: {new_estimated_progress:.1f}%")
+                        self.progress_signal.emit(t_format("长时间无进度更新，发送估算进度: {:.1f}%", new_estimated_progress))
                         self.progress_percent_signal.emit(new_estimated_progress)
                         last_progress_update = current_time
                         last_estimated_progress = new_estimated_progress
@@ -4613,7 +4613,7 @@ class DownloadThread(QThread):
                                     last_progress_update = current_time
                                     last_percent = adjusted_percent
                                     self.progress_sent = True
-                                    self.progress_signal.emit(f"⏱️ 时间片段进度: {adjusted_percent:.1f}% (流 {ts_stream_count}, 原始 {percent:.1f}%)")
+                                    self.progress_signal.emit(t_format("⏱️ 时间片段进度: {:.1f}% (流 {}, 原始 {:.1f}%)", adjusted_percent, ts_stream_count, percent))
                             else:
                                 # 还没检测到流，使用原始进度的40%（假设是第一个流）
                                 adjusted_percent = percent * 0.4
@@ -4623,7 +4623,7 @@ class DownloadThread(QThread):
                                     last_progress_update = current_time
                                     last_percent = adjusted_percent
                                     self.progress_sent = True
-                                    self.progress_signal.emit(f"⏱️ 时间片段进度: {adjusted_percent:.1f}% (原始 {percent:.1f}%)")
+                                    self.progress_signal.emit(t_format("⏱️ 时间片段进度: {:.1f}% (原始 {:.1f}%)", adjusted_percent, percent))
                         else:
                             # 非时间片段下载模式，使用原始进度
                             # 只有当进度变化超过0.5%或距离上次更新超过0.5秒时才发送信号
@@ -4635,7 +4635,7 @@ class DownloadThread(QThread):
                                 # 标记已发送过进度信号
                                 self.progress_sent = True
                                 # 输出调试信息
-                                self.progress_signal.emit(f"进度更新: {percent:.2f}%")
+                                self.progress_signal.emit(t_format("进度更新: {:.2f}%", percent))
                     except (ValueError, IndexError) as e:
                         self.progress_signal.emit(f"解析进度出错: {str(e)}")
                 
@@ -4661,14 +4661,14 @@ class DownloadThread(QThread):
                         total = downloaded_match.group(2)
                         
                         # 记录原始匹配信息，帮助调试
-                        self.progress_signal.emit(f"原始下载信息: {downloaded}/{total}")
+                        self.progress_signal.emit(t_format("原始下载信息: {}/{}", downloaded, total))
                         
                         # 使用改进的单位转换
                         downloaded_value = self._parse_size(downloaded)
                         total_value = self._parse_size(total)
                         
                         # 记录转换后的值，帮助调试
-                        self.progress_signal.emit(f"转换后的大小: {downloaded_value:.2f}/{total_value:.2f} 字节")
+                        self.progress_signal.emit(t_format("转换后的大小: {:.2f}/{:.2f} 字节", downloaded_value, total_value))
                         
                         # 处理总大小未知的情况（NA或0）
                         if total == "NA" or total_value <= 0:
@@ -4698,7 +4698,7 @@ class DownloadThread(QThread):
                                 # 只有当估算进度变化超过0.5%或距离上次更新超过1秒时才发送信号
                                 current_time = time.time()
                                 if abs(estimated_percent - last_percent) >= 0.5 or (current_time - last_progress_update) >= 1:
-                                    self.progress_signal.emit(f"总大小未知，使用时间估算进度: {estimated_percent:.2f}%")
+                                    self.progress_signal.emit(t_format("总大小未知，使用时间估算进度: {:.2f}%", estimated_percent))
                                     self.progress_percent_signal.emit(estimated_percent)
                                     last_progress_update = current_time
                                     last_percent = estimated_percent
@@ -4712,7 +4712,7 @@ class DownloadThread(QThread):
                             current_time = time.time()
                             if abs(percent - last_percent) >= 0.5 or (current_time - last_progress_update) >= 0.5:
                                 # 发送进度信号前记录详细信息
-                                self.progress_signal.emit(f"进度估算: {downloaded}/{total} = {percent:.2f}%")
+                                self.progress_signal.emit(t_format("进度估算: {}/{} = {:.2f}%", downloaded, total, percent))
                                 self.progress_percent_signal.emit(percent)
                                 last_progress_update = current_time
                                 last_percent = percent
@@ -4818,7 +4818,7 @@ class DownloadThread(QThread):
                             if new_files:
                                 # 【修复】使用实际新增文件数作为成功下载数，不再重复设置
                                 actual_success_count = len(new_files)
-                                self.progress_signal.emit(f"📊 实际统计: 成功下载 {actual_success_count} 个新文件")
+                                self.progress_signal.emit(t_format("📊 实际统计: 成功下载 {} 个新文件", actual_success_count))
                                 self.progress_signal.emit(f"   开始前文件数: {len(self.download_start_files)}")
                                 self.progress_signal.emit(f"   结束后文件数: {len(current_files)}")
                                 self.progress_signal.emit(f"   新增文件数: {len(new_files)}")
@@ -4865,11 +4865,11 @@ class DownloadThread(QThread):
                                 if len(current_files) > 0 and len(self.download_start_files) == 0:
                                     # 开始时目录为空，结束时有了文件，说明都下载成功了
                                     actual_success_count = len(current_files)
-                                    self.progress_signal.emit(f"📊 实际统计: 成功下载 {actual_success_count} 个文件（起始目录为空）")
+                                    self.progress_signal.emit(t_format("📊 实际统计: 成功下载 {} 个文件（起始目录为空）", actual_success_count))
                                 else:
                                     actual_success_count = 0
                     except Exception as e:
-                        self.progress_signal.emit(f"⚠️ 统计实际文件时出错: {e}")
+                        self.progress_signal.emit(t_format("⚠️ 统计实际文件时出错: {}", e))
                     
                     # 如果是因为达到最大下载限制而停止，给出明确提示
                     if reached_max_downloads:
@@ -4880,7 +4880,7 @@ class DownloadThread(QThread):
                     # 无论是否有失败，都要显示报告（精准统计）
                     if self.playlist_enabled:
                         # 【精准统计修复】从失败列表中移除实际已下载的视频
-                        self.progress_signal.emit(f"🔍 检查失败列表中是否有实际下载成功的视频...")
+                        self.progress_signal.emit(t_format("🔍 检查失败列表中是否有实际下载成功的视频...", ))
                         actual_failed_videos = []
                         new_files_names = {os.path.basename(f) for f in new_files} if new_files else set()
                         
@@ -4946,7 +4946,7 @@ class DownloadThread(QThread):
                                             if file_exists:
                                                 break
                                 except Exception as e:
-                                    self.progress_signal.emit(f"⚠️ 检查失败视频时出错: {e}")
+                                    self.progress_signal.emit(t_format("⚠️ 检查失败视频时出错: {}", e))
                             
                             if not file_exists:
                                 actual_failed_videos.append(failed_video)
@@ -4965,22 +4965,22 @@ class DownloadThread(QThread):
                                 self.progress_signal.emit(f"📊 开始范围感知文件统计，新增文件数: {len(new_files)}")
                                 for file_path in new_files:
                                     filename = os.path.basename(file_path)
-                                    self.progress_signal.emit(f"📁 检查文件: {filename}")
+                                    self.progress_signal.emit(t_format("📁 检查文件: {}", filename))
                                     # 尝试从文件名中提取索引信息（yt-dlp通常包含索引）
                                     index_match = re.search(r'(\d+)', filename)
                                     if index_match:
                                         file_index = int(index_match.group(1))
-                                        self.progress_signal.emit(f"   提取到索引: {file_index}")
+                                        self.progress_signal.emit(t_format("   提取到索引: {}", file_index))
                                         # 检查这个索引是否在用户设置的范围内
                                         if self._is_index_in_range(file_index):
                                             range_aware_files.append(file_path)
-                                            self.progress_signal.emit(f"   ✅ 索引在范围内，包含此文件")
+                                            self.progress_signal.emit(t_format("   ✅ 索引在范围内，包含此文件", ))
                                         else:
-                                            self.progress_signal.emit(f"   ❌ 索引不在范围内，排除此文件")
+                                            self.progress_signal.emit(t_format("   ❌ 索引不在范围内，排除此文件", ))
                                     else:
                                         # 如果没有索引信息，默认包含（保守策略）
                                         range_aware_files.append(file_path)
-                                        self.progress_signal.emit(f"   ⚠️ 未提取到索引，默认包含")
+                                        self.progress_signal.emit(t_format("   ⚠️ 未提取到索引，默认包含", ))
                                 
                                 self.successful_downloads = len(range_aware_files)
                                 self.progress_signal.emit(f"📊 最终成功下载数（范围感知）: {self.successful_downloads} (范围内)")
@@ -5031,7 +5031,7 @@ class DownloadThread(QThread):
                             # 如果总数很大但处理数很小，说明有很多视频被过滤了
                             if actual_expected > total_processed + self.playlist_skipped_count:
                                 # 预计下载数应该调整为：实际处理数（这是最准确的）
-                                self.progress_signal.emit(f"📊 预计下载数调整为实际尝试下载数（考虑日期过滤）")
+                                self.progress_signal.emit(t_format("📊 预计下载数调整为实际尝试下载数（考虑日期过滤）", ))
                                 self.expected_download_count = total_processed
                             else:
                                 # 如果预计数合理，保持不变
@@ -5047,7 +5047,7 @@ class DownloadThread(QThread):
                                                      for keyword in ['限制', '年龄', '地区', '会员', 'restricted', 
                                                                     'age', 'geo', 'membership', 'premium']))
                         
-                        self.progress_signal.emit(f"📊 最终统计:")
+                        self.progress_signal.emit(t_format("📊 最终统计:", ))
                         
                         # 【关键修复】如果设置了范围，特别标注（更准确的检测）
                         has_range_set = (self.expected_download_count > 0 and 
@@ -5062,29 +5062,29 @@ class DownloadThread(QThread):
                             self.progress_signal.emit(f"   播放列表总数: {self.total_videos}")
                             self.progress_signal.emit(f"   设置范围: {self.expected_download_count} 个视频")
                             if time_sections_enabled:
-                                self.progress_signal.emit(f"   ⏱️ 时间片段: {sections_summary}")
+                                self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(f"   ✅ 成功下载: {self.successful_downloads} (基于实际文件统计)")
                             self.progress_signal.emit(f"   ❌ 下载失败: {len(self.failed_videos)} (已移除误报)")
                             if restriction_failed > 0:
-                                self.progress_signal.emit(f"      └─ 其中因限制失败: {restriction_failed} 个")
+                                self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
-                                self.progress_signal.emit(f"   ⏭️ 因限制跳过: {restriction_skipped} 个")
-                            self.progress_signal.emit(f"   📹 范围内处理: {total_processed}")
+                                self.progress_signal.emit(t_format("   ⏭️ 因限制跳过: {} 个", restriction_skipped))
+                            self.progress_signal.emit(t_format("   📹 范围内处理: {}", total_processed))
                         else:
                             self.progress_signal.emit(f"   预计下载: {self.expected_download_count if self.expected_download_count > 0 else self.total_videos}")
                             if time_sections_enabled:
-                                self.progress_signal.emit(f"   ⏱️ 时间片段: {sections_summary}")
+                                self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(f"   ✅ 成功下载: {self.successful_downloads} (基于实际文件统计)")
                             self.progress_signal.emit(f"   ❌ 下载失败: {len(self.failed_videos)} (已移除误报)")
                             if restriction_failed > 0:
-                                self.progress_signal.emit(f"      └─ 其中因限制失败: {restriction_failed} 个")
+                                self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
-                                self.progress_signal.emit(f"   ⏭️ 因限制跳过: {restriction_skipped} 个")
-                            self.progress_signal.emit(f"   📹 总计处理: {total_processed}")
+                                self.progress_signal.emit(t_format("   ⏭️ 因限制跳过: {} 个", restriction_skipped))
+                            self.progress_signal.emit(t_format("   📹 总计处理: {}", total_processed))
                         
                         # 【关键修复】无论是否有失败，都显示播放列表下载报告
                         # 使用实际统计的数据：预期下载数量、成功数量、失败数量
-                        self.progress_signal.emit(f"\n📊 播放列表下载完成，正在生成下载报告...")
+                        self.progress_signal.emit(t_format("\n📊 播放列表下载完成，正在生成下载报告...", ))
                         self.failed_videos_signal.emit(self.failed_videos)
                     
                     # 转换元数据文件为可读格式
@@ -5135,7 +5135,7 @@ class DownloadThread(QThread):
                                 self._convert_metadata_files_to_readable()
                                 skip_count = len(self.failed_videos) if hasattr(self, 'failed_videos') and self.failed_videos else "部分"
                                 success_message = f"下载完成！\n\n✓ 已成功下载可用的视频\n⚠️ {skip_count} 个视频因限制被跳过"
-                                self.progress_signal.emit(f"✓ 播放列表下载完成（部分视频因限制跳过）")
+                                self.progress_signal.emit(t_format("✓ 播放列表下载完成（部分视频因限制跳过）", ))
                                 self.finished_signal.emit(True, success_message)
                             else:
                                 # 没有文件下载成功
@@ -5207,7 +5207,7 @@ class DownloadThread(QThread):
                         
                         actual_success_count = len(new_files)
                         self.successful_downloads = actual_success_count  # 更新成功下载计数
-                        self.progress_signal.emit(f"📊 实际统计: 成功下载 {actual_success_count} 个新文件")
+                        self.progress_signal.emit(t_format("📊 实际统计: 成功下载 {} 个新文件", actual_success_count))
                         
                         # 检查是否启用了时间片段或章节功能
                         time_sections_enabled = self._time_section_mode_active()
@@ -5249,7 +5249,7 @@ class DownloadThread(QThread):
                         
                         # 【精准统计修复】修正失败视频列表 - 移除实际已下载成功的视频
                         if self.failed_videos:
-                            self.progress_signal.emit(f"🔍 检查失败列表中是否有实际下载成功的视频...")
+                            self.progress_signal.emit(t_format("🔍 检查失败列表中是否有实际下载成功的视频...", ))
                             actual_failed_videos = []
                             new_files_names = {os.path.basename(f) for f in new_files} if new_files else set()
                             
@@ -5315,7 +5315,7 @@ class DownloadThread(QThread):
                                                 if file_exists:
                                                     break
                                     except Exception as e:
-                                        self.progress_signal.emit(f"⚠️ 检查失败视频时出错: {e}")
+                                        self.progress_signal.emit(t_format("⚠️ 检查失败视频时出错: {}", e))
                                 
                                 if not file_exists:
                                     actual_failed_videos.append(failed_video)
@@ -5363,7 +5363,7 @@ class DownloadThread(QThread):
                                                      for keyword in ['限制', '年龄', '地区', '会员', 'restricted', 
                                                                     'age', 'geo', 'membership', 'premium']))
                         
-                        self.progress_signal.emit(f"📊 最终统计:")
+                        self.progress_signal.emit(t_format("📊 最终统计:", ))
                         
                         # 【关键修复】如果设置了范围，特别标注（更准确的检测）
                         has_range_set = (self.expected_download_count > 0 and 
@@ -5378,29 +5378,29 @@ class DownloadThread(QThread):
                             self.progress_signal.emit(f"   播放列表总数: {self.total_videos}")
                             self.progress_signal.emit(f"   设置范围: {self.expected_download_count} 个视频")
                             if time_sections_enabled:
-                                self.progress_signal.emit(f"   ⏱️ 时间片段: {sections_summary}")
+                                self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(f"   ✅ 成功下载: {self.successful_downloads} (基于实际文件统计)")
                             self.progress_signal.emit(f"   ❌ 下载失败: {len(self.failed_videos)} (已移除误报)")
                             if restriction_failed > 0:
-                                self.progress_signal.emit(f"      └─ 其中因限制失败: {restriction_failed} 个")
+                                self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
-                                self.progress_signal.emit(f"   ⏭️ 因限制跳过: {restriction_skipped} 个")
-                            self.progress_signal.emit(f"   📹 范围内处理: {total_processed}")
+                                self.progress_signal.emit(t_format("   ⏭️ 因限制跳过: {} 个", restriction_skipped))
+                            self.progress_signal.emit(t_format("   📹 范围内处理: {}", total_processed))
                         else:
                             self.progress_signal.emit(f"   预计下载: {self.expected_download_count if self.expected_download_count > 0 else self.total_videos}")
                             if time_sections_enabled:
-                                self.progress_signal.emit(f"   ⏱️ 时间片段: {sections_summary}")
+                                self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(f"   ✅ 成功下载: {self.successful_downloads} (基于实际文件统计)")
                             self.progress_signal.emit(f"   ❌ 下载失败: {len(self.failed_videos)} (已移除误报)")
                             if restriction_failed > 0:
-                                self.progress_signal.emit(f"      └─ 其中因限制失败: {restriction_failed} 个")
+                                self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
-                                self.progress_signal.emit(f"   ⏭️ 因限制跳过: {restriction_skipped} 个")
-                            self.progress_signal.emit(f"   📹 总计处理: {total_processed}")
+                                self.progress_signal.emit(t_format("   ⏭️ 因限制跳过: {} 个", restriction_skipped))
+                            self.progress_signal.emit(t_format("   📹 总计处理: {}", total_processed))
                         
                         # 【关键修复】无论是否有失败，都显示播放列表下载报告
                         # 使用实际统计的数据：预期下载数量、成功数量、失败数量
-                        self.progress_signal.emit(f"\n📊 播放列表下载完成，正在生成下载报告...")
+                        self.progress_signal.emit(t_format("\n📊 播放列表下载完成，正在生成下载报告...", ))
                         self.failed_videos_signal.emit(self.failed_videos)
                         
                         # 转换元数据文件为可读格式
@@ -5846,7 +5846,7 @@ class DownloadThread(QThread):
                                 self.progress_signal.emit(f"📄 已转换描述文件: {os.path.basename(txt_path)}")
                                 converted_count += 1
                         except Exception as e:
-                            self.progress_signal.emit(f"⚠️ 转换描述文件时出错: {e}")
+                            self.progress_signal.emit(t_format("⚠️ 转换描述文件时出错: {}", e))
                     
                     # 处理 .info.json 文件 - 提取评论和描述
                     if filename.endswith('.info.json'):
@@ -5942,10 +5942,10 @@ class DownloadThread(QThread):
                                     self.progress_signal.emit(f"💬 已生成评论文件: {os.path.basename(comments_txt_path)} ({len(comments)} 条评论)")
                                     converted_count += 1
                         except Exception as e:
-                            self.progress_signal.emit(f"⚠️ 处理JSON元数据时出错: {e}")
+                            self.progress_signal.emit(t_format("⚠️ 处理JSON元数据时出错: {}", e))
             
             if converted_count > 0:
-                self.progress_signal.emit(f"✅ 元数据文件转换完成，共转换 {converted_count} 个文件为可读格式")
+                self.progress_signal.emit(t_format("✅ 元数据文件转换完成，共转换 {} 个文件为可读格式", converted_count))
             
             # 第二遍：清理原始元数据文件（转换成功后删除）
             deleted_count = 0
@@ -5959,10 +5959,10 @@ class DownloadThread(QThread):
                         if os.path.exists(txt_path):
                             try:
                                 os.remove(file_path)
-                                self.progress_signal.emit(f"🗑️ 已删除原始描述文件: {filename}")
+                                self.progress_signal.emit(t_format("🗑️ 已删除原始描述文件: {}", filename))
                                 deleted_count += 1
                             except Exception as e:
-                                self.progress_signal.emit(f"⚠️ 删除原始描述文件失败: {e}")
+                                self.progress_signal.emit(t_format("⚠️ 删除原始描述文件失败: {}", e))
                     
                     # 删除 .info.json 文件（如果对应的 .comments.txt 或 .description.txt 存在）
                     if filename.endswith('.info.json'):
@@ -5973,16 +5973,16 @@ class DownloadThread(QThread):
                         if os.path.exists(comments_txt) or os.path.exists(description_txt):
                             try:
                                 os.remove(file_path)
-                                self.progress_signal.emit(f"🗑️ 已删除原始JSON文件: {filename}")
+                                self.progress_signal.emit(t_format("🗑️ 已删除原始JSON文件: {}", filename))
                                 deleted_count += 1
                             except Exception as e:
-                                self.progress_signal.emit(f"⚠️ 删除原始JSON文件失败: {e}")
+                                self.progress_signal.emit(t_format("⚠️ 删除原始JSON文件失败: {}", e))
             
             if deleted_count > 0:
-                self.progress_signal.emit(f"🧹 清理完成，共删除 {deleted_count} 个原始元数据文件")
+                self.progress_signal.emit(t_format("🧹 清理完成，共删除 {} 个原始元数据文件", deleted_count))
             
         except Exception as e:
-            self.progress_signal.emit(f"⚠️ 转换元数据文件时出现异常: {e}")
+            self.progress_signal.emit(t_format("⚠️ 转换元数据文件时出现异常: {}", e))
     
     def _retry_with_enhanced_auth(self):
         """使用增强的认证参数重试下载"""
@@ -6151,7 +6151,7 @@ class DownloadThread(QThread):
                 
                 if is_age_restricted or is_geo_restricted:
                     restriction_type = "年龄限制" if is_age_restricted else "地理限制"
-                    self.progress_signal.emit(f"❌ {restriction_type}绕过失败，增强认证重试无效")
+                    self.progress_signal.emit(t_format("❌ {}绕过失败，增强认证重试无效", restriction_type))
                     
                     if self.process:
                         self.process.terminate()
@@ -6165,7 +6165,7 @@ class DownloadThread(QThread):
                 if "[download] Destination:" in stripped_line:
                     stream_count += 1
                     current_stream_total = 0
-                    self.progress_signal.emit(f"📥 检测到第 {stream_count} 个流开始下载")
+                    self.progress_signal.emit(t_format("📥 检测到第 {} 个流开始下载", stream_count))
                 
                 # 解析下载进度
                 # 【修复】支持多种进度格式：
@@ -6221,7 +6221,7 @@ class DownloadThread(QThread):
                     # 只在进度变化超过1%或时间间隔超过0.5秒时更新
                     if abs(adjusted_percent - last_percent) >= 1 or (current_time - last_progress_update) >= 0.5:
                         self.progress_percent_signal.emit(adjusted_percent)
-                        self.progress_signal.emit(f"收到进度信号: {adjusted_percent:.1f}% (流{stream_count}: {raw_percent:.1f}%)")
+                        self.progress_signal.emit(t_format("收到进度信号: {:.1f}% (流{}: {:.1f}%)", adjusted_percent, stream_count, raw_percent))
                         last_progress_update = current_time
                         last_percent = adjusted_percent
                 
@@ -6245,7 +6245,7 @@ class DownloadThread(QThread):
             # 等待进程结束
             return_code = self.process.wait()
             
-            self.progress_signal.emit(f"进程结束，返回代码: {return_code}")
+            self.progress_signal.emit(t_format("进程结束，返回代码: {}", return_code))
             
             if return_code == 0:
                 if self._staging_output_dir:
@@ -6516,7 +6516,7 @@ class DownloadThread(QThread):
 
             return selected_media
         except Exception as e:
-            self.progress_signal.emit(f"⚠️ 浏览器媒体嗅探失败: {e}")
+            self.progress_signal.emit(t_format("⚠️ 浏览器媒体嗅探失败: {}", e))
             return None
 
     def _retry_with_captured_media(self, media_info):
@@ -6534,7 +6534,7 @@ class DownloadThread(QThread):
                 self.preferred_title = resolved_media_title
                 self.current_video_title = resolved_media_title
 
-            self.progress_signal.emit(f"✅ 嗅探到媒体直链，类型: {media_type}")
+            self.progress_signal.emit(t_format("✅ 嗅探到媒体直链，类型: {}", media_type))
             self.progress_signal.emit(f"🔁 使用媒体直链重试下载: {direct_url[:160]}")
 
             cmd = ["yt-dlp.exe"]
@@ -6587,7 +6587,7 @@ class DownloadThread(QThread):
                     self.progress_signal.emit(t("✓ 媒体直链重试启用暂存目录"))
                 output_template = self._build_output_template(output_base_dir)
                 cmd.extend(["-o", output_template])
-                self.progress_signal.emit(f"媒体直链输出模板: {output_template}")
+                self.progress_signal.emit(t_format("媒体直链输出模板: {}", output_template))
 
             cmd.extend([
                 "--prefer-free-formats",
@@ -6661,7 +6661,7 @@ class DownloadThread(QThread):
                         pass
 
             return_code = self.process.wait()
-            self.progress_signal.emit(f"媒体直链重试进程结束，返回代码: {return_code}")
+            self.progress_signal.emit(t_format("媒体直链重试进程结束，返回代码: {}", return_code))
 
             if return_code == 0:
                 if self._staging_output_dir:
@@ -6669,13 +6669,13 @@ class DownloadThread(QThread):
                     if moved:
                         self.progress_signal.emit(f"✓ 媒体直链重试已搬运 {len(moved)} 个结果文件")
                 success_title = choose_better_download_title(self.current_video_title, media_title) or "媒体直链"
-                self.finished_signal.emit(True, f"下载完成（已自动从网页中嗅探真实媒体地址）\n\n来源: {success_title}")
+                self.finished_signal.emit(True, t_format("下载完成（已自动从网页中嗅探真实媒体地址）\n\n来源: {}", success_title))
                 return
 
             error_message = self._generate_simple_error_message(error_output)
-            self.finished_signal.emit(False, f"网页URL不受支持，且媒体直链重试失败：{error_message}")
+            self.finished_signal.emit(False, t_format("网页URL不受支持，且媒体直链重试失败：{}", error_message))
         except Exception as e:
-            self.finished_signal.emit(False, f"媒体直链重试失败: {e}")
+            self.finished_signal.emit(False, t_format("媒体直链重试失败: {}", e))
 
     def _retry_with_browser_media_fallback(self):
         if self.browser_media_fallback_attempted:
@@ -6728,7 +6728,7 @@ class DownloadThread(QThread):
                             # 忽略太小的文件（可能是临时文件或元数据文件）
                             if file_size > 1024:  # 大于1KB
                                 recent_files.append((file_path, file_size, recent_time))
-                                self.progress_signal.emit(f"找到下载文件: {file_path} ({file_size} 字节)")
+                                self.progress_signal.emit(t_format("找到下载文件: {} ({} 字节)", file_path, file_size))
                     except (OSError, IOError):
                         continue
             
@@ -6783,7 +6783,7 @@ class DownloadThread(QThread):
             if stdout:
                 self.progress_signal.emit(t("获取到输出数据"))
             if stderr:
-                self.progress_signal.emit(f"错误输出: {stderr}")
+                self.progress_signal.emit(t_format("错误输出: {}", stderr))
             
             if process.returncode == 0:
                 try:
@@ -6827,7 +6827,7 @@ class DownloadThread(QThread):
                 # 命令执行失败，记录错误代码和输出
                 self.progress_signal.emit(f"命令执行失败，返回码: {process.returncode}")
                 if stderr:
-                    self.progress_signal.emit(f"错误详情: {stderr}")
+                    self.progress_signal.emit(t_format("错误详情: {}", stderr))
                 
                 # 尝试备用方法
                 self.progress_signal.emit(t("尝试使用备用方法获取信息..."))
@@ -6976,7 +6976,7 @@ class DownloadThread(QThread):
             # 如果所有方法都失败
             self.progress_signal.emit(t("所有信息获取方法均失败"))
             if stderr:
-                self.progress_signal.emit(f"最终错误: {stderr}")
+                self.progress_signal.emit(t_format("最终错误: {}", stderr))
             
             # 创建一个最小的信息对象，至少包含URL
             minimal_info = {"url": self.url, "title": "未知标题", "_type": "video"}
@@ -7158,7 +7158,7 @@ class DownloadThread(QThread):
                     'resolution': '自动选择',
                     'format': 'X平台自动选择最佳格式'
                 }]
-                self.progress_signal.emit(f"✅ X平台自动选择格式: {auto_format}")
+                self.progress_signal.emit(t_format("✅ X平台自动选择格式: {}", auto_format))
                 self.progress_signal.emit(t("ℹ️ 已自动选择最佳格式，无需手动选择"))
                 self.formats_signal.emit(x_formats)
                 self.finished_signal.emit(True, "X平台自动格式选择完成")
@@ -7182,12 +7182,12 @@ class DownloadThread(QThread):
             try:
                 vp = subprocess.Popen(["yt-dlp.exe", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, creationflags=subprocess.CREATE_NO_WINDOW)
                 v = vp.communicate()[0].strip()
-                self.progress_signal.emit(f"[日志] yt-dlp版本: {v}")
+                self.progress_signal.emit(t_format("[日志] yt-dlp版本: {}", v))
             except Exception:
                 pass
             try:
                 ts = int(time.time())
-                self.progress_signal.emit(f"[日志] 请求时间戳: {ts}")
+                self.progress_signal.emit(t_format("[日志] 请求时间戳: {}", ts))
             except Exception:
                 pass
 
@@ -7518,7 +7518,7 @@ class DownloadThread(QThread):
             value = float(match.group(1))
             
             # 记录调试信息
-            self.progress_signal.emit(f"解析大小: {size_str} -> 提取数值: {value}")
+            self.progress_signal.emit(t_format("解析大小: {} -> 提取数值: {}", size_str, value))
             
             # 提取数值和单位 - 改进单位检测逻辑
             size_str = size_str.upper()  # 转换为大写以简化匹配
@@ -7526,31 +7526,31 @@ class DownloadThread(QThread):
             # 检查各种单位并进行相应转换
             if any(unit in size_str for unit in ['KIB', 'KB', 'K']):
                 result = value * 1024
-                self.progress_signal.emit(f"单位转换: KB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: KB -> {:.2f} 字节", result))
                 return result
                     
             elif any(unit in size_str for unit in ['MIB', 'MB', 'M']):
                 result = value * 1024 * 1024
-                self.progress_signal.emit(f"单位转换: MB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: MB -> {:.2f} 字节", result))
                 return result
                     
             elif any(unit in size_str for unit in ['GIB', 'GB', 'G']):
                 result = value * 1024 * 1024 * 1024
-                self.progress_signal.emit(f"单位转换: GB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: GB -> {:.2f} 字节", result))
                 return result
                 
             elif any(unit in size_str for unit in ['TIB', 'TB', 'T']):
                 result = value * 1024 * 1024 * 1024 * 1024
-                self.progress_signal.emit(f"单位转换: TB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: TB -> {:.2f} 字节", result))
                 return result
                 
             elif 'B' in size_str:
                 # 如果包含B单位，假设是字节
-                self.progress_signal.emit(f"单位: 字节 -> {value:.2f} 字节")
+                self.progress_signal.emit(t_format("单位: 字节 -> {:.2f} 字节", value))
                 return value
                 
             # 如果没有单位，假设是字节
-            self.progress_signal.emit(f"无单位: 假设为字节 -> {value:.2f} 字节")
+            self.progress_signal.emit(t_format("无单位: 假设为字节 -> {:.2f} 字节", value))
             return value
         except Exception as e:
             self.progress_signal.emit(f"解析大小出错: {str(e)}")
@@ -7632,7 +7632,7 @@ class DownloadThread(QThread):
                 output_template = self._build_output_template(safe_output_path)
                 cmd.extend(["-o", output_template])
                 # 记录使用的输出模板
-                self.progress_signal.emit(f"使用输出模板: {output_template}")
+                self.progress_signal.emit(t_format("使用输出模板: {}", output_template))
             
             # 添加其他选项，但排除可能导致格式问题的选项
             if self.additional_options:
@@ -7830,7 +7830,7 @@ class DownloadThread(QThread):
                         safe_output_path = staged_dir
                 output_template = self._build_output_template(safe_output_path, "_单文件")
                 cmd.extend(["-o", output_template])
-                self.progress_signal.emit(f"使用输出模板: {output_template}")
+                self.progress_signal.emit(t_format("使用输出模板: {}", output_template))
             
             # 添加其他选项，但排除可能导致格式问题的选项
             if self.additional_options:
@@ -8141,7 +8141,7 @@ class DownloadThread(QThread):
                         try:
                             if not os.listdir(dir_path):  # 如果目录为空
                                 os.rmdir(dir_path)
-                                self.progress_signal.emit(f"  ✓ 已删除空目录: {dir_name}")
+                                self.progress_signal.emit(t_format("  ✓ 已删除空目录: {}", dir_name))
                         except:
                             pass
             except:
@@ -8442,7 +8442,7 @@ class TranscodeThread(QThread):
                 gpu_output, _ = gpu_process.communicate()
                 if gpu_output.strip():
                     gpu_info = gpu_output.strip()
-                    self.progress_signal.emit(f"系统GPU信息:\n{gpu_info}")
+                    self.progress_signal.emit(t_format("系统GPU信息:\n{}", gpu_info))
             except Exception as gpu_err:
                 self.progress_signal.emit(f"获取GPU详细信息失败: {str(gpu_err)}")
             
@@ -8453,7 +8453,7 @@ class TranscodeThread(QThread):
                 nvenc_available, nvenc_error = self._test_ffmpeg_encoder("h264_nvenc")
                 self.progress_signal.emit(f"NVENC编码器测试结果: {'可用' if nvenc_available else '不可用'}")
                 if not nvenc_available and nvenc_error:
-                    self.progress_signal.emit(f"NVENC编码器测试详情: {nvenc_error}")
+                    self.progress_signal.emit(t_format("NVENC编码器测试详情: {}", nvenc_error))
             
             # 测试AMD编码器
             amf_available = False
@@ -8461,7 +8461,7 @@ class TranscodeThread(QThread):
                 amf_available, amf_error = self._test_ffmpeg_encoder("h264_amf")
                 self.progress_signal.emit(f"AMF编码器测试结果: {'可用' if amf_available else '不可用'}")
                 if not amf_available and amf_error:
-                    self.progress_signal.emit(f"AMF编码器测试详情: {amf_error}")
+                    self.progress_signal.emit(t_format("AMF编码器测试详情: {}", amf_error))
             
             # 根据检测结果确定GPU类型
             if nvenc_available and (has_cuda or "nvidia" in gpu_info.lower()):
@@ -8566,7 +8566,7 @@ class TranscodeThread(QThread):
                                 for line in process_output.strip().split('\n'):
                                     if 'ffmpeg' in line.lower():
                                         ffmpeg_found = True
-                                        self.progress_signal.emit(f"在GPU进程列表中找到ffmpeg: {line}")
+                                        self.progress_signal.emit(t_format("在GPU进程列表中找到ffmpeg: {}", line))
                                         self.gpu_encoder_active = True
                                         encoder_detected = True
                             
@@ -8608,7 +8608,7 @@ class TranscodeThread(QThread):
                                     elif avg_usage > 80:
                                         self.progress_signal.emit(t("🔥 优秀: NVIDIA GPU利用率非常高！"))
                                 else:
-                                    self.progress_signal.emit(f"NVIDIA GPU加速状态: ❌ 未激活 (平均使用率: {avg_usage:.1f}%)")
+                                    self.progress_signal.emit(t_format("NVIDIA GPU加速状态: ❌ 未激活 (平均使用率: {:.1f}%)", avg_usage))
                                     if check_count > 10:  # 10次检查后仍未激活
                                         self.progress_signal.emit(t("⚠️ 警告: NVENC编码器可能未正常工作"))
                     except Exception as e:
@@ -8764,7 +8764,7 @@ class TranscodeThread(QThread):
                                 elif avg_usage > 80:
                                     self.progress_signal.emit(t("🔥 优秀: GPU利用率非常高！"))
                             else:
-                                self.progress_signal.emit(f"AMD GPU加速状态: ❌ 未激活 (平均使用率: {avg_usage:.1f}%)")
+                                self.progress_signal.emit(t_format("AMD GPU加速状态: ❌ 未激活 (平均使用率: {:.1f}%)", avg_usage))
                                 if check_count > 10:  # 10次检查后仍未激活
                                     self.progress_signal.emit(t("⚠️ 警告: GPU编码器可能未正常工作"))
                     except Exception as e:
@@ -9080,12 +9080,12 @@ class TranscodeThread(QThread):
                                 reason += f"。FFmpeg反馈: {amf_error}"
                             self._fallback_to_cpu(reason)
                         else:
-                            self.progress_signal.emit(f"AMD GPU可用，启用{selected_amf_codec}硬件加速编码")
+                            self.progress_signal.emit(t_format("AMD GPU可用，启用{}硬件加速编码", selected_amf_codec))
                             self.gpu_encoder_active = True
 
                     if self.use_gpu and self.gpu_type == "AMD (AMF)":
                         new_cmd.extend(["-c:v", selected_amf_codec])
-                        self.progress_signal.emit(f"强制使用{selected_amf_codec}编码器")
+                        self.progress_signal.emit(t_format("强制使用{}编码器", selected_amf_codec))
                         
                         # 3. 添加保守且兼容性更高的 AMF 参数
                         new_cmd.extend(["-quality", "balanced"])
@@ -9341,12 +9341,12 @@ class TranscodeThread(QThread):
                 metadata_output, metadata_error = metadata_process.communicate()
                 
                 if metadata_error:
-                    self.progress_signal.emit(f"ffprobe错误输出: {metadata_error}")
+                    self.progress_signal.emit(t_format("ffprobe错误输出: {}", metadata_error))
                 
                 if metadata_output.strip():
                     try:
                         metadata = json.loads(metadata_output)
-                        self.progress_signal.emit(f"获取到元数据: {metadata}")
+                        self.progress_signal.emit(t_format("获取到元数据: {}", metadata))
                         
                         # 尝试从流信息中获取时长
                         if 'streams' in metadata and metadata['streams'] and 'duration' in metadata['streams'][0]:
@@ -9359,11 +9359,11 @@ class TranscodeThread(QThread):
                                 if '/' in frame_rate_str:
                                     num, den = map(int, frame_rate_str.split('/'))
                                     frame_rate = num / den if den != 0 else 0
-                                    self.progress_signal.emit(f"视频帧率: {frame_rate:.2f} fps")
+                                    self.progress_signal.emit(t_format("视频帧率: {:.2f} fps", frame_rate))
                             
                             if 'nb_frames' in metadata['streams'][0] and metadata['streams'][0]['nb_frames'] != 'N/A':
                                 total_frames = int(metadata['streams'][0]['nb_frames'])
-                                self.progress_signal.emit(f"视频总帧数: {total_frames}")
+                                self.progress_signal.emit(t_format("视频总帧数: {}", total_frames))
                         # 如果流信息中没有时长，尝试从格式信息中获取
                         elif 'format' in metadata and 'duration' in metadata['format']:
                             duration_seconds = float(metadata['format']['duration'])
@@ -9394,14 +9394,14 @@ class TranscodeThread(QThread):
                             if duration_match:
                                 h, m, s = duration_match.groups()
                                 duration_seconds = int(h) * 3600 + int(m) * 60 + float(s)
-                                self.progress_signal.emit(f"从ffmpeg输出获取视频总时长: {h}:{m}:{s} ({duration_seconds:.2f}秒)")
+                                self.progress_signal.emit(t_format("从ffmpeg输出获取视频总时长: {}:{}:{} ({:.2f}秒)", h, m, s, duration_seconds))
                                 break
                             
                             # 尝试提取视频总时长 - 替代格式 (秒数)
                             alt_duration_match = alt_duration_pattern.search(decoded_line)
                             if alt_duration_match:
                                 duration_seconds = float(alt_duration_match.group(1))
-                                self.progress_signal.emit(f"从ffmpeg输出获取视频总时长(秒数格式): {duration_seconds:.2f}秒")
+                                self.progress_signal.emit(t_format("从ffmpeg输出获取视频总时长(秒数格式): {:.2f}秒", duration_seconds))
                                 break
                     except Exception as e:
                         self.progress_signal.emit(f"解析输出时出错: {str(e)}")
@@ -9459,7 +9459,7 @@ class TranscodeThread(QThread):
                             progress_seconds = int(h) * 3600 + int(m) * 60 + float(s)
                             progress_percent = min(99.9, (progress_seconds / duration_seconds) * 100)  # 限制最大为99.9%，留出完成时的100%
                             progress_found = True
-                            self.progress_signal.emit(f"标准时间格式进度: {progress_seconds:.2f}/{duration_seconds:.2f}秒 = {progress_percent:.1f}%")
+                            self.progress_signal.emit(t_format("标准时间格式进度: {:.2f}/{:.2f}秒 = {:.1f}%", progress_seconds, duration_seconds, progress_percent))
                         
                         # 如果标准格式未匹配，尝试替代时间格式 (秒数)
                         if not progress_found:
@@ -9468,7 +9468,7 @@ class TranscodeThread(QThread):
                                 progress_seconds = float(alt_progress_match.group(1))
                                 progress_percent = min(99.9, (progress_seconds / duration_seconds) * 100)
                                 progress_found = True
-                                self.progress_signal.emit(f"替代时间格式进度: {progress_seconds:.2f}/{duration_seconds:.2f}秒 = {progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("替代时间格式进度: {:.2f}/{:.2f}秒 = {:.1f}%", progress_seconds, duration_seconds, progress_percent))
                         
                         # 尝试直接匹配百分比格式
                         if not progress_found:
@@ -9477,7 +9477,7 @@ class TranscodeThread(QThread):
                                 progress_percent = float(percent_match.group(1))
                                 progress_percent = min(99.9, progress_percent)  # 限制最大为99.9%
                                 progress_found = True
-                                self.progress_signal.emit(f"直接百分比进度: {progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("直接百分比进度: {:.1f}%", progress_percent))
                         
                         # 尝试从webm特有的帧处理信息中提取进度
                         if not progress_found and input_ext == '.webm':
@@ -9489,7 +9489,7 @@ class TranscodeThread(QThread):
                                 if total_frames > 0:
                                     progress_percent = min(99.9, (current_frame / total_frames) * 100)
                                     progress_found = True
-                                    self.progress_signal.emit(f"WebM帧进度: {current_frame}/{total_frames} = {progress_percent:.1f}%")
+                                    self.progress_signal.emit(t_format("WebM帧进度: {}/{} = {:.1f}%", current_frame, total_frames, progress_percent))
                             
                             # 添加更多webm特有的进度匹配模式
                             # 匹配VP8/VP9编码器的进度输出
@@ -9504,13 +9504,13 @@ class TranscodeThread(QThread):
                                     if estimated_total_frames > 0:
                                         progress_percent = min(99.9, (frames_processed / estimated_total_frames) * 100)
                                         progress_found = True
-                                        self.progress_signal.emit(f"VP8/VP9进度: {frames_processed}帧/{time_elapsed:.2f}秒 = {progress_percent:.1f}%")
+                                        self.progress_signal.emit(t_format("VP8/VP9进度: {}帧/{:.2f}秒 = {:.1f}%", frames_processed, time_elapsed, progress_percent))
                                         
                             # 匹配webm处理阶段信息
                             webm_stage = re.search(r'(Pass \d+/\d+)', decoded_line)
                             if not progress_found and webm_stage:
                                 stage_info = webm_stage.group(1)
-                                self.progress_signal.emit(f"WebM处理阶段: {stage_info}")
+                                self.progress_signal.emit(t_format("WebM处理阶段: {}", stage_info))
                                 # 确保在处理阶段变化时至少有一些进度显示
                                 if self.last_progress_value < 5:
                                     progress_percent = 5.0
@@ -9533,10 +9533,10 @@ class TranscodeThread(QThread):
                                 progress_percent = min(99.9, (current_seconds / duration_seconds) * 100)
                                 
                                 # 记录详细的处理信息
-                                self.progress_signal.emit(f"详细帧处理进度: 帧={frame}, FPS={fps}, Q={q_value}, 大小={size_kb}kB, 时间={h}:{m}:{s:.2f}, 进度={progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("详细帧处理进度: 帧={}, FPS={}, Q={}, 大小={}kB, 时间={}:{}:{:.2f}, 进度={:.1f}%", frame, fps, q_value, size_kb, h, m, s, progress_percent))
                                 
                                 # 直接使用实际进度，不做特殊处理
-                                self.progress_signal.emit(f"转码进度: {progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("转码进度: {:.1f}%", progress_percent))
                                 # 不再对进度值进行人为调整
                                 
                                 progress_found = True
@@ -9556,7 +9556,7 @@ class TranscodeThread(QThread):
                                 progress_percent = min(99.9, (current_seconds / duration_seconds) * 100)
                                 
                                 # 记录统计信息
-                                self.progress_signal.emit(f"统计输出进度: Q={q_value}, 大小={size_kb}kB, 时间={h}:{m}:{s:.2f}, 进度={progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("统计输出进度: Q={}, 大小={}kB, 时间={}:{}:{:.2f}, 进度={:.1f}%", q_value, size_kb, h, m, s, progress_percent))
                                 progress_found = True
                         
                         # 如果时间格式都未匹配，尝试从帧信息估算进度
@@ -9572,7 +9572,7 @@ class TranscodeThread(QThread):
                                         estimated_seconds = frame / fps
                                         progress_percent = min(99.9, (estimated_seconds / duration_seconds) * 100)
                                         progress_found = True
-                                        self.progress_signal.emit(f"基于帧数估算进度: 帧={frame}, FPS={fps}, 估算时间={estimated_seconds:.2f}秒, 进度={progress_percent:.1f}%")
+                                        self.progress_signal.emit(t_format("基于帧数估算进度: 帧={}, FPS={}, 估算时间={:.2f}秒, 进度={:.1f}%", frame, fps, estimated_seconds, progress_percent))
                                 else:
                                     # 没有fps信息时，使用总帧数估算
                                     # 假设视频帧率为25fps（常见帧率）
@@ -9580,7 +9580,7 @@ class TranscodeThread(QThread):
                                     if estimated_total_frames > 0:
                                         progress_percent = min(99.9, (frame / estimated_total_frames) * 100)
                                         progress_found = True
-                                        self.progress_signal.emit(f"基于帧数估算进度(无FPS): 帧={frame}, 估算总帧数={estimated_total_frames:.0f}, 进度={progress_percent:.1f}%")
+                                        self.progress_signal.emit(t_format("基于帧数估算进度(无FPS): 帧={}, 估算总帧数={:.0f}, 进度={:.1f}%", frame, estimated_total_frames, progress_percent))
                         
                         # 尝试匹配替代帧处理信息
                         if not progress_found:
@@ -9595,7 +9595,7 @@ class TranscodeThread(QThread):
                                     if estimated_total_frames > 0:
                                         progress_percent = min(99.9, (frames / estimated_total_frames) * 100)
                                         progress_found = True
-                                        self.progress_signal.emit(f"替代帧处理进度: 已处理{frames}帧, 估算进度={progress_percent:.1f}%")
+                                        self.progress_signal.emit(t_format("替代帧处理进度: 已处理{}帧, 估算进度={:.1f}%", frames, progress_percent))
                         
                         # 尝试匹配替代百分比格式
                         if not progress_found:
@@ -9604,14 +9604,14 @@ class TranscodeThread(QThread):
                                 progress_percent = float(alt_percent_match.group(1))
                                 progress_percent = min(99.9, progress_percent)  # 限制最大为99.9%
                                 progress_found = True
-                                self.progress_signal.emit(f"替代百分比进度: {progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("替代百分比进度: {:.1f}%", progress_percent))
                         
                         # 检测处理阶段信息
                         if not progress_found:
                             processing_match = processing_pattern.search(decoded_line)
                             if processing_match:
                                 processing_stage = processing_match.group(1)
-                                self.progress_signal.emit(f"当前处理阶段: {processing_stage}ing")
+                                self.progress_signal.emit(t_format("当前处理阶段: {}ing", processing_stage))
                                 # 如果检测到处理阶段，至少发送一个小的进度更新
                                 if self.last_progress_value < 1:
                                     progress_percent = 1.0
@@ -9683,7 +9683,7 @@ class TranscodeThread(QThread):
                                     # 修改：移除估算进度的更新阈值，确保更频繁地更新
                                     # 只要估算进度不小于上次进度，就发送更新
                                     if estimated_progress >= self.last_progress_value:
-                                        self.progress_signal.emit(f"基于时间估算进度: {estimated_progress:.1f}%")
+                                        self.progress_signal.emit(t_format("基于时间估算进度: {:.1f}%", estimated_progress))
                                         self.progress_percent_signal.emit(estimated_progress)
                                         self.last_progress_value = estimated_progress
                                         self.progress_sent = True
@@ -9699,7 +9699,7 @@ class TranscodeThread(QThread):
                     # 检查进度是否停滞
                     if current_time - last_progress_check_time > progress_stall_threshold:
                         progress_stall_count += 1
-                        self.progress_signal.emit(f"⚠️ 警告: 进度停滞检测 - 已{progress_stall_threshold}秒无进度更新 (停滞次数: {progress_stall_count})")
+                        self.progress_signal.emit(t_format("⚠️ 警告: 进度停滞检测 - 已{}秒无进度更新 (停滞次数: {})", progress_stall_threshold, progress_stall_count))
                         
                         # 如果停滞次数过多，可能需要采取行动
                         if progress_stall_count >= 3:  # 3次停滞后采取行动
@@ -9723,7 +9723,7 @@ class TranscodeThread(QThread):
             current_progress = self.last_progress_value
             
             # 记录当前进度，不再人为跳跃到95%或98%
-            self.progress_signal.emit(f"转码即将完成，当前进度: {current_progress:.1f}%")
+            self.progress_signal.emit(t_format("转码即将完成，当前进度: {:.1f}%", current_progress))
             # 不再强制设置进度为95%或98%，保持实际进度值
             # 强制更新UI
             QApplication.processEvents()
@@ -9765,7 +9765,7 @@ class TranscodeThread(QThread):
                 
                 if os.path.exists(self.output_file):
                     file_size = os.path.getsize(self.output_file)
-                    self.progress_signal.emit(f"输出文件存在，大小: {file_size:,} 字节")
+                    self.progress_signal.emit(t_format("输出文件存在，大小: {:,} 字节", file_size))
                     
                     if file_size > 1024:  # 至少需要有1KB
                         # 使用ffprobe验证文件完整性
@@ -9809,14 +9809,14 @@ class TranscodeThread(QThread):
                 
                 # 根据验证结果发送信号
                 if validation_success:
-                    self.finished_signal.emit(True, f"转码完成！总耗时: {time_str}")
+                    self.finished_signal.emit(True, t_format("转码完成！总耗时: {}", time_str))
                 else:
                     # 即使返回码为0，如果文件验证失败，也认为转码失败
                     self.progress_signal.emit("转码结果不完整，进度未达到100%")
                     self.progress_percent_signal.emit(-1.0)  # 发送错误状态
                     self.progress_signal.emit("收到转码进度信号: -1.00%")
                     self.progress_signal.emit(t("错误: 转码失败，显示错误状态"))
-                    self.finished_signal.emit(False, f"转码结果不完整，进度未达到100%，耗时: {time_str}")
+                    self.finished_signal.emit(False, t_format("转码结果不完整，进度未达到100%，耗时: {}", time_str))
             else:
                 # 处理特定错误码
                 if self.process.returncode == 4294967274 or self.process.returncode == -22:  # 0xFFFFFF6A 或 -22
@@ -9824,7 +9824,7 @@ class TranscodeThread(QThread):
                     # 不再发送90.5%的进度信号，而是保持当前进度值
                     # 记录当前进度值，以便在重试时能够平滑过渡
                     current_progress = self.last_progress_value
-                    self.progress_signal.emit(f"保持当前进度: {current_progress:.1f}%，准备重试转码")
+                    self.progress_signal.emit(t_format("保持当前进度: {:.1f}%，准备重试转码", current_progress))
                     # 尝试使用安全参数自动重试
                     retry_success = self._retry_with_safe_params()
                     
@@ -9859,7 +9859,7 @@ class TranscodeThread(QThread):
                         
                         if os.path.exists(self.output_file):
                             file_size = os.path.getsize(self.output_file)
-                            self.progress_signal.emit(f"输出文件存在，大小: {file_size:,} 字节")
+                            self.progress_signal.emit(t_format("输出文件存在，大小: {:,} 字节", file_size))
                             
                             if file_size > 1024:  # 至少需要有1KB
                                 # 使用ffprobe验证文件完整性
@@ -9903,9 +9903,9 @@ class TranscodeThread(QThread):
                         
                         # 根据验证结果发送信号
                         if validation_success:
-                            self.finished_signal.emit(True, f"转码完成，耗时: {time_str}")
+                            self.finished_signal.emit(True, t_format("转码完成，耗时: {}", time_str))
                         else:
-                            self.finished_signal.emit(False, f"转码失败: {validation_message}，耗时: {time_str}")
+                            self.finished_signal.emit(False, t_format("转码失败: {}，耗时: {}", validation_message, time_str))
                     else:
                         # 发送转码失败信号，但不使用负值
                         self.progress_signal.emit(f"转码失败，返回码：{str(self.process.returncode)}")
@@ -9914,7 +9914,7 @@ class TranscodeThread(QThread):
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            self.progress_signal.emit(f"详细错误信息: {error_details}")
+            self.progress_signal.emit(t_format("详细错误信息: {}", error_details))
             # 发送错误状态的进度信号
             self.progress_percent_signal.emit(-1.0)  # 使用负值表示错误状态
             self.progress_signal.emit(f"转码过程中发生异常: {str(e)}")
@@ -9944,9 +9944,9 @@ class TranscodeThread(QThread):
                     # 主要总结信息
                     summary_msg = f"📊 GPU性能总结报告 📊"
                     self.progress_signal.emit(summary_msg)
-                    self.progress_signal.emit(f"✅ GPU类型: {display_gpu_type}")
-                    self.progress_signal.emit(f"📈 最高使用率: {original_max_usage:.1f}% | 平均使用率: {avg_gpu_usage:.1f}%")
-                    self.progress_signal.emit(f"🏆 效率评分: {efficiency_score:.1f}/10 ({performance_grade}级)")
+                    self.progress_signal.emit(t_format("✅ GPU类型: {}", display_gpu_type))
+                    self.progress_signal.emit(t_format("📈 最高使用率: {:.1f}% | 平均使用率: {:.1f}%", original_max_usage, avg_gpu_usage))
+                    self.progress_signal.emit(t_format("🏆 效率评分: {:.1f}/10 ({}级)", efficiency_score, performance_grade))
 
                     # 性能分析和建议
                     if avg_gpu_usage < 2:
@@ -9990,10 +9990,10 @@ class TranscodeThread(QThread):
                         # 计算百分比分布
                         total = len(usage_history)
                         distribution = ", ".join([f"{k}: {v/total*100:.1f}%" for k, v in usage_ranges.items() if v > 0])
-                        self.progress_signal.emit(f"GPU使用率分布: {distribution}")
+                        self.progress_signal.emit(t_format("GPU使用率分布: {}", distribution))
                 else:
                     avg_gpu_usage = sum(usage_history) / max(1, len(usage_history)) if usage_history else 0
-                    self.progress_signal.emit(f"GPU硬件加速总结: 未检测到{display_gpu_type}被有效使用，可能使用了CPU编码，最高GPU使用率: {original_max_usage:.1f}%，平均GPU使用率: {avg_gpu_usage:.1f}%")
+                    self.progress_signal.emit(t_format("GPU硬件加速总结: 未检测到{}被有效使用，可能使用了CPU编码，最高GPU使用率: {:.1f}%，平均GPU使用率: {:.1f}%", display_gpu_type, original_max_usage, avg_gpu_usage))
 
                     # 分析可能的原因
                     if original_max_usage < 5:
@@ -10073,7 +10073,7 @@ class TranscodeThread(QThread):
                         if duration_match:
                             h, m, s = map(float, duration_match.groups())
                             total_duration = h * 3600 + m * 60 + s
-                            self.progress_signal.emit(f"视频总时长: {total_duration:.2f}秒")
+                            self.progress_signal.emit(t_format("视频总时长: {:.2f}秒", total_duration))
                     
                     # 解析当前进度
                     time_match = time_pattern.search(decoded_line)
@@ -10088,7 +10088,7 @@ class TranscodeThread(QThread):
                             self.progress_percent_signal.emit(percent)
                             last_progress_update = current_update_time
                             last_percent = percent
-                            self.progress_signal.emit(f"CPU模式转码进度: {percent:.2f}%")
+                            self.progress_signal.emit(t_format("CPU模式转码进度: {:.2f}%", percent))
                     
                     # 如果长时间没有进度更新，发送估算进度
                     current_time = time.time()
@@ -10105,7 +10105,7 @@ class TranscodeThread(QThread):
                             estimated_percent = min(95, last_percent + 3)
                         
                         if estimated_percent > last_percent:
-                            self.progress_signal.emit(f"CPU模式估算进度: {estimated_percent:.2f}%")
+                            self.progress_signal.emit(t_format("CPU模式估算进度: {:.2f}%", estimated_percent))
                             self.progress_percent_signal.emit(estimated_percent)
                             last_progress_update = current_time
                             last_percent = estimated_percent
@@ -10122,7 +10122,7 @@ class TranscodeThread(QThread):
             
             # 检查进程返回码
             if self.process.returncode == 0:
-                self.progress_signal.emit(f"CPU模式转码成功完成，耗时: {time_str}")
+                self.progress_signal.emit(t_format("CPU模式转码成功完成，耗时: {}", time_str))
                 self.progress_percent_signal.emit(100.0)
                 return True
             else:
@@ -10133,7 +10133,7 @@ class TranscodeThread(QThread):
             import traceback
             error_details = traceback.format_exc()
             self.progress_signal.emit(f"CPU模式转码出错: {str(e)}")
-            self.progress_signal.emit(f"详细错误信息: {error_details}")
+            self.progress_signal.emit(t_format("详细错误信息: {}", error_details))
             return False
     
     def _retry_with_safe_params(self):
@@ -10158,7 +10158,7 @@ class TranscodeThread(QThread):
             if not os.path.exists(output_dir):
                 try:
                     os.makedirs(output_dir, exist_ok=True)
-                    self.progress_signal.emit(f"创建输出目录: {output_dir}")
+                    self.progress_signal.emit(t_format("创建输出目录: {}", output_dir))
                 except Exception as e:
                     self.progress_signal.emit(f"创建输出目录失败: {str(e)}")
                     return False
@@ -10278,7 +10278,7 @@ class TranscodeThread(QThread):
                         progress_seconds = h * 3600 + m * 60 + s
                         # 使用更保守的进度估算
                         progress_percent = min(90, progress_seconds / 2)  # 限制最大进度为90%
-                        self.progress_signal.emit(f"转码进度: {progress_percent:.1f}%")
+                        self.progress_signal.emit(t_format("转码进度: {:.1f}%", progress_percent))
                         self.progress_percent_signal.emit(progress_percent)
                         last_progress_value = progress_percent
                     else:
@@ -10290,14 +10290,14 @@ class TranscodeThread(QThread):
                         # 只有当进度增加时才更新
                         if estimated_progress > last_progress_value + 0.5:  # 至少增加0.5%才更新
                             self.progress_percent_signal.emit(estimated_progress)
-                            self.progress_signal.emit(f"估算转码进度: {estimated_progress:.1f}%")
+                            self.progress_signal.emit(t_format("估算转码进度: {:.1f}%", estimated_progress))
                             last_progress_value = estimated_progress
                     
                     last_update_time = current_time
                 
                 # 检查是否长时间没有进度更新
                 if current_time - last_output_time > max_no_output_time:
-                    self.progress_signal.emit(f"警告: 转码进程{max_no_output_time}秒内无输出，可能已卡住")
+                    self.progress_signal.emit(t_format("警告: 转码进程{}秒内无输出，可能已卡住", max_no_output_time))
                     # 不立即终止，继续等待一段时间
             
             # 等待进程完成，添加超时机制
@@ -10307,7 +10307,7 @@ class TranscodeThread(QThread):
             while self.process and self.process.poll() is None:
                 # 检查是否超时
                 if time.time() - wait_start > max_wait_time:
-                    self.progress_signal.emit(f"错误: 转码进程超过{max_wait_time}秒未完成，强制终止")
+                    self.progress_signal.emit(t_format("错误: 转码进程超过{}秒未完成，强制终止", max_wait_time))
                     try:
                         self.process.terminate()
                         time.sleep(1)
@@ -10353,10 +10353,10 @@ class TranscodeThread(QThread):
                         # 只有在重试转码真正成功时才发送100%的进度信号
                         self.progress_percent_signal.emit(100.0)
                         self.progress_signal.emit("转码完成，进度100%")
-                        self.finished_signal.emit(True, f"使用安全参数重试转码成功！总耗时: {time_str}")
+                        self.finished_signal.emit(True, t_format("使用安全参数重试转码成功！总耗时: {}", time_str))
                         return True
                     else:
-                        self.progress_signal.emit(f"输出文件验证失败: {probe_error}")
+                        self.progress_signal.emit(t_format("输出文件验证失败: {}", probe_error))
                         # 文件存在但验证失败，可能是不完整或损坏
                         error_msg = f"重试转码可能部分成功，但输出文件验证失败，耗时: {time_str}\n建议尝试使用其他格式或编码器。"
                         self.progress_signal.emit("转码结果不完整，进度未达到100%")
@@ -10369,7 +10369,7 @@ class TranscodeThread(QThread):
                     if output_file_valid:
                         self.progress_percent_signal.emit(100.0)
                         self.progress_signal.emit(t("转码可能成功，但验证过程出错"))
-                        self.finished_signal.emit(True, f"使用安全参数重试转码可能成功，但无法验证文件完整性。总耗时: {time_str}")
+                        self.finished_signal.emit(True, t_format("使用安全参数重试转码可能成功，但无法验证文件完整性。总耗时: {}", time_str))
                         return True
             else:
                 # 转码失败时发送失败信息，不更新进度为100%
@@ -10400,7 +10400,7 @@ class TranscodeThread(QThread):
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            self.progress_signal.emit(f"详细错误信息: {error_details}")
+            self.progress_signal.emit(t_format("详细错误信息: {}", error_details))
             self.progress_signal.emit(f"重试转码时出错: {str(e)}")
             self.progress_percent_signal.emit(-1.0)  # 使用负值表示错误状态
             
@@ -10518,7 +10518,7 @@ class TranscodeThread(QThread):
             value = float(match.group(1))
             
             # 记录调试信息
-            self.progress_signal.emit(f"解析大小: {size_str} -> 提取数值: {value}")
+            self.progress_signal.emit(t_format("解析大小: {} -> 提取数值: {}", size_str, value))
             
             # 提取数值和单位 - 改进单位检测逻辑
             size_str = size_str.upper()  # 转换为大写以简化匹配
@@ -10526,31 +10526,31 @@ class TranscodeThread(QThread):
             # 检查各种单位并进行相应转换
             if any(unit in size_str for unit in ['KIB', 'KB', 'K']):
                 result = value * 1024
-                self.progress_signal.emit(f"单位转换: KB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: KB -> {:.2f} 字节", result))
                 return result
                     
             elif any(unit in size_str for unit in ['MIB', 'MB', 'M']):
                 result = value * 1024 * 1024
-                self.progress_signal.emit(f"单位转换: MB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: MB -> {:.2f} 字节", result))
                 return result
                     
             elif any(unit in size_str for unit in ['GIB', 'GB', 'G']):
                 result = value * 1024 * 1024 * 1024
-                self.progress_signal.emit(f"单位转换: GB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: GB -> {:.2f} 字节", result))
                 return result
                 
             elif any(unit in size_str for unit in ['TIB', 'TB', 'T']):
                 result = value * 1024 * 1024 * 1024 * 1024
-                self.progress_signal.emit(f"单位转换: TB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: TB -> {:.2f} 字节", result))
                 return result
                 
             elif 'B' in size_str:
                 # 如果包含B单位，假设是字节
-                self.progress_signal.emit(f"单位: 字节 -> {value:.2f} 字节")
+                self.progress_signal.emit(t_format("单位: 字节 -> {:.2f} 字节", value))
                 return value
                 
             # 如果没有单位，假设是字节
-            self.progress_signal.emit(f"无单位: 假设为字节 -> {value:.2f} 字节")
+            self.progress_signal.emit(t_format("无单位: 假设为字节 -> {:.2f} 字节", value))
             return value
         except Exception as e:
             self.progress_signal.emit(f"解析大小出错: {str(e)}")
@@ -10632,7 +10632,7 @@ class TranscodeThread(QThread):
                 output_template = self._build_output_template(safe_output_path)
                 cmd.extend(["-o", output_template])
                 # 记录使用的输出模板
-                self.progress_signal.emit(f"使用输出模板: {output_template}")
+                self.progress_signal.emit(t_format("使用输出模板: {}", output_template))
             
             # 添加其他选项，但排除可能导致格式问题的选项
             if self.additional_options:
@@ -10829,7 +10829,7 @@ class TranscodeThread(QThread):
                         safe_output_path = staged_dir
                 output_template = self._build_output_template(safe_output_path, "_单文件")
                 cmd.extend(["-o", output_template])
-                self.progress_signal.emit(f"使用输出模板: {output_template}")
+                self.progress_signal.emit(t_format("使用输出模板: {}", output_template))
             
             # 添加其他选项，但排除可能导致格式问题的选项
             if self.additional_options:
@@ -11380,7 +11380,7 @@ class UpdateThread(QThread):
                 self.finished_signal.emit(False, "无法获取当前yt-dlp版本", "")
                 return
             
-            self.progress_signal.emit(f"当前版本: {current_version}")
+            self.progress_signal.emit(t_format("当前版本: {}", current_version))
             
             # 获取最新版本信息
             self.progress_signal.emit(t("正在获取最新版本信息..."))
@@ -11390,7 +11390,7 @@ class UpdateThread(QThread):
                 return
             
             latest_version = latest_info.get('tag_name', 'Unknown')
-            self.progress_signal.emit(f"最新版本: {latest_version}")
+            self.progress_signal.emit(t_format("最新版本: {}", latest_version))
             
             # 如果需要执行更新
             if self.perform_update:
@@ -11494,7 +11494,7 @@ class UpdateThread(QThread):
                     return True, ""
                 elif "already up to date" in output or "latest version" in output:
                     last_error = "当前已是最新版本"
-                    self.progress_signal.emit(f"yt-dlp自更新: {last_error}")
+                    self.progress_signal.emit(t_format("yt-dlp自更新: {}", last_error))
                 else:
                     # 返回码为0但输出不明确
                     self.progress_signal.emit(t("yt-dlp自更新命令完成"))
@@ -11794,7 +11794,7 @@ class DependencyUpdateThread(QThread):
             
             for comp_name in check_components:
                 config = self.COMPONENTS[comp_name]
-                self.progress_signal.emit(f"🔍 检查 {comp_name} 版本...")
+                self.progress_signal.emit(t_format("🔍 检查 {} 版本...", comp_name))
                 
                 # 获取当前版本
                 current_ver = self._get_current_version(config)
@@ -11819,7 +11819,7 @@ class DependencyUpdateThread(QThread):
                 auto_remaining = []
                 for comp_name, current_ver, latest_ver, download_url in updates_available:
                     if comp_name in self.auto_update_components:
-                        self.progress_signal.emit(f"⬇️ 自动更新 {comp_name}...")
+                        self.progress_signal.emit(t_format("⬇️ 自动更新 {}...", comp_name))
                         config = self.COMPONENTS[comp_name]
                         try:
                             success = self._download_and_update(comp_name, config, download_url)
@@ -11850,7 +11850,7 @@ class DependencyUpdateThread(QThread):
                 if self.components_to_update and comp_name not in self.components_to_update:
                     continue
                     
-                self.progress_signal.emit(f"⬇️ 正在更新 {comp_name}...")
+                self.progress_signal.emit(t_format("⬇️ 正在更新 {}...", comp_name))
                 config = self.COMPONENTS[comp_name]
                 
                 try:
@@ -11991,11 +11991,11 @@ class DependencyUpdateThread(QThread):
         import shutil
         
         if not download_url:
-            self.progress_signal.emit(f"❌ {comp_name}: 未找到下载链接")
+            self.progress_signal.emit(t_format("❌ {}: 未找到下载链接", comp_name))
             return False
         
         try:
-            self.progress_signal.emit(f"⬇️ 下载 {comp_name}...")
+            self.progress_signal.emit(t_format("⬇️ 下载 {}...", comp_name))
             
             # 下载文件
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -12010,7 +12010,7 @@ class DependencyUpdateThread(QThread):
                 
                 # 如果是压缩包，解压
                 if 'extract_from_zip' in config:
-                    self.progress_signal.emit(f"📦 解压 {comp_name}...")
+                    self.progress_signal.emit(t_format("📦 解压 {}...", comp_name))
                     extract_name = config['extract_from_zip']
                     
                     with zipfile.ZipFile(temp_file, 'r') as zf:
@@ -12042,7 +12042,7 @@ class DependencyUpdateThread(QThread):
                                                     os.remove(probe_backup)
                                                 shutil.move(probe_target, probe_backup)
                                             shutil.move(extracted_probe, probe_target)
-                                            self.progress_signal.emit(f"✅ ffprobe 已同步更新")
+                                            self.progress_signal.emit(t_format("✅ ffprobe 已同步更新", ))
                                             break
                                 break
                 else:
@@ -12054,11 +12054,11 @@ class DependencyUpdateThread(QThread):
                         shutil.move(target_file, backup)
                     shutil.move(temp_file, target_file)
                 
-                self.progress_signal.emit(f"✅ {comp_name} 更新成功")
+                self.progress_signal.emit(t_format("✅ {} 更新成功", comp_name))
                 return True
                 
         except PermissionError:
-            self.progress_signal.emit(f"❌ {comp_name}: 权限不足，请以管理员身份运行")
+            self.progress_signal.emit(t_format("❌ {}: 权限不足，请以管理员身份运行", comp_name))
             return False
         except Exception as e:
             self.progress_signal.emit(f"❌ {comp_name}: {str(e)}")
@@ -17048,15 +17048,15 @@ class VideoDownloaderApp(QMainWindow):
     def on_dep_component_status(self, comp_name, current_ver, latest_ver, status):
         """组件状态更新回调"""
         if status == "update_available":
-            self.update_status(f"📦 {comp_name}: {current_ver} → {latest_ver} (可更新)", "info")
+            self.update_status(t_format("📦 {}: {} → {} (可更新)", comp_name, current_ver, latest_ver), "info")
         elif status == "up_to_date":
-            self.update_status(f"✅ {comp_name}: {current_ver} (已是最新)", "success")
+            self.update_status(t_format("✅ {}: {} (已是最新)", comp_name, current_ver), "success")
         elif status == "updated":
-            self.update_status(f"✅ {comp_name}: 更新完成 → {latest_ver}", "success")
+            self.update_status(t_format("✅ {}: 更新完成 → {}", comp_name, latest_ver), "success")
         elif status == "update_failed":
-            self.update_status(f"❌ {comp_name}: 更新失败", "error")
+            self.update_status(t_format("❌ {}: 更新失败", comp_name), "error")
         elif status == "error":
-            self.update_status(f"⚠️ {comp_name}: 检查失败", "warning")
+            self.update_status(t_format("⚠️ {}: 检查失败", comp_name), "warning")
     
     def on_dep_check_finished(self, success, message):
         """依赖检查完成回调 - 静默自动更新，无弹窗"""
@@ -17070,7 +17070,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 如果发现可更新组件，直接静默更新，无需弹窗确认
         if "可更新" in message or "个组件可更新" in message:
-            self.update_status(f"🔄 {message}，正在自动更新...", "info")
+            self.update_status(t_format("🔄 {}，正在自动更新...", message), "info")
             self.perform_dependency_updates()
         else:
             self.update_status(f"✅ {message}", "success")
@@ -17390,7 +17390,7 @@ class VideoDownloaderApp(QMainWindow):
             return
 
         if message == "update_available":
-            self.update_status(f"🎆 发现软件新版本: {latest_version}", "success")
+            self.update_status(t_format("🎆 发现软件新版本: {}", latest_version), "success")
             self.set_update_button_green()
             self.play_update_notification_sound()
             if getattr(self, 'enable_update_notification', True):
@@ -17415,9 +17415,9 @@ class VideoDownloaderApp(QMainWindow):
                 elif getattr(self, "manual_app_update_check", False):
                     QMessageBox.information(self, t("软件更新"), prompt)
             else:
-                self.update_status(f"✨ 发现新版本 {latest_version}，已关闭弹窗提醒，可手动点击更新按钮升级", "info")
+                self.update_status(t_format("✨ 发现新版本 {}，已关闭弹窗提醒，可手动点击更新按钮升级", latest_version), "info")
         else:
-            self.update_status(f"✅ 软件已是最新版本 v{current_version}", "success")
+            self.update_status(t_format("✅ 软件已是最新版本 v{}", current_version), "success")
             if hasattr(self, 'update_button'):
                 self.update_button.setToolTip("检查软件更新")
             if getattr(self, "manual_app_update_check", False):
@@ -17563,7 +17563,7 @@ class VideoDownloaderApp(QMainWindow):
                     # 播放悦耳的提示音
                     self.play_update_notification_sound()
                     # 在状态栏显示简短提示（不弹窗）
-                    self.update_status(f"✨ {message}，点击更新按钮即可升级", "success")
+                    self.update_status(t_format("✨ {}，点击更新按钮即可升级", message), "success")
         except Exception as e:
             # 静默处理错误
             print(f"处理启动依赖检查结果时出错: {str(e)}")
@@ -17591,7 +17591,7 @@ class VideoDownloaderApp(QMainWindow):
                                 f"点击此按钮立即更新"
                             )
                         # 在状态栏显示简短提示（不弹窗）
-                        self.update_status(f"✨ 发现 yt-dlp 新版本 {latest_version}，点击更新按钮即可升级", "success")
+                        self.update_status(t_format("✨ 发现 yt-dlp 新版本 {}，点击更新按钮即可升级", latest_version), "success")
                     elif status == "current":
                         # 已是最新版本，保持默认样式，不做任何提示
                         if hasattr(self, 'update_button'):
@@ -17619,7 +17619,7 @@ class VideoDownloaderApp(QMainWindow):
                 if len(parts) >= 3:
                     old_version = parts[1]
                     new_version = parts[2]
-                    self.update_status(f"✅ yt-dlp更新成功！{old_version} → {new_version}", "success")
+                    self.update_status(t_format("✅ yt-dlp更新成功！{} → {}", old_version, new_version), "success")
                     QMessageBox.information(
                         self, 
                         "更新成功", 
@@ -17641,7 +17641,7 @@ class VideoDownloaderApp(QMainWindow):
                 QMessageBox.information(self, t("提示"), message)
         else:
             # 更新失败
-            self.update_status(f"❌ 更新失败: {message}", "error")
+            self.update_status(t_format("❌ 更新失败: {}", message), "error")
             QMessageBox.warning(self, t("更新失败"), f"更新过程中发生错误：\n\n{message}\n\n请尝试：\n1. 以管理员身份运行程序\n2. 手动从 GitHub 下载最新版本\n3. 使用 pip install --upgrade yt-dlp 命令更新")
     
     def show_settings_dialog(self):
@@ -18179,7 +18179,7 @@ class VideoDownloaderApp(QMainWindow):
                 if status == "current":
                     # 已是最新版本，重置按钮样式
                     self.reset_update_button_icon()
-                    self.update_status(f"✅ 已是最新版本，无需更新", "success")
+                    self.update_status(t_format("✅ 已是最新版本，无需更新", ), "success")
                     # 只在手动检查时显示弹窗
                     if hasattr(self, 'manual_check') and self.manual_check:
                         QMessageBox.information(
@@ -18191,7 +18191,7 @@ class VideoDownloaderApp(QMainWindow):
                 elif status == "update_available":
                     # 发现新版本，设置按钮为绿色
                     self.set_update_button_green()
-                    self.update_status(f"🎆 发现新版本: {latest_version}", "success")
+                    self.update_status(t_format("🎆 发现新版本: {}", latest_version), "success")
                     
                     # 不再显示弹窗，只在状态栏显示信息
                     # 用户可以通过点击绿色的更新按钮来更新
@@ -18345,7 +18345,7 @@ class VideoDownloaderApp(QMainWindow):
     
     def start_actual_update(self, latest_version):
         """开始实际更新yt-dlp"""
-        self.update_status(f"🚀 开始更新到版本 {latest_version}...", "info")
+        self.update_status(t_format("🚀 开始更新到版本 {}...", latest_version), "info")
         
         # 这里可以添加实际的更新逻辑
         # 例如调用 yt-dlp -U 命令
@@ -19209,7 +19209,7 @@ class VideoDownloaderApp(QMainWindow):
                     options.extend(["--proxy", proxy_url])
                     print(f"DEBUG: ✓ 启用代理: {proxy_url}")
                     # 注意：这里是在主窗口类中，没有progress_signal，不能emit
-                    # self.progress_signal.emit(f"✓ 使用代理: {proxy_url}")
+                    # self.progress_signal.emit(t_format("✓ 使用代理: {}", proxy_url))
         
         # 网络超时设置（代理模式下使用更长的超时时间）
         if hasattr(self, 'timeout_setting'):
@@ -19241,7 +19241,7 @@ class VideoDownloaderApp(QMainWindow):
                     options.extend(["--source-address", source_ip])
                     print(f"DEBUG: 绑定源地址: {source_ip}")
                     # 注意：这里是在主窗口类中，没有progress_signal，不能emit
-                    # self.progress_signal.emit(f"✓ 绑定源地址: {source_ip}")
+                    # self.progress_signal.emit(t_format("✓ 绑定源地址: {}", source_ip))
         
         # === 下载速度与稳定性优化（根据代理状态自适应）===
         # 代理模式和正常模式使用不同的优化策略
@@ -21949,7 +21949,7 @@ class VideoDownloaderApp(QMainWindow):
             
             # 显示刷新完成状态
             record_count = len(self.history_manager.get_history())
-            self.update_status(f"历史记录刷新完成，共 {record_count} 条记录", "success")
+            self.update_status(t_format("历史记录刷新完成，共 {} 条记录", record_count), "success")
             
         except Exception as e:
             # 如果刷新失败，显示错误信息
@@ -23207,7 +23207,7 @@ class VideoDownloaderApp(QMainWindow):
                 display_text = self.remove_chapters_regex
                 if len(display_text) > 50:
                     display_text = display_text[:47] + "..."
-                self.current_remove_label.setText(f"当前: {display_text}")
+                self.current_remove_label.setText(t_format("当前: {}", display_text))
                 self.current_remove_label.setStyleSheet(
                     "font-size: 11px; "
                     "color: #2c3e50; "
@@ -23829,7 +23829,7 @@ class VideoDownloaderApp(QMainWindow):
     def _update_image_count(self):
         """更新图片数量标签"""
         count = len(self.image_file_list)
-        self.image_count_label.setText(f"已添加 {count} 张图片")
+        self.image_count_label.setText(t_format("已添加 {} 张图片", count))
 
     def _reset_image_process_state(self):
         """当图片列表变化时，重置处理状态显示。"""
@@ -24139,7 +24139,7 @@ class VideoDownloaderApp(QMainWindow):
 
     def _update_realesrgan_count(self):
         count = len(self.realesrgan_file_list)
-        self.realesrgan_count_label.setText(f"已添加 {count} 个文件")
+        self.realesrgan_count_label.setText(t_format("已添加 {} 个文件", count))
 
     def browse_realesrgan_output_dir(self):
         """选择画质修复输出目录"""
@@ -24546,7 +24546,7 @@ class VideoDownloaderApp(QMainWindow):
                 self.realesrgan_progress_text.append(detail_message)
         except Exception as e:
             if hasattr(self, "realesrgan_runtime_hint"):
-                self.realesrgan_runtime_hint.setText(f"运行时检查失败: {e}")
+                self.realesrgan_runtime_hint.setText(t_format("运行时检查失败: {}", e))
             if not silent and hasattr(self, "realesrgan_progress_text"):
                 self.realesrgan_progress_text.append(f"❌ 运行时检查失败: {e}")
 

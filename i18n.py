@@ -124,9 +124,10 @@ def t(text):
     return _load(_current).get(text, text)
 
 
-def t_format(text, **kwargs):
-    """翻译 + 占位符填充（译文可重排语序），如 t_format("已添加 {n} 张图片", n=5)。"""
+def t_format(text, *args, **kwargs):
+    """翻译 + 占位符填充（译文可重排语序），支持位置/关键字参数：
+       t_format("已添加 {} 个文件", count) 或 t_format("已添加 {n} 个文件", n=count)。"""
     try:
-        return t(text).format(**kwargs)
+        return t(text).format(*args, **kwargs)
     except Exception:
         return text

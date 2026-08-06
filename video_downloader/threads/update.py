@@ -39,7 +39,7 @@ class UpdateThread(QThread):
                 self.finished_signal.emit(False, "无法获取当前yt-dlp版本", "")
                 return
             
-            self.progress_signal.emit(f"当前版本: {current_version}")
+            self.progress_signal.emit(t_format("当前版本: {}", current_version))
             
             # 获取最新版本信息
             self.progress_signal.emit(t("正在获取最新版本信息..."))
@@ -49,7 +49,7 @@ class UpdateThread(QThread):
                 return
             
             latest_version = latest_info.get('tag_name', 'Unknown')
-            self.progress_signal.emit(f"最新版本: {latest_version}")
+            self.progress_signal.emit(t_format("最新版本: {}", latest_version))
             
             # 如果需要执行更新
             if self.perform_update:
@@ -153,7 +153,7 @@ class UpdateThread(QThread):
                     return True, ""
                 elif "already up to date" in output or "latest version" in output:
                     last_error = "当前已是最新版本"
-                    self.progress_signal.emit(f"yt-dlp自更新: {last_error}")
+                    self.progress_signal.emit(t_format("yt-dlp自更新: {}", last_error))
                 else:
                     # 返回码为0但输出不明确
                     self.progress_signal.emit(t("yt-dlp自更新命令完成"))

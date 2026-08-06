@@ -5023,15 +5023,15 @@ class VideoDownloaderApp(QMainWindow):
     def on_dep_component_status(self, comp_name, current_ver, latest_ver, status):
         """组件状态更新回调"""
         if status == "update_available":
-            self.update_status(f"📦 {comp_name}: {current_ver} → {latest_ver} (可更新)", "info")
+            self.update_status(t_format("📦 {}: {} → {} (可更新)", comp_name, current_ver, latest_ver), "info")
         elif status == "up_to_date":
-            self.update_status(f"✅ {comp_name}: {current_ver} (已是最新)", "success")
+            self.update_status(t_format("✅ {}: {} (已是最新)", comp_name, current_ver), "success")
         elif status == "updated":
-            self.update_status(f"✅ {comp_name}: 更新完成 → {latest_ver}", "success")
+            self.update_status(t_format("✅ {}: 更新完成 → {}", comp_name, latest_ver), "success")
         elif status == "update_failed":
-            self.update_status(f"❌ {comp_name}: 更新失败", "error")
+            self.update_status(t_format("❌ {}: 更新失败", comp_name), "error")
         elif status == "error":
-            self.update_status(f"⚠️ {comp_name}: 检查失败", "warning")
+            self.update_status(t_format("⚠️ {}: 检查失败", comp_name), "warning")
     
     def on_dep_check_finished(self, success, message):
         """依赖检查完成回调 - 静默自动更新，无弹窗"""
@@ -5045,7 +5045,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 如果发现可更新组件，直接静默更新，无需弹窗确认
         if "可更新" in message or "个组件可更新" in message:
-            self.update_status(f"🔄 {message}，正在自动更新...", "info")
+            self.update_status(t_format("🔄 {}，正在自动更新...", message), "info")
             self.perform_dependency_updates()
         else:
             self.update_status(f"✅ {message}", "success")
@@ -5365,7 +5365,7 @@ class VideoDownloaderApp(QMainWindow):
             return
 
         if message == "update_available":
-            self.update_status(f"🎆 发现软件新版本: {latest_version}", "success")
+            self.update_status(t_format("🎆 发现软件新版本: {}", latest_version), "success")
             self.set_update_button_green()
             self.play_update_notification_sound()
             if getattr(self, 'enable_update_notification', True):
@@ -5390,9 +5390,9 @@ class VideoDownloaderApp(QMainWindow):
                 elif getattr(self, "manual_app_update_check", False):
                     QMessageBox.information(self, t("软件更新"), prompt)
             else:
-                self.update_status(f"✨ 发现新版本 {latest_version}，已关闭弹窗提醒，可手动点击更新按钮升级", "info")
+                self.update_status(t_format("✨ 发现新版本 {}，已关闭弹窗提醒，可手动点击更新按钮升级", latest_version), "info")
         else:
-            self.update_status(f"✅ 软件已是最新版本 v{current_version}", "success")
+            self.update_status(t_format("✅ 软件已是最新版本 v{}", current_version), "success")
             if hasattr(self, 'update_button'):
                 self.update_button.setToolTip("检查软件更新")
             if getattr(self, "manual_app_update_check", False):
@@ -5538,7 +5538,7 @@ class VideoDownloaderApp(QMainWindow):
                     # 播放悦耳的提示音
                     self.play_update_notification_sound()
                     # 在状态栏显示简短提示（不弹窗）
-                    self.update_status(f"✨ {message}，点击更新按钮即可升级", "success")
+                    self.update_status(t_format("✨ {}，点击更新按钮即可升级", message), "success")
         except Exception as e:
             # 静默处理错误
             print(f"处理启动依赖检查结果时出错: {str(e)}")
@@ -5566,7 +5566,7 @@ class VideoDownloaderApp(QMainWindow):
                                 f"点击此按钮立即更新"
                             )
                         # 在状态栏显示简短提示（不弹窗）
-                        self.update_status(f"✨ 发现 yt-dlp 新版本 {latest_version}，点击更新按钮即可升级", "success")
+                        self.update_status(t_format("✨ 发现 yt-dlp 新版本 {}，点击更新按钮即可升级", latest_version), "success")
                     elif status == "current":
                         # 已是最新版本，保持默认样式，不做任何提示
                         if hasattr(self, 'update_button'):
@@ -5594,7 +5594,7 @@ class VideoDownloaderApp(QMainWindow):
                 if len(parts) >= 3:
                     old_version = parts[1]
                     new_version = parts[2]
-                    self.update_status(f"✅ yt-dlp更新成功！{old_version} → {new_version}", "success")
+                    self.update_status(t_format("✅ yt-dlp更新成功！{} → {}", old_version, new_version), "success")
                     QMessageBox.information(
                         self, 
                         "更新成功", 
@@ -5616,7 +5616,7 @@ class VideoDownloaderApp(QMainWindow):
                 QMessageBox.information(self, t("提示"), message)
         else:
             # 更新失败
-            self.update_status(f"❌ 更新失败: {message}", "error")
+            self.update_status(t_format("❌ 更新失败: {}", message), "error")
             QMessageBox.warning(self, t("更新失败"), f"更新过程中发生错误：\n\n{message}\n\n请尝试：\n1. 以管理员身份运行程序\n2. 手动从 GitHub 下载最新版本\n3. 使用 pip install --upgrade yt-dlp 命令更新")
     
     def show_settings_dialog(self):
@@ -6154,7 +6154,7 @@ class VideoDownloaderApp(QMainWindow):
                 if status == "current":
                     # 已是最新版本，重置按钮样式
                     self.reset_update_button_icon()
-                    self.update_status(f"✅ 已是最新版本，无需更新", "success")
+                    self.update_status(t_format("✅ 已是最新版本，无需更新", ), "success")
                     # 只在手动检查时显示弹窗
                     if hasattr(self, 'manual_check') and self.manual_check:
                         QMessageBox.information(
@@ -6166,7 +6166,7 @@ class VideoDownloaderApp(QMainWindow):
                 elif status == "update_available":
                     # 发现新版本，设置按钮为绿色
                     self.set_update_button_green()
-                    self.update_status(f"🎆 发现新版本: {latest_version}", "success")
+                    self.update_status(t_format("🎆 发现新版本: {}", latest_version), "success")
                     
                     # 不再显示弹窗，只在状态栏显示信息
                     # 用户可以通过点击绿色的更新按钮来更新
@@ -6320,7 +6320,7 @@ class VideoDownloaderApp(QMainWindow):
     
     def start_actual_update(self, latest_version):
         """开始实际更新yt-dlp"""
-        self.update_status(f"🚀 开始更新到版本 {latest_version}...", "info")
+        self.update_status(t_format("🚀 开始更新到版本 {}...", latest_version), "info")
         
         # 这里可以添加实际的更新逻辑
         # 例如调用 yt-dlp -U 命令
@@ -7185,7 +7185,7 @@ class VideoDownloaderApp(QMainWindow):
                     options.extend(["--proxy", proxy_url])
                     print(f"DEBUG: ✓ 启用代理: {proxy_url}")
                     # 注意：这里是在主窗口类中，没有progress_signal，不能emit
-                    # self.progress_signal.emit(f"✓ 使用代理: {proxy_url}")
+                    # self.progress_signal.emit(t_format("✓ 使用代理: {}", proxy_url))
         
         # 网络超时设置（代理模式下使用更长的超时时间）
         if hasattr(self, 'timeout_setting'):
@@ -7217,7 +7217,7 @@ class VideoDownloaderApp(QMainWindow):
                     options.extend(["--source-address", source_ip])
                     print(f"DEBUG: 绑定源地址: {source_ip}")
                     # 注意：这里是在主窗口类中，没有progress_signal，不能emit
-                    # self.progress_signal.emit(f"✓ 绑定源地址: {source_ip}")
+                    # self.progress_signal.emit(t_format("✓ 绑定源地址: {}", source_ip))
         
         # === 下载速度与稳定性优化（根据代理状态自适应）===
         # 代理模式和正常模式使用不同的优化策略
@@ -9925,7 +9925,7 @@ class VideoDownloaderApp(QMainWindow):
             
             # 显示刷新完成状态
             record_count = len(self.history_manager.get_history())
-            self.update_status(f"历史记录刷新完成，共 {record_count} 条记录", "success")
+            self.update_status(t_format("历史记录刷新完成，共 {} 条记录", record_count), "success")
             
         except Exception as e:
             # 如果刷新失败，显示错误信息
@@ -11183,7 +11183,7 @@ class VideoDownloaderApp(QMainWindow):
                 display_text = self.remove_chapters_regex
                 if len(display_text) > 50:
                     display_text = display_text[:47] + "..."
-                self.current_remove_label.setText(f"当前: {display_text}")
+                self.current_remove_label.setText(t_format("当前: {}", display_text))
                 self.current_remove_label.setStyleSheet(
                     "font-size: 11px; "
                     "color: #2c3e50; "
@@ -11805,7 +11805,7 @@ class VideoDownloaderApp(QMainWindow):
     def _update_image_count(self):
         """更新图片数量标签"""
         count = len(self.image_file_list)
-        self.image_count_label.setText(f"已添加 {count} 张图片")
+        self.image_count_label.setText(t_format("已添加 {} 张图片", count))
 
     def _reset_image_process_state(self):
         """当图片列表变化时，重置处理状态显示。"""
@@ -12115,7 +12115,7 @@ class VideoDownloaderApp(QMainWindow):
 
     def _update_realesrgan_count(self):
         count = len(self.realesrgan_file_list)
-        self.realesrgan_count_label.setText(f"已添加 {count} 个文件")
+        self.realesrgan_count_label.setText(t_format("已添加 {} 个文件", count))
 
     def browse_realesrgan_output_dir(self):
         """选择画质修复输出目录"""
@@ -12522,7 +12522,7 @@ class VideoDownloaderApp(QMainWindow):
                 self.realesrgan_progress_text.append(detail_message)
         except Exception as e:
             if hasattr(self, "realesrgan_runtime_hint"):
-                self.realesrgan_runtime_hint.setText(f"运行时检查失败: {e}")
+                self.realesrgan_runtime_hint.setText(t_format("运行时检查失败: {}", e))
             if not silent and hasattr(self, "realesrgan_progress_text"):
                 self.realesrgan_progress_text.append(f"❌ 运行时检查失败: {e}")
 

@@ -302,7 +302,7 @@ class TranscodeThread(QThread):
                 gpu_output, _ = gpu_process.communicate()
                 if gpu_output.strip():
                     gpu_info = gpu_output.strip()
-                    self.progress_signal.emit(f"系统GPU信息:\n{gpu_info}")
+                    self.progress_signal.emit(t_format("系统GPU信息:\n{}", gpu_info))
             except Exception as gpu_err:
                 self.progress_signal.emit(f"获取GPU详细信息失败: {str(gpu_err)}")
             
@@ -313,7 +313,7 @@ class TranscodeThread(QThread):
                 nvenc_available, nvenc_error = self._test_ffmpeg_encoder("h264_nvenc")
                 self.progress_signal.emit(f"NVENC编码器测试结果: {'可用' if nvenc_available else '不可用'}")
                 if not nvenc_available and nvenc_error:
-                    self.progress_signal.emit(f"NVENC编码器测试详情: {nvenc_error}")
+                    self.progress_signal.emit(t_format("NVENC编码器测试详情: {}", nvenc_error))
             
             # 测试AMD编码器
             amf_available = False
@@ -321,7 +321,7 @@ class TranscodeThread(QThread):
                 amf_available, amf_error = self._test_ffmpeg_encoder("h264_amf")
                 self.progress_signal.emit(f"AMF编码器测试结果: {'可用' if amf_available else '不可用'}")
                 if not amf_available and amf_error:
-                    self.progress_signal.emit(f"AMF编码器测试详情: {amf_error}")
+                    self.progress_signal.emit(t_format("AMF编码器测试详情: {}", amf_error))
             
             # 根据检测结果确定GPU类型
             if nvenc_available and (has_cuda or "nvidia" in gpu_info.lower()):
@@ -426,7 +426,7 @@ class TranscodeThread(QThread):
                                 for line in process_output.strip().split('\n'):
                                     if 'ffmpeg' in line.lower():
                                         ffmpeg_found = True
-                                        self.progress_signal.emit(f"在GPU进程列表中找到ffmpeg: {line}")
+                                        self.progress_signal.emit(t_format("在GPU进程列表中找到ffmpeg: {}", line))
                                         self.gpu_encoder_active = True
                                         encoder_detected = True
                             
@@ -468,7 +468,7 @@ class TranscodeThread(QThread):
                                     elif avg_usage > 80:
                                         self.progress_signal.emit(t("🔥 优秀: NVIDIA GPU利用率非常高！"))
                                 else:
-                                    self.progress_signal.emit(f"NVIDIA GPU加速状态: ❌ 未激活 (平均使用率: {avg_usage:.1f}%)")
+                                    self.progress_signal.emit(t_format("NVIDIA GPU加速状态: ❌ 未激活 (平均使用率: {:.1f}%)", avg_usage))
                                     if check_count > 10:  # 10次检查后仍未激活
                                         self.progress_signal.emit(t("⚠️ 警告: NVENC编码器可能未正常工作"))
                     except Exception as e:
@@ -624,7 +624,7 @@ class TranscodeThread(QThread):
                                 elif avg_usage > 80:
                                     self.progress_signal.emit(t("🔥 优秀: GPU利用率非常高！"))
                             else:
-                                self.progress_signal.emit(f"AMD GPU加速状态: ❌ 未激活 (平均使用率: {avg_usage:.1f}%)")
+                                self.progress_signal.emit(t_format("AMD GPU加速状态: ❌ 未激活 (平均使用率: {:.1f}%)", avg_usage))
                                 if check_count > 10:  # 10次检查后仍未激活
                                     self.progress_signal.emit(t("⚠️ 警告: GPU编码器可能未正常工作"))
                     except Exception as e:
@@ -940,12 +940,12 @@ class TranscodeThread(QThread):
                                 reason += f"。FFmpeg反馈: {amf_error}"
                             self._fallback_to_cpu(reason)
                         else:
-                            self.progress_signal.emit(f"AMD GPU可用，启用{selected_amf_codec}硬件加速编码")
+                            self.progress_signal.emit(t_format("AMD GPU可用，启用{}硬件加速编码", selected_amf_codec))
                             self.gpu_encoder_active = True
 
                     if self.use_gpu and self.gpu_type == "AMD (AMF)":
                         new_cmd.extend(["-c:v", selected_amf_codec])
-                        self.progress_signal.emit(f"强制使用{selected_amf_codec}编码器")
+                        self.progress_signal.emit(t_format("强制使用{}编码器", selected_amf_codec))
                         
                         # 3. 添加保守且兼容性更高的 AMF 参数
                         new_cmd.extend(["-quality", "balanced"])
@@ -1201,12 +1201,12 @@ class TranscodeThread(QThread):
                 metadata_output, metadata_error = metadata_process.communicate()
                 
                 if metadata_error:
-                    self.progress_signal.emit(f"ffprobe错误输出: {metadata_error}")
+                    self.progress_signal.emit(t_format("ffprobe错误输出: {}", metadata_error))
                 
                 if metadata_output.strip():
                     try:
                         metadata = json.loads(metadata_output)
-                        self.progress_signal.emit(f"获取到元数据: {metadata}")
+                        self.progress_signal.emit(t_format("获取到元数据: {}", metadata))
                         
                         # 尝试从流信息中获取时长
                         if 'streams' in metadata and metadata['streams'] and 'duration' in metadata['streams'][0]:
@@ -1219,11 +1219,11 @@ class TranscodeThread(QThread):
                                 if '/' in frame_rate_str:
                                     num, den = map(int, frame_rate_str.split('/'))
                                     frame_rate = num / den if den != 0 else 0
-                                    self.progress_signal.emit(f"视频帧率: {frame_rate:.2f} fps")
+                                    self.progress_signal.emit(t_format("视频帧率: {:.2f} fps", frame_rate))
                             
                             if 'nb_frames' in metadata['streams'][0] and metadata['streams'][0]['nb_frames'] != 'N/A':
                                 total_frames = int(metadata['streams'][0]['nb_frames'])
-                                self.progress_signal.emit(f"视频总帧数: {total_frames}")
+                                self.progress_signal.emit(t_format("视频总帧数: {}", total_frames))
                         # 如果流信息中没有时长，尝试从格式信息中获取
                         elif 'format' in metadata and 'duration' in metadata['format']:
                             duration_seconds = float(metadata['format']['duration'])
@@ -1254,14 +1254,14 @@ class TranscodeThread(QThread):
                             if duration_match:
                                 h, m, s = duration_match.groups()
                                 duration_seconds = int(h) * 3600 + int(m) * 60 + float(s)
-                                self.progress_signal.emit(f"从ffmpeg输出获取视频总时长: {h}:{m}:{s} ({duration_seconds:.2f}秒)")
+                                self.progress_signal.emit(t_format("从ffmpeg输出获取视频总时长: {}:{}:{} ({:.2f}秒)", h, m, s, duration_seconds))
                                 break
                             
                             # 尝试提取视频总时长 - 替代格式 (秒数)
                             alt_duration_match = alt_duration_pattern.search(decoded_line)
                             if alt_duration_match:
                                 duration_seconds = float(alt_duration_match.group(1))
-                                self.progress_signal.emit(f"从ffmpeg输出获取视频总时长(秒数格式): {duration_seconds:.2f}秒")
+                                self.progress_signal.emit(t_format("从ffmpeg输出获取视频总时长(秒数格式): {:.2f}秒", duration_seconds))
                                 break
                     except Exception as e:
                         self.progress_signal.emit(f"解析输出时出错: {str(e)}")
@@ -1319,7 +1319,7 @@ class TranscodeThread(QThread):
                             progress_seconds = int(h) * 3600 + int(m) * 60 + float(s)
                             progress_percent = min(99.9, (progress_seconds / duration_seconds) * 100)  # 限制最大为99.9%，留出完成时的100%
                             progress_found = True
-                            self.progress_signal.emit(f"标准时间格式进度: {progress_seconds:.2f}/{duration_seconds:.2f}秒 = {progress_percent:.1f}%")
+                            self.progress_signal.emit(t_format("标准时间格式进度: {:.2f}/{:.2f}秒 = {:.1f}%", progress_seconds, duration_seconds, progress_percent))
                         
                         # 如果标准格式未匹配，尝试替代时间格式 (秒数)
                         if not progress_found:
@@ -1328,7 +1328,7 @@ class TranscodeThread(QThread):
                                 progress_seconds = float(alt_progress_match.group(1))
                                 progress_percent = min(99.9, (progress_seconds / duration_seconds) * 100)
                                 progress_found = True
-                                self.progress_signal.emit(f"替代时间格式进度: {progress_seconds:.2f}/{duration_seconds:.2f}秒 = {progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("替代时间格式进度: {:.2f}/{:.2f}秒 = {:.1f}%", progress_seconds, duration_seconds, progress_percent))
                         
                         # 尝试直接匹配百分比格式
                         if not progress_found:
@@ -1337,7 +1337,7 @@ class TranscodeThread(QThread):
                                 progress_percent = float(percent_match.group(1))
                                 progress_percent = min(99.9, progress_percent)  # 限制最大为99.9%
                                 progress_found = True
-                                self.progress_signal.emit(f"直接百分比进度: {progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("直接百分比进度: {:.1f}%", progress_percent))
                         
                         # 尝试从webm特有的帧处理信息中提取进度
                         if not progress_found and input_ext == '.webm':
@@ -1349,7 +1349,7 @@ class TranscodeThread(QThread):
                                 if total_frames > 0:
                                     progress_percent = min(99.9, (current_frame / total_frames) * 100)
                                     progress_found = True
-                                    self.progress_signal.emit(f"WebM帧进度: {current_frame}/{total_frames} = {progress_percent:.1f}%")
+                                    self.progress_signal.emit(t_format("WebM帧进度: {}/{} = {:.1f}%", current_frame, total_frames, progress_percent))
                             
                             # 添加更多webm特有的进度匹配模式
                             # 匹配VP8/VP9编码器的进度输出
@@ -1364,13 +1364,13 @@ class TranscodeThread(QThread):
                                     if estimated_total_frames > 0:
                                         progress_percent = min(99.9, (frames_processed / estimated_total_frames) * 100)
                                         progress_found = True
-                                        self.progress_signal.emit(f"VP8/VP9进度: {frames_processed}帧/{time_elapsed:.2f}秒 = {progress_percent:.1f}%")
+                                        self.progress_signal.emit(t_format("VP8/VP9进度: {}帧/{:.2f}秒 = {:.1f}%", frames_processed, time_elapsed, progress_percent))
                                         
                             # 匹配webm处理阶段信息
                             webm_stage = re.search(r'(Pass \d+/\d+)', decoded_line)
                             if not progress_found and webm_stage:
                                 stage_info = webm_stage.group(1)
-                                self.progress_signal.emit(f"WebM处理阶段: {stage_info}")
+                                self.progress_signal.emit(t_format("WebM处理阶段: {}", stage_info))
                                 # 确保在处理阶段变化时至少有一些进度显示
                                 if self.last_progress_value < 5:
                                     progress_percent = 5.0
@@ -1393,10 +1393,10 @@ class TranscodeThread(QThread):
                                 progress_percent = min(99.9, (current_seconds / duration_seconds) * 100)
                                 
                                 # 记录详细的处理信息
-                                self.progress_signal.emit(f"详细帧处理进度: 帧={frame}, FPS={fps}, Q={q_value}, 大小={size_kb}kB, 时间={h}:{m}:{s:.2f}, 进度={progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("详细帧处理进度: 帧={}, FPS={}, Q={}, 大小={}kB, 时间={}:{}:{:.2f}, 进度={:.1f}%", frame, fps, q_value, size_kb, h, m, s, progress_percent))
                                 
                                 # 直接使用实际进度，不做特殊处理
-                                self.progress_signal.emit(f"转码进度: {progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("转码进度: {:.1f}%", progress_percent))
                                 # 不再对进度值进行人为调整
                                 
                                 progress_found = True
@@ -1416,7 +1416,7 @@ class TranscodeThread(QThread):
                                 progress_percent = min(99.9, (current_seconds / duration_seconds) * 100)
                                 
                                 # 记录统计信息
-                                self.progress_signal.emit(f"统计输出进度: Q={q_value}, 大小={size_kb}kB, 时间={h}:{m}:{s:.2f}, 进度={progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("统计输出进度: Q={}, 大小={}kB, 时间={}:{}:{:.2f}, 进度={:.1f}%", q_value, size_kb, h, m, s, progress_percent))
                                 progress_found = True
                         
                         # 如果时间格式都未匹配，尝试从帧信息估算进度
@@ -1432,7 +1432,7 @@ class TranscodeThread(QThread):
                                         estimated_seconds = frame / fps
                                         progress_percent = min(99.9, (estimated_seconds / duration_seconds) * 100)
                                         progress_found = True
-                                        self.progress_signal.emit(f"基于帧数估算进度: 帧={frame}, FPS={fps}, 估算时间={estimated_seconds:.2f}秒, 进度={progress_percent:.1f}%")
+                                        self.progress_signal.emit(t_format("基于帧数估算进度: 帧={}, FPS={}, 估算时间={:.2f}秒, 进度={:.1f}%", frame, fps, estimated_seconds, progress_percent))
                                 else:
                                     # 没有fps信息时，使用总帧数估算
                                     # 假设视频帧率为25fps（常见帧率）
@@ -1440,7 +1440,7 @@ class TranscodeThread(QThread):
                                     if estimated_total_frames > 0:
                                         progress_percent = min(99.9, (frame / estimated_total_frames) * 100)
                                         progress_found = True
-                                        self.progress_signal.emit(f"基于帧数估算进度(无FPS): 帧={frame}, 估算总帧数={estimated_total_frames:.0f}, 进度={progress_percent:.1f}%")
+                                        self.progress_signal.emit(t_format("基于帧数估算进度(无FPS): 帧={}, 估算总帧数={:.0f}, 进度={:.1f}%", frame, estimated_total_frames, progress_percent))
                         
                         # 尝试匹配替代帧处理信息
                         if not progress_found:
@@ -1455,7 +1455,7 @@ class TranscodeThread(QThread):
                                     if estimated_total_frames > 0:
                                         progress_percent = min(99.9, (frames / estimated_total_frames) * 100)
                                         progress_found = True
-                                        self.progress_signal.emit(f"替代帧处理进度: 已处理{frames}帧, 估算进度={progress_percent:.1f}%")
+                                        self.progress_signal.emit(t_format("替代帧处理进度: 已处理{}帧, 估算进度={:.1f}%", frames, progress_percent))
                         
                         # 尝试匹配替代百分比格式
                         if not progress_found:
@@ -1464,14 +1464,14 @@ class TranscodeThread(QThread):
                                 progress_percent = float(alt_percent_match.group(1))
                                 progress_percent = min(99.9, progress_percent)  # 限制最大为99.9%
                                 progress_found = True
-                                self.progress_signal.emit(f"替代百分比进度: {progress_percent:.1f}%")
+                                self.progress_signal.emit(t_format("替代百分比进度: {:.1f}%", progress_percent))
                         
                         # 检测处理阶段信息
                         if not progress_found:
                             processing_match = processing_pattern.search(decoded_line)
                             if processing_match:
                                 processing_stage = processing_match.group(1)
-                                self.progress_signal.emit(f"当前处理阶段: {processing_stage}ing")
+                                self.progress_signal.emit(t_format("当前处理阶段: {}ing", processing_stage))
                                 # 如果检测到处理阶段，至少发送一个小的进度更新
                                 if self.last_progress_value < 1:
                                     progress_percent = 1.0
@@ -1543,7 +1543,7 @@ class TranscodeThread(QThread):
                                     # 修改：移除估算进度的更新阈值，确保更频繁地更新
                                     # 只要估算进度不小于上次进度，就发送更新
                                     if estimated_progress >= self.last_progress_value:
-                                        self.progress_signal.emit(f"基于时间估算进度: {estimated_progress:.1f}%")
+                                        self.progress_signal.emit(t_format("基于时间估算进度: {:.1f}%", estimated_progress))
                                         self.progress_percent_signal.emit(estimated_progress)
                                         self.last_progress_value = estimated_progress
                                         self.progress_sent = True
@@ -1559,7 +1559,7 @@ class TranscodeThread(QThread):
                     # 检查进度是否停滞
                     if current_time - last_progress_check_time > progress_stall_threshold:
                         progress_stall_count += 1
-                        self.progress_signal.emit(f"⚠️ 警告: 进度停滞检测 - 已{progress_stall_threshold}秒无进度更新 (停滞次数: {progress_stall_count})")
+                        self.progress_signal.emit(t_format("⚠️ 警告: 进度停滞检测 - 已{}秒无进度更新 (停滞次数: {})", progress_stall_threshold, progress_stall_count))
                         
                         # 如果停滞次数过多，可能需要采取行动
                         if progress_stall_count >= 3:  # 3次停滞后采取行动
@@ -1583,7 +1583,7 @@ class TranscodeThread(QThread):
             current_progress = self.last_progress_value
             
             # 记录当前进度，不再人为跳跃到95%或98%
-            self.progress_signal.emit(f"转码即将完成，当前进度: {current_progress:.1f}%")
+            self.progress_signal.emit(t_format("转码即将完成，当前进度: {:.1f}%", current_progress))
             # 不再强制设置进度为95%或98%，保持实际进度值
             # 强制更新UI
             QApplication.processEvents()
@@ -1625,7 +1625,7 @@ class TranscodeThread(QThread):
                 
                 if os.path.exists(self.output_file):
                     file_size = os.path.getsize(self.output_file)
-                    self.progress_signal.emit(f"输出文件存在，大小: {file_size:,} 字节")
+                    self.progress_signal.emit(t_format("输出文件存在，大小: {:,} 字节", file_size))
                     
                     if file_size > 1024:  # 至少需要有1KB
                         # 使用ffprobe验证文件完整性
@@ -1669,14 +1669,14 @@ class TranscodeThread(QThread):
                 
                 # 根据验证结果发送信号
                 if validation_success:
-                    self.finished_signal.emit(True, f"转码完成！总耗时: {time_str}")
+                    self.finished_signal.emit(True, t_format("转码完成！总耗时: {}", time_str))
                 else:
                     # 即使返回码为0，如果文件验证失败，也认为转码失败
                     self.progress_signal.emit("转码结果不完整，进度未达到100%")
                     self.progress_percent_signal.emit(-1.0)  # 发送错误状态
                     self.progress_signal.emit("收到转码进度信号: -1.00%")
                     self.progress_signal.emit(t("错误: 转码失败，显示错误状态"))
-                    self.finished_signal.emit(False, f"转码结果不完整，进度未达到100%，耗时: {time_str}")
+                    self.finished_signal.emit(False, t_format("转码结果不完整，进度未达到100%，耗时: {}", time_str))
             else:
                 # 处理特定错误码
                 if self.process.returncode == 4294967274 or self.process.returncode == -22:  # 0xFFFFFF6A 或 -22
@@ -1684,7 +1684,7 @@ class TranscodeThread(QThread):
                     # 不再发送90.5%的进度信号，而是保持当前进度值
                     # 记录当前进度值，以便在重试时能够平滑过渡
                     current_progress = self.last_progress_value
-                    self.progress_signal.emit(f"保持当前进度: {current_progress:.1f}%，准备重试转码")
+                    self.progress_signal.emit(t_format("保持当前进度: {:.1f}%，准备重试转码", current_progress))
                     # 尝试使用安全参数自动重试
                     retry_success = self._retry_with_safe_params()
                     
@@ -1719,7 +1719,7 @@ class TranscodeThread(QThread):
                         
                         if os.path.exists(self.output_file):
                             file_size = os.path.getsize(self.output_file)
-                            self.progress_signal.emit(f"输出文件存在，大小: {file_size:,} 字节")
+                            self.progress_signal.emit(t_format("输出文件存在，大小: {:,} 字节", file_size))
                             
                             if file_size > 1024:  # 至少需要有1KB
                                 # 使用ffprobe验证文件完整性
@@ -1763,9 +1763,9 @@ class TranscodeThread(QThread):
                         
                         # 根据验证结果发送信号
                         if validation_success:
-                            self.finished_signal.emit(True, f"转码完成，耗时: {time_str}")
+                            self.finished_signal.emit(True, t_format("转码完成，耗时: {}", time_str))
                         else:
-                            self.finished_signal.emit(False, f"转码失败: {validation_message}，耗时: {time_str}")
+                            self.finished_signal.emit(False, t_format("转码失败: {}，耗时: {}", validation_message, time_str))
                     else:
                         # 发送转码失败信号，但不使用负值
                         self.progress_signal.emit(f"转码失败，返回码：{str(self.process.returncode)}")
@@ -1774,7 +1774,7 @@ class TranscodeThread(QThread):
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            self.progress_signal.emit(f"详细错误信息: {error_details}")
+            self.progress_signal.emit(t_format("详细错误信息: {}", error_details))
             # 发送错误状态的进度信号
             self.progress_percent_signal.emit(-1.0)  # 使用负值表示错误状态
             self.progress_signal.emit(f"转码过程中发生异常: {str(e)}")
@@ -1804,9 +1804,9 @@ class TranscodeThread(QThread):
                     # 主要总结信息
                     summary_msg = f"📊 GPU性能总结报告 📊"
                     self.progress_signal.emit(summary_msg)
-                    self.progress_signal.emit(f"✅ GPU类型: {display_gpu_type}")
-                    self.progress_signal.emit(f"📈 最高使用率: {original_max_usage:.1f}% | 平均使用率: {avg_gpu_usage:.1f}%")
-                    self.progress_signal.emit(f"🏆 效率评分: {efficiency_score:.1f}/10 ({performance_grade}级)")
+                    self.progress_signal.emit(t_format("✅ GPU类型: {}", display_gpu_type))
+                    self.progress_signal.emit(t_format("📈 最高使用率: {:.1f}% | 平均使用率: {:.1f}%", original_max_usage, avg_gpu_usage))
+                    self.progress_signal.emit(t_format("🏆 效率评分: {:.1f}/10 ({}级)", efficiency_score, performance_grade))
 
                     # 性能分析和建议
                     if avg_gpu_usage < 2:
@@ -1850,10 +1850,10 @@ class TranscodeThread(QThread):
                         # 计算百分比分布
                         total = len(usage_history)
                         distribution = ", ".join([f"{k}: {v/total*100:.1f}%" for k, v in usage_ranges.items() if v > 0])
-                        self.progress_signal.emit(f"GPU使用率分布: {distribution}")
+                        self.progress_signal.emit(t_format("GPU使用率分布: {}", distribution))
                 else:
                     avg_gpu_usage = sum(usage_history) / max(1, len(usage_history)) if usage_history else 0
-                    self.progress_signal.emit(f"GPU硬件加速总结: 未检测到{display_gpu_type}被有效使用，可能使用了CPU编码，最高GPU使用率: {original_max_usage:.1f}%，平均GPU使用率: {avg_gpu_usage:.1f}%")
+                    self.progress_signal.emit(t_format("GPU硬件加速总结: 未检测到{}被有效使用，可能使用了CPU编码，最高GPU使用率: {:.1f}%，平均GPU使用率: {:.1f}%", display_gpu_type, original_max_usage, avg_gpu_usage))
 
                     # 分析可能的原因
                     if original_max_usage < 5:
@@ -1933,7 +1933,7 @@ class TranscodeThread(QThread):
                         if duration_match:
                             h, m, s = map(float, duration_match.groups())
                             total_duration = h * 3600 + m * 60 + s
-                            self.progress_signal.emit(f"视频总时长: {total_duration:.2f}秒")
+                            self.progress_signal.emit(t_format("视频总时长: {:.2f}秒", total_duration))
                     
                     # 解析当前进度
                     time_match = time_pattern.search(decoded_line)
@@ -1948,7 +1948,7 @@ class TranscodeThread(QThread):
                             self.progress_percent_signal.emit(percent)
                             last_progress_update = current_update_time
                             last_percent = percent
-                            self.progress_signal.emit(f"CPU模式转码进度: {percent:.2f}%")
+                            self.progress_signal.emit(t_format("CPU模式转码进度: {:.2f}%", percent))
                     
                     # 如果长时间没有进度更新，发送估算进度
                     current_time = time.time()
@@ -1965,7 +1965,7 @@ class TranscodeThread(QThread):
                             estimated_percent = min(95, last_percent + 3)
                         
                         if estimated_percent > last_percent:
-                            self.progress_signal.emit(f"CPU模式估算进度: {estimated_percent:.2f}%")
+                            self.progress_signal.emit(t_format("CPU模式估算进度: {:.2f}%", estimated_percent))
                             self.progress_percent_signal.emit(estimated_percent)
                             last_progress_update = current_time
                             last_percent = estimated_percent
@@ -1982,7 +1982,7 @@ class TranscodeThread(QThread):
             
             # 检查进程返回码
             if self.process.returncode == 0:
-                self.progress_signal.emit(f"CPU模式转码成功完成，耗时: {time_str}")
+                self.progress_signal.emit(t_format("CPU模式转码成功完成，耗时: {}", time_str))
                 self.progress_percent_signal.emit(100.0)
                 return True
             else:
@@ -1993,7 +1993,7 @@ class TranscodeThread(QThread):
             import traceback
             error_details = traceback.format_exc()
             self.progress_signal.emit(f"CPU模式转码出错: {str(e)}")
-            self.progress_signal.emit(f"详细错误信息: {error_details}")
+            self.progress_signal.emit(t_format("详细错误信息: {}", error_details))
             return False
     
     def _retry_with_safe_params(self):
@@ -2018,7 +2018,7 @@ class TranscodeThread(QThread):
             if not os.path.exists(output_dir):
                 try:
                     os.makedirs(output_dir, exist_ok=True)
-                    self.progress_signal.emit(f"创建输出目录: {output_dir}")
+                    self.progress_signal.emit(t_format("创建输出目录: {}", output_dir))
                 except Exception as e:
                     self.progress_signal.emit(f"创建输出目录失败: {str(e)}")
                     return False
@@ -2138,7 +2138,7 @@ class TranscodeThread(QThread):
                         progress_seconds = h * 3600 + m * 60 + s
                         # 使用更保守的进度估算
                         progress_percent = min(90, progress_seconds / 2)  # 限制最大进度为90%
-                        self.progress_signal.emit(f"转码进度: {progress_percent:.1f}%")
+                        self.progress_signal.emit(t_format("转码进度: {:.1f}%", progress_percent))
                         self.progress_percent_signal.emit(progress_percent)
                         last_progress_value = progress_percent
                     else:
@@ -2150,14 +2150,14 @@ class TranscodeThread(QThread):
                         # 只有当进度增加时才更新
                         if estimated_progress > last_progress_value + 0.5:  # 至少增加0.5%才更新
                             self.progress_percent_signal.emit(estimated_progress)
-                            self.progress_signal.emit(f"估算转码进度: {estimated_progress:.1f}%")
+                            self.progress_signal.emit(t_format("估算转码进度: {:.1f}%", estimated_progress))
                             last_progress_value = estimated_progress
                     
                     last_update_time = current_time
                 
                 # 检查是否长时间没有进度更新
                 if current_time - last_output_time > max_no_output_time:
-                    self.progress_signal.emit(f"警告: 转码进程{max_no_output_time}秒内无输出，可能已卡住")
+                    self.progress_signal.emit(t_format("警告: 转码进程{}秒内无输出，可能已卡住", max_no_output_time))
                     # 不立即终止，继续等待一段时间
             
             # 等待进程完成，添加超时机制
@@ -2167,7 +2167,7 @@ class TranscodeThread(QThread):
             while self.process and self.process.poll() is None:
                 # 检查是否超时
                 if time.time() - wait_start > max_wait_time:
-                    self.progress_signal.emit(f"错误: 转码进程超过{max_wait_time}秒未完成，强制终止")
+                    self.progress_signal.emit(t_format("错误: 转码进程超过{}秒未完成，强制终止", max_wait_time))
                     try:
                         self.process.terminate()
                         time.sleep(1)
@@ -2213,10 +2213,10 @@ class TranscodeThread(QThread):
                         # 只有在重试转码真正成功时才发送100%的进度信号
                         self.progress_percent_signal.emit(100.0)
                         self.progress_signal.emit("转码完成，进度100%")
-                        self.finished_signal.emit(True, f"使用安全参数重试转码成功！总耗时: {time_str}")
+                        self.finished_signal.emit(True, t_format("使用安全参数重试转码成功！总耗时: {}", time_str))
                         return True
                     else:
-                        self.progress_signal.emit(f"输出文件验证失败: {probe_error}")
+                        self.progress_signal.emit(t_format("输出文件验证失败: {}", probe_error))
                         # 文件存在但验证失败，可能是不完整或损坏
                         error_msg = f"重试转码可能部分成功，但输出文件验证失败，耗时: {time_str}\n建议尝试使用其他格式或编码器。"
                         self.progress_signal.emit("转码结果不完整，进度未达到100%")
@@ -2229,7 +2229,7 @@ class TranscodeThread(QThread):
                     if output_file_valid:
                         self.progress_percent_signal.emit(100.0)
                         self.progress_signal.emit(t("转码可能成功，但验证过程出错"))
-                        self.finished_signal.emit(True, f"使用安全参数重试转码可能成功，但无法验证文件完整性。总耗时: {time_str}")
+                        self.finished_signal.emit(True, t_format("使用安全参数重试转码可能成功，但无法验证文件完整性。总耗时: {}", time_str))
                         return True
             else:
                 # 转码失败时发送失败信息，不更新进度为100%
@@ -2260,7 +2260,7 @@ class TranscodeThread(QThread):
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            self.progress_signal.emit(f"详细错误信息: {error_details}")
+            self.progress_signal.emit(t_format("详细错误信息: {}", error_details))
             self.progress_signal.emit(f"重试转码时出错: {str(e)}")
             self.progress_percent_signal.emit(-1.0)  # 使用负值表示错误状态
             
@@ -2378,7 +2378,7 @@ class TranscodeThread(QThread):
             value = float(match.group(1))
             
             # 记录调试信息
-            self.progress_signal.emit(f"解析大小: {size_str} -> 提取数值: {value}")
+            self.progress_signal.emit(t_format("解析大小: {} -> 提取数值: {}", size_str, value))
             
             # 提取数值和单位 - 改进单位检测逻辑
             size_str = size_str.upper()  # 转换为大写以简化匹配
@@ -2386,31 +2386,31 @@ class TranscodeThread(QThread):
             # 检查各种单位并进行相应转换
             if any(unit in size_str for unit in ['KIB', 'KB', 'K']):
                 result = value * 1024
-                self.progress_signal.emit(f"单位转换: KB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: KB -> {:.2f} 字节", result))
                 return result
                     
             elif any(unit in size_str for unit in ['MIB', 'MB', 'M']):
                 result = value * 1024 * 1024
-                self.progress_signal.emit(f"单位转换: MB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: MB -> {:.2f} 字节", result))
                 return result
                     
             elif any(unit in size_str for unit in ['GIB', 'GB', 'G']):
                 result = value * 1024 * 1024 * 1024
-                self.progress_signal.emit(f"单位转换: GB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: GB -> {:.2f} 字节", result))
                 return result
                 
             elif any(unit in size_str for unit in ['TIB', 'TB', 'T']):
                 result = value * 1024 * 1024 * 1024 * 1024
-                self.progress_signal.emit(f"单位转换: TB -> {result:.2f} 字节")
+                self.progress_signal.emit(t_format("单位转换: TB -> {:.2f} 字节", result))
                 return result
                 
             elif 'B' in size_str:
                 # 如果包含B单位，假设是字节
-                self.progress_signal.emit(f"单位: 字节 -> {value:.2f} 字节")
+                self.progress_signal.emit(t_format("单位: 字节 -> {:.2f} 字节", value))
                 return value
                 
             # 如果没有单位，假设是字节
-            self.progress_signal.emit(f"无单位: 假设为字节 -> {value:.2f} 字节")
+            self.progress_signal.emit(t_format("无单位: 假设为字节 -> {:.2f} 字节", value))
             return value
         except Exception as e:
             self.progress_signal.emit(f"解析大小出错: {str(e)}")
@@ -2485,7 +2485,7 @@ class TranscodeThread(QThread):
                 output_template = self._build_output_template(safe_output_path)
                 cmd.extend(["-o", output_template])
                 # 记录使用的输出模板
-                self.progress_signal.emit(f"使用输出模板: {output_template}")
+                self.progress_signal.emit(t_format("使用输出模板: {}", output_template))
             
             # 添加其他选项，但排除可能导致格式问题的选项
             if self.additional_options:
@@ -2676,7 +2676,7 @@ class TranscodeThread(QThread):
                         safe_output_path = staged_dir
                 output_template = self._build_output_template(safe_output_path, "_单文件")
                 cmd.extend(["-o", output_template])
-                self.progress_signal.emit(f"使用输出模板: {output_template}")
+                self.progress_signal.emit(t_format("使用输出模板: {}", output_template))
             
             # 添加其他选项，但排除可能导致格式问题的选项
             if self.additional_options:

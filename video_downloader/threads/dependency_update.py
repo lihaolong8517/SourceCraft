@@ -74,7 +74,7 @@ class DependencyUpdateThread(QThread):
             
             for comp_name in check_components:
                 config = self.COMPONENTS[comp_name]
-                self.progress_signal.emit(f"🔍 检查 {comp_name} 版本...")
+                self.progress_signal.emit(t_format("🔍 检查 {} 版本...", comp_name))
                 
                 # 获取当前版本
                 current_ver = self._get_current_version(config)
@@ -99,7 +99,7 @@ class DependencyUpdateThread(QThread):
                 auto_remaining = []
                 for comp_name, current_ver, latest_ver, download_url in updates_available:
                     if comp_name in self.auto_update_components:
-                        self.progress_signal.emit(f"⬇️ 自动更新 {comp_name}...")
+                        self.progress_signal.emit(t_format("⬇️ 自动更新 {}...", comp_name))
                         config = self.COMPONENTS[comp_name]
                         try:
                             success = self._download_and_update(comp_name, config, download_url)
@@ -130,7 +130,7 @@ class DependencyUpdateThread(QThread):
                 if self.components_to_update and comp_name not in self.components_to_update:
                     continue
                     
-                self.progress_signal.emit(f"⬇️ 正在更新 {comp_name}...")
+                self.progress_signal.emit(t_format("⬇️ 正在更新 {}...", comp_name))
                 config = self.COMPONENTS[comp_name]
                 
                 try:
@@ -271,11 +271,11 @@ class DependencyUpdateThread(QThread):
         import shutil
         
         if not download_url:
-            self.progress_signal.emit(f"❌ {comp_name}: 未找到下载链接")
+            self.progress_signal.emit(t_format("❌ {}: 未找到下载链接", comp_name))
             return False
         
         try:
-            self.progress_signal.emit(f"⬇️ 下载 {comp_name}...")
+            self.progress_signal.emit(t_format("⬇️ 下载 {}...", comp_name))
             
             # 下载文件
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -290,7 +290,7 @@ class DependencyUpdateThread(QThread):
                 
                 # 如果是压缩包，解压
                 if 'extract_from_zip' in config:
-                    self.progress_signal.emit(f"📦 解压 {comp_name}...")
+                    self.progress_signal.emit(t_format("📦 解压 {}...", comp_name))
                     extract_name = config['extract_from_zip']
                     
                     with zipfile.ZipFile(temp_file, 'r') as zf:
@@ -322,7 +322,7 @@ class DependencyUpdateThread(QThread):
                                                     os.remove(probe_backup)
                                                 shutil.move(probe_target, probe_backup)
                                             shutil.move(extracted_probe, probe_target)
-                                            self.progress_signal.emit(f"✅ ffprobe 已同步更新")
+                                            self.progress_signal.emit(t_format("✅ ffprobe 已同步更新", ))
                                             break
                                 break
                 else:
@@ -334,11 +334,11 @@ class DependencyUpdateThread(QThread):
                         shutil.move(target_file, backup)
                     shutil.move(temp_file, target_file)
                 
-                self.progress_signal.emit(f"✅ {comp_name} 更新成功")
+                self.progress_signal.emit(t_format("✅ {} 更新成功", comp_name))
                 return True
                 
         except PermissionError:
-            self.progress_signal.emit(f"❌ {comp_name}: 权限不足，请以管理员身份运行")
+            self.progress_signal.emit(t_format("❌ {}: 权限不足，请以管理员身份运行", comp_name))
             return False
         except Exception as e:
             self.progress_signal.emit(f"❌ {comp_name}: {str(e)}")
