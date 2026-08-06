@@ -34,6 +34,7 @@ from PyQt5.QtGui import QIcon, QDesktopServices, QPalette, QColor, QFont, QPixma
 from PyQt5.QtSvg import QSvgRenderer
 
 # Internal modules
+from i18n import t, t_format, set_language, get_language, SUPPORTED_LANGUAGES, language_display_name
 from .constants import RUNTIME_APP_DIR, APP_DISPLAY_NAME, APP_ORGANIZATION_NAME, WINDOWS_APP_USER_MODEL_ID, APP_ICON_CANDIDATES
 from . import utils
 from . import utils_update
@@ -135,6 +136,14 @@ class VideoDownloaderApp(QMainWindow):
         # 加载设置
         self.settings = QSettings("VideoDownloader", "Settings")
         self.current_theme = self.settings.value("theme", "light")
+        
+        # 加载界面语言（QSettings 有持久化值才覆盖；否则保留环境变量/默认值）
+        try:
+            saved_lang = str(self.settings.value("language", "", type=str) or "").strip()
+            if saved_lang:
+                set_language(saved_lang)
+        except Exception:
+            pass
         
         # 应用主题
         self.apply_theme(self.current_theme)
@@ -930,7 +939,7 @@ class VideoDownloaderApp(QMainWindow):
         self.main_layout = QVBoxLayout(central_widget)
         
         # 创建状态标签 - 预设固定高度和内边距，防止布局跳动
-        self.status_label = QLabel("就绪")
+        self.status_label = QLabel(t("就绪"))
         self.status_label.setMinimumHeight(32) # 允许根据内容高度自动扩充
         self.status_label.setWordWrap(True)    # 允许自动换行逻辑
         self.status_label.setStyleSheet(
@@ -947,8 +956,8 @@ class VideoDownloaderApp(QMainWindow):
         toolbar_layout = QHBoxLayout()
         
         # 添加登录按钮
-        self.login_button = QPushButton("🔑 登录网站")
-        self.login_button.setToolTip("打开内置浏览器：播放网页视频时自动捕获下载地址；登录账号以同步您的播放与下载权限。")
+        self.login_button = QPushButton(t("🔑 登录网站"))
+        self.login_button.setToolTip(t("打开内置浏览器：播放网页视频时自动捕获下载地址；登录账号以同步您的播放与下载权限。"))
         self.login_button.setFixedHeight(34)
         self.login_button.clicked.connect(self.open_browser)
         self.login_button.setStyleSheet("""
@@ -1040,7 +1049,7 @@ class VideoDownloaderApp(QMainWindow):
 
         # 主题切换按钮
         self.theme_button = QPushButton()
-        self.theme_button.setToolTip("选择主题颜色")
+        self.theme_button.setToolTip(t("选择主题颜色"))
         self.theme_button.setFixedSize(btn_size)
         self.theme_button.setIcon(self._create_svg_icon(self.svg_palette, self._active_icon_color()))
         self.theme_button.setIconSize(icon_size)
@@ -1083,7 +1092,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加帮助按钮
         self.help_button = QPushButton()
-        self.help_button.setToolTip("联系开发者")
+        self.help_button.setToolTip(t("联系开发者"))
         self.help_button.setFixedSize(btn_size)
         self.help_button.setIcon(self._create_svg_icon(self.svg_help, self._active_icon_color()))
         self.help_button.setIconSize(icon_size)
@@ -1099,7 +1108,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加软件更新按钮（检查应用程序自身更新）
         self.update_button = QPushButton()
-        self.update_button.setToolTip("检查软件更新")
+        self.update_button.setToolTip(t("检查软件更新"))
         self.update_button.setFixedSize(btn_size)
         self.update_button.setIcon(self._create_svg_icon(self.svg_upgrade, self._active_icon_color()))
         self.update_button.setIconSize(icon_size)
@@ -1109,7 +1118,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加设置按钮
         self.settings_button = QPushButton()
-        self.settings_button.setToolTip("应用设置")
+        self.settings_button.setToolTip(t("应用设置"))
         self.settings_button.setFixedSize(btn_size)
         self.settings_button.setIcon(self._create_svg_icon(self.svg_settings, self._active_icon_color()))
         self.settings_button.setIconSize(icon_size)
@@ -1140,12 +1149,12 @@ class VideoDownloaderApp(QMainWindow):
         download_layout = QVBoxLayout(download_tab)
         
         # URL输入区域
-        url_group = QGroupBox("视频URL")
+        url_group = QGroupBox(t("视频URL"))
         url_layout = QHBoxLayout()
         url_group.setLayout(url_layout)
         
         self.url_input = QLineEdit()
-        self.url_input.setPlaceholderText("输入视频URL...")
+        self.url_input.setPlaceholderText(t("输入视频URL..."))
         self.url_input.setMinimumHeight(36)
         self.url_input.setFont(QFont('Segoe UI', 13))
         self.url_input.setStyleSheet("QLineEdit { padding: 8px 16px; border: 1px solid rgba(0,0,0,0.08); border-radius: 18px; background-color: #efe9e7; color: #1f1f1f; font-size: 14px; } QLineEdit:focus { background-color: #fdfcfc; border: 1px solid #8bb5e8; }")
@@ -1153,18 +1162,18 @@ class VideoDownloaderApp(QMainWindow):
         self.url_input.textChanged.connect(self._on_url_text_changed)
         url_layout.addWidget(self.url_input)
         
-        paste_button = QPushButton("粘贴")
+        paste_button = QPushButton(t("粘贴"))
         paste_button.clicked.connect(self.paste_url)
         url_layout.addWidget(paste_button)
         
-        info_button = QPushButton("获取信息")
+        info_button = QPushButton(t("获取信息"))
         info_button.clicked.connect(self.get_video_info)
         url_layout.addWidget(info_button)
         
         download_layout.addWidget(url_group)
         
         # 下载选项区域
-        options_group = QGroupBox("下载选项")
+        options_group = QGroupBox(t("下载选项"))
         options_layout = QFormLayout()
         options_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         options_layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
@@ -1187,13 +1196,13 @@ class VideoDownloaderApp(QMainWindow):
             "指定格式ID"
         ])
         # 添加工具提示，说明格式选择
-        self.format_combo.setToolTip("选择下载格式。'最佳质量'选项会自动选择最佳视频和音频质量。'仅缩略图'选项只下载视频封面图片，不下载视频文件。")
+        self.format_combo.setToolTip(t("选择下载格式。'最佳质量'选项会自动选择最佳视频和音频质量。'仅缩略图'选项只下载视频封面图片，不下载视频文件。"))
         self.format_combo.currentIndexChanged.connect(self.update_format_options)
         format_layout.addWidget(self.format_combo)
         
         # 添加高级格式选择按钮（集成了获取格式列表功能）
-        self.advanced_format_button = QPushButton("🛠️ 高级格式选择")
-        self.advanced_format_button.setToolTip("自动获取可用格式并支持复杂过滤和排序")
+        self.advanced_format_button = QPushButton(t("🛠️ 高级格式选择"))
+        self.advanced_format_button.setToolTip(t("自动获取可用格式并支持复杂过滤和排序"))
         self.advanced_format_button.clicked.connect(self.open_advanced_format_dialog)
         format_layout.addWidget(self.advanced_format_button)
         
@@ -1201,14 +1210,14 @@ class VideoDownloaderApp(QMainWindow):
         
         # 自定义格式
         self.custom_format = QLineEdit()
-        self.custom_format.setPlaceholderText("例如: bestvideo[height<=1080]+bestaudio[acodec!=opus]/best[acodec!=opus]")
+        self.custom_format.setPlaceholderText(t("例如: bestvideo[height<=1080]+bestaudio[acodec!=opus]/best[acodec!=opus]"))
         self.custom_format.setEnabled(False)
         options_layout.addRow("自定义格式:", self.custom_format)
         
         # 格式ID选择
         self.format_id_combo = QComboBox()
         self.format_id_combo.setEnabled(False)
-        self.format_id_combo.setPlaceholderText("选择格式ID")
+        self.format_id_combo.setPlaceholderText(t("选择格式ID"))
         # 设置最大可见项数，超过此数量时会显示滚动条
         self.format_id_combo.setMaxVisibleItems(15)
         # 设置下拉列表的样式，确保有足够的宽度显示完整内容
@@ -1244,12 +1253,12 @@ class VideoDownloaderApp(QMainWindow):
             "越南语 (vi)",
             "自定义语言代码"
         ])
-        self.audio_lang_combo.setToolTip("选择音频语言。'自动选择'会优先选择英语或视频的默认语言。")
+        self.audio_lang_combo.setToolTip(t("选择音频语言。'自动选择'会优先选择英语或视频的默认语言。"))
         audio_lang_layout.addWidget(self.audio_lang_combo)
         
         # 自定义语言代码输入框
         self.custom_audio_lang = QLineEdit()
-        self.custom_audio_lang.setPlaceholderText("例如: en-US, zh-CN")
+        self.custom_audio_lang.setPlaceholderText(t("例如: en-US, zh-CN"))
         self.custom_audio_lang.setEnabled(False)
         self.custom_audio_lang.setMaximumWidth(120)
         audio_lang_layout.addWidget(self.custom_audio_lang)
@@ -1262,7 +1271,7 @@ class VideoDownloaderApp(QMainWindow):
         # 输出路径
         self.output_path = QLineEdit()
         # 默认路径设置在load_saved_path方法中，不在这里设置
-        browse_button = QPushButton("浏览...")
+        browse_button = QPushButton(t("浏览..."))
         browse_button.clicked.connect(self.browse_output_path)
         output_layout = QHBoxLayout()
         output_layout.addWidget(self.output_path)
@@ -1270,7 +1279,7 @@ class VideoDownloaderApp(QMainWindow):
         options_layout.addRow("保存位置:", output_layout)
         
         # 创建高级选项的可折叠区域
-        self.advanced_group = QGroupBox("高级选项")
+        self.advanced_group = QGroupBox(t("高级选项"))
         self.advanced_group.setCheckable(True)
         self.advanced_group.setChecked(False)
         
@@ -1332,7 +1341,7 @@ class VideoDownloaderApp(QMainWindow):
         subtitle_layout.addWidget(subtitle_usage_label)
         
         # 字幕下载和配置选项组 - 合并为一个蓝色边框组
-        subtitle_download_config_group = QGroupBox("字幕下载与配置")
+        subtitle_download_config_group = QGroupBox(t("字幕下载与配置"))
         # 设置组框样式为蓝色边框
         subtitle_download_config_group.setStyleSheet(
             "QGroupBox { "
@@ -1355,8 +1364,8 @@ class VideoDownloaderApp(QMainWindow):
         
         # 字幕列表预览按钮
         subtitle_preview_layout = QHBoxLayout()
-        self.list_subs_button = QPushButton("🔍 预览可用字幕")
-        self.list_subs_button.setToolTip("预览视频的所有可用字幕语言和格式（不下载视频）")
+        self.list_subs_button = QPushButton(t("🔍 预览可用字幕"))
+        self.list_subs_button.setToolTip(t("预览视频的所有可用字幕语言和格式（不下载视频）"))
         self.list_subs_button.setStyleSheet(
             "QPushButton { "
             "background-color: #17a2b8; "
@@ -1379,18 +1388,18 @@ class VideoDownloaderApp(QMainWindow):
         subtitle_download_config_layout.addLayout(subtitle_preview_layout)
         
         # 基础字幕选项
-        self.subtitle_check = QCheckBox("下载手动字幕")
-        self.subtitle_check.setToolTip("下载视频的手动字幕文件")
+        self.subtitle_check = QCheckBox(t("下载手动字幕"))
+        self.subtitle_check.setToolTip(t("下载视频的手动字幕文件"))
         subtitle_download_config_layout.addWidget(self.subtitle_check)
         
         # 自动字幕选项
-        self.auto_subtitle_check = QCheckBox("下载自动生成字幕")
-        self.auto_subtitle_check.setToolTip("下载平台自动生成的字幕（如YouTube自动字幕、Bilibili AI字幕等）")
+        self.auto_subtitle_check = QCheckBox(t("下载自动生成字幕"))
+        self.auto_subtitle_check.setToolTip(t("下载平台自动生成的字幕（如YouTube自动字幕、Bilibili AI字幕等）"))
         subtitle_download_config_layout.addWidget(self.auto_subtitle_check)
         
         # 字幕语言选择
         subtitle_lang_layout = QHBoxLayout()
-        lang_label = QLabel("字幕语言:")
+        lang_label = QLabel(t("字幕语言:"))
         lang_label.setMinimumWidth(80)
         lang_label.setStyleSheet("QLabel { font-weight: bold; }")
         subtitle_lang_layout.addWidget(lang_label)
@@ -1450,14 +1459,14 @@ class VideoDownloaderApp(QMainWindow):
         self.subtitle_lang.addItem("斯瓦希里语 (sw)", "sw")
         self.subtitle_lang.addItem("阿姆哈拉语 (am)", "am")
         self.subtitle_lang.setEnabled(False)
-        self.subtitle_lang.setToolTip("选择要下载的字幕语言，'全部语言'将下载所有可用语言的字幕")
+        self.subtitle_lang.setToolTip(t("选择要下载的字幕语言，'全部语言'将下载所有可用语言的字幕"))
         subtitle_lang_layout.addWidget(self.subtitle_lang)
         subtitle_lang_layout.addStretch()
         subtitle_download_config_layout.addLayout(subtitle_lang_layout)
         
         # 字幕格式选择
         subtitle_format_layout = QHBoxLayout()
-        format_label = QLabel("字幕格式:")
+        format_label = QLabel(t("字幕格式:"))
         format_label.setMinimumWidth(80)
         format_label.setStyleSheet("QLabel { font-weight: bold; }")
         subtitle_format_layout.addWidget(format_label)
@@ -1470,7 +1479,7 @@ class VideoDownloaderApp(QMainWindow):
         self.subtitle_format.addItem("格式优先级 (srt/ass/vtt/best)", "srt/ass/vtt/best")
         self.subtitle_format.addItem("格式优先级 (ass/srt/best)", "ass/srt/best")
         self.subtitle_format.setEnabled(False)
-        self.subtitle_format.setToolTip("选择字幕文件格式。支持格式优先级，如'srt/ass/vtt/best'会按优先级选择可用格式")
+        self.subtitle_format.setToolTip(t("选择字幕文件格式。支持格式优先级，如'srt/ass/vtt/best'会按优先级选择可用格式"))
         subtitle_format_layout.addWidget(self.subtitle_format)
         subtitle_format_layout.addStretch()
         subtitle_download_config_layout.addLayout(subtitle_format_layout)
@@ -1478,7 +1487,7 @@ class VideoDownloaderApp(QMainWindow):
         subtitle_layout.addWidget(subtitle_download_config_group)
         
         # 字幕处理选项组
-        subtitle_process_group = QGroupBox("字幕处理")
+        subtitle_process_group = QGroupBox(t("字幕处理"))
         # 设置组框样式，确保标题完整显示
         subtitle_process_group.setStyleSheet(
             "QGroupBox { "
@@ -1501,17 +1510,13 @@ class VideoDownloaderApp(QMainWindow):
         
         # 字幕嵌入选项 - 使用水平布局将复选框和提示放在同一行
         embed_subtitle_layout = QHBoxLayout()
-        self.embed_subtitle_check = QCheckBox("嵌入字幕到视频文件")
-        self.embed_subtitle_check.setToolTip(
-            "将字幕嵌入到视频文件中（需要 ffmpeg）。注意：MP4 对字幕嵌入支持有限，MKV 更稳；建议在高级格式中选择 MKV 或启用重封装为 MKV 提高兼容性。若视频仅有自动字幕，请同时勾选'下载自动生成字幕'。"
-        )
+        self.embed_subtitle_check = QCheckBox(t("嵌入字幕到视频文件"))
+        self.embed_subtitle_check.setToolTip(t("将字幕嵌入到视频文件中（需要 ffmpeg）。注意：MP4 对字幕嵌入支持有限，MKV 更稳；建议在高级格式中选择 MKV 或启用重封装为 MKV 提高兼容性。若视频仅有自动字幕，请同时勾选'下载自动生成字幕'。"))
         self.embed_subtitle_check.setEnabled(True)
         embed_subtitle_layout.addWidget(self.embed_subtitle_check)
         
         # 在复选框右侧添加提示标签（单行显示，不换行）
-        self.embed_subtitle_notice = QLabel(
-            "⚠ MP4 对字幕嵌入支持有限，MKV 更稳.建议在'高级格式'功能中选择 MKV"
-        )
+        self.embed_subtitle_notice = QLabel(t("⚠ MP4 对字幕嵌入支持有限，MKV 更稳.建议在'高级格式'功能中选择 MKV"))
         self.embed_subtitle_notice.setWordWrap(False)  # 禁用自动换行
         self.embed_subtitle_notice.setStyleSheet("QLabel { color: #6c757d; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
         embed_subtitle_layout.addWidget(self.embed_subtitle_notice, 0)  # 0 表示不拉伸
@@ -1520,14 +1525,14 @@ class VideoDownloaderApp(QMainWindow):
         subtitle_process_layout.addLayout(embed_subtitle_layout)
         
         # 字幕转换选项
-        self.convert_subtitle_check = QCheckBox("转换字幕为SRT+UTF-8")
-        self.convert_subtitle_check.setToolTip("将字幕转换为 SRT 格式并使用 UTF-8 编码，确保中文字符正常显示，推荐开启")
+        self.convert_subtitle_check = QCheckBox(t("转换字幕为SRT+UTF-8"))
+        self.convert_subtitle_check.setToolTip(t("将字幕转换为 SRT 格式并使用 UTF-8 编码，确保中文字符正常显示，推荐开启"))
         self.convert_subtitle_check.setEnabled(False)
         subtitle_process_layout.addWidget(self.convert_subtitle_check)
         
         # 字幕下载延迟设置
         subtitle_delay_layout = QHBoxLayout()
-        delay_label = QLabel("字幕下载延迟:")
+        delay_label = QLabel(t("字幕下载延迟:"))
         delay_label.setMinimumWidth(100)
         delay_label.setStyleSheet("QLabel { font-weight: bold; }")
         subtitle_delay_layout.addWidget(delay_label)
@@ -1535,7 +1540,7 @@ class VideoDownloaderApp(QMainWindow):
         self.subtitle_delay_spin.setRange(0, 60)
         self.subtitle_delay_spin.setValue(0)
         self.subtitle_delay_spin.setSuffix(" 秒")
-        self.subtitle_delay_spin.setToolTip("设置字幕下载之间的延迟时间，避免频繁请求被限制")
+        self.subtitle_delay_spin.setToolTip(t("设置字幕下载之间的延迟时间，避免频繁请求被限制"))
         self.subtitle_delay_spin.setEnabled(False)
         subtitle_delay_layout.addWidget(self.subtitle_delay_spin)
         subtitle_delay_layout.addStretch()
@@ -1572,21 +1577,15 @@ class VideoDownloaderApp(QMainWindow):
             # 更新UI提示（单行显示）
             if embed_enabled and not any_subtitle_enabled:
                 # 仅启用嵌入时的提示
-                self.embed_subtitle_notice.setText(
-                    "ℹ️ 仅嵌入模式：yt-dlp 会自动下载字幕并嵌入后删除外部文件"
-                )
+                self.embed_subtitle_notice.setText(t("ℹ️ 仅嵌入模式：yt-dlp 会自动下载字幕并嵌入后删除外部文件"))
                 self.embed_subtitle_notice.setStyleSheet("QLabel { color: #0066cc; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
             elif embed_enabled and any_subtitle_enabled:
                 # 同时启用下载和嵌入时的提示
-                self.embed_subtitle_notice.setText(
-                    "ℹ️ 下载+嵌入模式：外部字幕文件将被保留。MP4 对字幕嵌入支持有限，MKV 更稳"
-                )
+                self.embed_subtitle_notice.setText(t("ℹ️ 下载+嵌入模式：外部字幕文件将被保留。MP4 对字幕嵌入支持有限，MKV 更稳"))
                 self.embed_subtitle_notice.setStyleSheet("QLabel { color: #6c757d; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
             else:
                 # 默认提示
-                self.embed_subtitle_notice.setText(
-                    "⚠ MP4 对字幕嵌入支持有限，MKV 更稳.建议在'高级格式'功能中选择 MKV"
-                )
+                self.embed_subtitle_notice.setText(t("⚠ MP4 对字幕嵌入支持有限，MKV 更稳.建议在'高级格式'功能中选择 MKV"))
                 self.embed_subtitle_notice.setStyleSheet("QLabel { color: #6c757d; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
         
         def on_subtitle_toggled(checked):
@@ -1677,12 +1676,12 @@ class VideoDownloaderApp(QMainWindow):
         basic_layout.setContentsMargins(15, 15, 15, 15)
         
         # 缩略图选项
-        self.thumbnail_check = QCheckBox("下载缩略图")
+        self.thumbnail_check = QCheckBox(t("下载缩略图"))
         basic_layout.addWidget(self.thumbnail_check)
         
         # 限速选项
         speed_layout = QHBoxLayout()
-        self.limit_speed_check = QCheckBox("限制下载速度")
+        self.limit_speed_check = QCheckBox(t("限制下载速度"))
         self.speed_limit = QSpinBox()
         self.speed_limit.setRange(50, 102400)  # 最大值提高到 100 MB/s，适应现代高速网络
         self.speed_limit.setValue(5000)  # 默认值设为 5 MB/s，更适合大多数场景
@@ -1695,14 +1694,14 @@ class VideoDownloaderApp(QMainWindow):
         
         
         # SponsorBlock 支持组 (新功能)
-        sponsorblock_group = QGroupBox("🚫 SponsorBlock 支持")
+        sponsorblock_group = QGroupBox(t("🚫 SponsorBlock 支持"))
         basic_layout.addWidget(sponsorblock_group)
         sponsorblock_layout = QVBoxLayout(sponsorblock_group)
         sponsorblock_layout.setSpacing(8)
         sponsorblock_layout.setContentsMargins(15, 15, 15, 15)
         
-        self.sponsorblock_check = QCheckBox("启用 SponsorBlock 自动跳过广告")
-        self.sponsorblock_check.setToolTip("自动检测并移除 YouTube 视频中的广告、赞助商内容等片段")
+        self.sponsorblock_check = QCheckBox(t("启用 SponsorBlock 自动跳过广告"))
+        self.sponsorblock_check.setToolTip(t("自动检测并移除 YouTube 视频中的广告、赞助商内容等片段"))
         self.sponsorblock_check.setStyleSheet(
             "QCheckBox { "
             "font-size: 13px; "
@@ -1723,25 +1722,25 @@ class VideoDownloaderApp(QMainWindow):
         
         # SponsorBlock 类型选择
         sponsorblock_types_layout = QHBoxLayout()
-        sponsorblock_types_label = QLabel("移除类型:")
+        sponsorblock_types_label = QLabel(t("移除类型:"))
         sponsorblock_types_layout.addWidget(sponsorblock_types_label)
         
         # SponsorBlock 类型复选框
-        self.sponsorblock_sponsor_check = QCheckBox("赞助商")
+        self.sponsorblock_sponsor_check = QCheckBox(t("赞助商"))
         self.sponsorblock_sponsor_check.setChecked(True)
-        self.sponsorblock_sponsor_check.setToolTip("移除赞助商内容")
+        self.sponsorblock_sponsor_check.setToolTip(t("移除赞助商内容"))
         sponsorblock_types_layout.addWidget(self.sponsorblock_sponsor_check)
         
-        self.sponsorblock_intro_check = QCheckBox("开场")
-        self.sponsorblock_intro_check.setToolTip("移除开场内容")
+        self.sponsorblock_intro_check = QCheckBox(t("开场"))
+        self.sponsorblock_intro_check.setToolTip(t("移除开场内容"))
         sponsorblock_types_layout.addWidget(self.sponsorblock_intro_check)
         
-        self.sponsorblock_outro_check = QCheckBox("结尾")
-        self.sponsorblock_outro_check.setToolTip("移除结尾内容")
+        self.sponsorblock_outro_check = QCheckBox(t("结尾"))
+        self.sponsorblock_outro_check.setToolTip(t("移除结尾内容"))
         sponsorblock_types_layout.addWidget(self.sponsorblock_outro_check)
         
-        self.sponsorblock_selfpromo_check = QCheckBox("自推广")
-        self.sponsorblock_selfpromo_check.setToolTip("移除自我推广内容")
+        self.sponsorblock_selfpromo_check = QCheckBox(t("自推广"))
+        self.sponsorblock_selfpromo_check.setToolTip(t("移除自我推广内容"))
         sponsorblock_types_layout.addWidget(self.sponsorblock_selfpromo_check)
         
         sponsorblock_types_layout.addStretch()
@@ -1795,7 +1794,7 @@ class VideoDownloaderApp(QMainWindow):
         self.sponsorblock_check.toggled.connect(on_sponsorblock_toggled)
         
         # 章节支持组 (优化版) - 已移除
-        # chapters_group = QGroupBox("📖 章节支持")
+        # chapters_group = QGroupBox(t("📖 章节支持"))
         # basic_layout.addWidget(chapters_group)
         # chapters_layout = QVBoxLayout(chapters_group)
         # chapters_layout.setSpacing(10)
@@ -1812,15 +1811,15 @@ class VideoDownloaderApp(QMainWindow):
         # 为简化，直接跳到下一个功能组（高级下载选项组）
         
         # 高级下载选项组 (精简版 - 仅保留常用选项)
-        advanced_download_group = QGroupBox("🎯 特殊场景下载")
+        advanced_download_group = QGroupBox(t("🎯 特殊场景下载"))
         basic_layout.addWidget(advanced_download_group)
         advanced_download_layout = QVBoxLayout(advanced_download_group)
         advanced_download_layout.setSpacing(10)
         advanced_download_layout.setContentsMargins(15, 15, 15, 15)
         
         # 添加总管控勾选框
-        self.special_scene_master_check = QCheckBox("启用特殊场景下载功能")
-        self.special_scene_master_check.setToolTip("启用此功能后，才能使用下方的特殊场景下载选项")
+        self.special_scene_master_check = QCheckBox(t("启用特殊场景下载功能"))
+        self.special_scene_master_check.setToolTip(t("启用此功能后，才能使用下方的特殊场景下载选项"))
         self.special_scene_master_check.setStyleSheet(
             "QCheckBox { "
             "font-size: 14px; "
@@ -1862,8 +1861,8 @@ class VideoDownloaderApp(QMainWindow):
         advanced_download_layout.addWidget(scenario_info_label)
         
         # 直播相关选项
-        self.live_from_start_check = QCheckBox("📡 从开头下载直播")
-        self.live_from_start_check.setToolTip("从直播开始时间下载，而不是从当前时间开始（实验性功能）")
+        self.live_from_start_check = QCheckBox(t("📡 从开头下载直播"))
+        self.live_from_start_check.setToolTip(t("从直播开始时间下载，而不是从当前时间开始（实验性功能）"))
         self.live_from_start_check.setStyleSheet(
             "QCheckBox { "
             "font-size: 13px; "
@@ -1879,8 +1878,8 @@ class VideoDownloaderApp(QMainWindow):
         
         # 等待视频可用（预约直播）
         wait_video_layout = QHBoxLayout()
-        self.wait_for_video_check = QCheckBox("⏳ 等待视频可用")
-        self.wait_for_video_check.setToolTip("等待预约直播或计划发布的视频变为可用状态")
+        self.wait_for_video_check = QCheckBox(t("⏳ 等待视频可用"))
+        self.wait_for_video_check.setToolTip(t("等待预约直播或计划发布的视频变为可用状态"))
         self.wait_for_video_check.setStyleSheet(
             "QCheckBox { "
             "font-size: 13px; "
@@ -1895,18 +1894,18 @@ class VideoDownloaderApp(QMainWindow):
         wait_video_layout.addWidget(self.wait_for_video_check)
         
         # 等待重试间隔输入（支持 MIN 或 MIN-MAX）
-        wait_video_layout.addWidget(QLabel("重试间隔:"))
+        wait_video_layout.addWidget(QLabel(t("重试间隔:")))
         self.wait_for_video_time = QSpinBox()
         self.wait_for_video_time.setRange(10, 3600)
         self.wait_for_video_time.setValue(300)
         self.wait_for_video_time.setSuffix(" 秒")
         self.wait_for_video_time.setEnabled(False)
-        self.wait_for_video_time.setToolTip("设置等待重试的最小间隔（10-3600秒）")
+        self.wait_for_video_time.setToolTip(t("设置等待重试的最小间隔（10-3600秒）"))
         wait_video_layout.addWidget(self.wait_for_video_time)
 
-        self.wait_for_video_use_range_check = QCheckBox("范围")
+        self.wait_for_video_use_range_check = QCheckBox(t("范围"))
         self.wait_for_video_use_range_check.setEnabled(False)
-        self.wait_for_video_use_range_check.setToolTip("启用后使用 MIN-MAX 区间随机等待")
+        self.wait_for_video_use_range_check.setToolTip(t("启用后使用 MIN-MAX 区间随机等待"))
         wait_video_layout.addWidget(self.wait_for_video_use_range_check)
 
         self.wait_for_video_max_time = QSpinBox()
@@ -1914,7 +1913,7 @@ class VideoDownloaderApp(QMainWindow):
         self.wait_for_video_max_time.setValue(600)
         self.wait_for_video_max_time.setSuffix(" 秒")
         self.wait_for_video_max_time.setEnabled(False)
-        self.wait_for_video_max_time.setToolTip("设置等待重试的最大间隔（需大于等于最小间隔）")
+        self.wait_for_video_max_time.setToolTip(t("设置等待重试的最大间隔（需大于等于最小间隔）"))
         wait_video_layout.addWidget(self.wait_for_video_max_time)
         self.wait_for_video_max_time.setMinimum(self.wait_for_video_time.value())
 
@@ -1934,8 +1933,8 @@ class VideoDownloaderApp(QMainWindow):
         advanced_download_layout.addLayout(wait_video_layout)
         
         # 容错选项
-        self.ignore_errors_check = QCheckBox("🛡️ 忽略错误继续")
-        self.ignore_errors_check.setToolTip("遇到下载或后处理错误时继续执行，不中止整个任务（推荐开启）")
+        self.ignore_errors_check = QCheckBox(t("🛡️ 忽略错误继续"))
+        self.ignore_errors_check.setToolTip(t("遇到下载或后处理错误时继续执行，不中止整个任务（推荐开启）"))
         self.ignore_errors_check.setChecked(True)  # 默认启用
         self.ignore_errors_check.setStyleSheet(
             "QCheckBox { "
@@ -1951,8 +1950,8 @@ class VideoDownloaderApp(QMainWindow):
         advanced_download_layout.addWidget(self.ignore_errors_check)
         
         # 片段下载选项
-        self.skip_unavailable_fragments_check = QCheckBox("⏭️ 跳过不可用片段")
-        self.skip_unavailable_fragments_check.setToolTip("勾选后跳过不可用片段；不勾选时遇到缺失片段将中止下载")
+        self.skip_unavailable_fragments_check = QCheckBox(t("⏭️ 跳过不可用片段"))
+        self.skip_unavailable_fragments_check.setToolTip(t("勾选后跳过不可用片段；不勾选时遇到缺失片段将中止下载"))
         self.skip_unavailable_fragments_check.setStyleSheet(
             "QCheckBox { "
             "font-size: 13px; "
@@ -1966,8 +1965,8 @@ class VideoDownloaderApp(QMainWindow):
         )
         advanced_download_layout.addWidget(self.skip_unavailable_fragments_check)
         
-        self.keep_fragments_check = QCheckBox("💾 保留下载片段")
-        self.keep_fragments_check.setToolTip("下载完成后保留临时片段文件，用于调试（会占用额外空间）")
+        self.keep_fragments_check = QCheckBox(t("💾 保留下载片段"))
+        self.keep_fragments_check.setToolTip(t("下载完成后保留临时片段文件，用于调试（会占用额外空间）"))
         self.keep_fragments_check.setStyleSheet(
             "QCheckBox { "
             "font-size: 13px; "
@@ -2100,13 +2099,13 @@ class VideoDownloaderApp(QMainWindow):
         )
         playlist_layout.addWidget(usage_label)
         
-        self.playlist_check = QCheckBox("下载播放列表")
+        self.playlist_check = QCheckBox(t("下载播放列表"))
         playlist_layout.addWidget(self.playlist_check)
         
         # 添加获取播放列表按钮
         get_playlist_layout = QHBoxLayout()
-        self.get_playlist_button = QPushButton("获取播放列表信息")
-        self.get_playlist_button.setToolTip("点击获取当前URL的播放列表信息（适用于博主主页、频道页面等）")
+        self.get_playlist_button = QPushButton(t("获取播放列表信息"))
+        self.get_playlist_button.setToolTip(t("点击获取当前URL的播放列表信息（适用于博主主页、频道页面等）"))
         self.get_playlist_button.clicked.connect(self.get_playlist_info)
         get_playlist_layout.addWidget(self.get_playlist_button)
         get_playlist_layout.addStretch()
@@ -2114,14 +2113,14 @@ class VideoDownloaderApp(QMainWindow):
         
         # 播放列表范围选择
         playlist_range_layout = QHBoxLayout()
-        playlist_range_layout.addWidget(QLabel("播放列表范围:"))
+        playlist_range_layout.addWidget(QLabel(t("播放列表范围:")))
         self.playlist_range = QLineEdit()
-        self.playlist_range.setPlaceholderText("例如: 1-10,15,20-25")
+        self.playlist_range.setPlaceholderText(t("例如: 1-10,15,20-25"))
         self.playlist_range.setEnabled(False)
         playlist_range_layout.addWidget(self.playlist_range)
         
         # 添加智能范围选择按钮
-        self.playlist_range_button = QPushButton("智能选择范围")
+        self.playlist_range_button = QPushButton(t("智能选择范围"))
         self.playlist_range_button.setEnabled(False)
         self.playlist_range_button.clicked.connect(self.open_playlist_range_dialog)
         playlist_range_layout.addWidget(self.playlist_range_button)
@@ -2190,7 +2189,7 @@ class VideoDownloaderApp(QMainWindow):
         metadata_content_layout.setContentsMargins(10, 10, 10, 10)
         
         # 元数据下载选项组
-        metadata_download_group = QGroupBox("📁 元数据下载选项")
+        metadata_download_group = QGroupBox(t("📁 元数据下载选项"))
         metadata_download_group.setStyleSheet(
             "QGroupBox { "
             "font-size: 14px; "
@@ -2214,8 +2213,8 @@ class VideoDownloaderApp(QMainWindow):
         metadata_download_layout.setSpacing(10)
         metadata_download_layout.setContentsMargins(15, 20, 15, 15)
         
-        self.write_description_check = QCheckBox("📄 下载视频描述")
-        self.write_description_check.setToolTip("下载视频的描述信息并保存为.description文件")
+        self.write_description_check = QCheckBox(t("📄 下载视频描述"))
+        self.write_description_check.setToolTip(t("下载视频的描述信息并保存为.description文件"))
         # 设置复选框样式
         self.write_description_check.setStyleSheet(
             "QCheckBox { "
@@ -2230,8 +2229,8 @@ class VideoDownloaderApp(QMainWindow):
         )
         metadata_download_layout.addWidget(self.write_description_check)
         
-        self.write_info_check = QCheckBox("📊 下载JSON元数据")
-        self.write_info_check.setToolTip("下载完整的视频元数据信息并保存为.info.json文件，包含标题、作者、时长、观看次数等")
+        self.write_info_check = QCheckBox(t("📊 下载JSON元数据"))
+        self.write_info_check.setToolTip(t("下载完整的视频元数据信息并保存为.info.json文件，包含标题、作者、时长、观看次数等"))
         # 设置复选框样式
         self.write_info_check.setStyleSheet(
             "QCheckBox { "
@@ -2246,8 +2245,8 @@ class VideoDownloaderApp(QMainWindow):
         )
         metadata_download_layout.addWidget(self.write_info_check)
         
-        self.write_comments_check = QCheckBox("💬 下载视频评论")
-        self.write_comments_check.setToolTip("下载视频评论并保存为JSON文件（如果网站支持）")
+        self.write_comments_check = QCheckBox(t("💬 下载视频评论"))
+        self.write_comments_check.setToolTip(t("下载视频评论并保存为JSON文件（如果网站支持）"))
         # 设置复选框样式
         self.write_comments_check.setStyleSheet(
             "QCheckBox { "
@@ -2263,7 +2262,7 @@ class VideoDownloaderApp(QMainWindow):
         metadata_download_layout.addWidget(self.write_comments_check)
         
         # 元数据嵌入选项组
-        metadata_embed_group = QGroupBox("🎬 元数据嵌入选项")
+        metadata_embed_group = QGroupBox(t("🎬 元数据嵌入选项"))
         metadata_embed_group.setStyleSheet(
             "QGroupBox { "
             "font-size: 14px; "
@@ -2287,8 +2286,8 @@ class VideoDownloaderApp(QMainWindow):
         metadata_embed_layout.setSpacing(10)
         metadata_embed_layout.setContentsMargins(15, 20, 15, 15)
         
-        self.embed_metadata_check = QCheckBox("📝 嵌入基础元数据")
-        self.embed_metadata_check.setToolTip("将标题、作者、描述等基础元数据信息嵌入到视频文件中")
+        self.embed_metadata_check = QCheckBox(t("📝 嵌入基础元数据"))
+        self.embed_metadata_check.setToolTip(t("将标题、作者、描述等基础元数据信息嵌入到视频文件中"))
         # 设置复选框样式
         self.embed_metadata_check.setStyleSheet(
             "QCheckBox { "
@@ -2303,8 +2302,8 @@ class VideoDownloaderApp(QMainWindow):
         )
         metadata_embed_layout.addWidget(self.embed_metadata_check)
         
-        self.embed_thumbnail_check = QCheckBox("🖼️ 嵌入缩略图")
-        self.embed_thumbnail_check.setToolTip("将视频缩略图嵌入到视频文件中作为封面")
+        self.embed_thumbnail_check = QCheckBox(t("🖼️ 嵌入缩略图"))
+        self.embed_thumbnail_check.setToolTip(t("将视频缩略图嵌入到视频文件中作为封面"))
         # 设置复选框样式
         self.embed_thumbnail_check.setStyleSheet(
             "QCheckBox { "
@@ -2320,8 +2319,8 @@ class VideoDownloaderApp(QMainWindow):
         metadata_embed_layout.addWidget(self.embed_thumbnail_check)
         
         # 新增：嵌入章节信息
-        self.embed_chapters_check = QCheckBox("📑 嵌入章节信息")
-        self.embed_chapters_check.setToolTip("将视频章节信息嵌入到视频文件中（如果可用）")
+        self.embed_chapters_check = QCheckBox(t("📑 嵌入章节信息"))
+        self.embed_chapters_check.setToolTip(t("将视频章节信息嵌入到视频文件中（如果可用）"))
         self.embed_chapters_check.setStyleSheet(
             "QCheckBox { "
             "font-size: 13px; "
@@ -2336,8 +2335,8 @@ class VideoDownloaderApp(QMainWindow):
         metadata_embed_layout.addWidget(self.embed_chapters_check)
         
         # 新增：嵌入JSON信息文件
-        self.embed_info_json_check = QCheckBox("📋 嵌入完整JSON信息")
-        self.embed_info_json_check.setToolTip("将完整的JSON元数据信息嵌入到mkv/mka视频文件中")
+        self.embed_info_json_check = QCheckBox(t("📋 嵌入完整JSON信息"))
+        self.embed_info_json_check.setToolTip(t("将完整的JSON元数据信息嵌入到mkv/mka视频文件中"))
         self.embed_info_json_check.setStyleSheet(
             "QCheckBox { "
             "font-size: 13px; "
@@ -2352,8 +2351,8 @@ class VideoDownloaderApp(QMainWindow):
         metadata_embed_layout.addWidget(self.embed_info_json_check)
         
         # 新增：写入扩展属性
-        self.xattrs_check = QCheckBox("🏷️ 写入扩展属性(xattrs)")
-        self.xattrs_check.setToolTip("将元数据写入到文件的扩展属性中（使用Dublin Core和XDG标准）")
+        self.xattrs_check = QCheckBox(t("🏷️ 写入扩展属性(xattrs)"))
+        self.xattrs_check.setToolTip(t("将元数据写入到文件的扩展属性中（使用Dublin Core和XDG标准）"))
         self.xattrs_check.setStyleSheet(
             "QCheckBox { "
             "font-size: 13px; "
@@ -2411,7 +2410,7 @@ class VideoDownloaderApp(QMainWindow):
         network_content_layout.addWidget(network_info_label)
         
         # === 代理设置组 ===
-        proxy_group = QGroupBox("🔐 代理设置")
+        proxy_group = QGroupBox(t("🔐 代理设置"))
         proxy_group.setStyleSheet(
             "QGroupBox { "
             "font-weight: bold; "
@@ -2434,8 +2433,8 @@ class VideoDownloaderApp(QMainWindow):
         
         # 代理启用复选框
         proxy_enable_layout = QHBoxLayout()
-        self.proxy_check = QCheckBox("启用代理")
-        self.proxy_check.setToolTip("启用网络代理，支持HTTP、HTTPS和SOCKS5代理")
+        self.proxy_check = QCheckBox(t("启用代理"))
+        self.proxy_check.setToolTip(t("启用网络代理，支持HTTP、HTTPS和SOCKS5代理"))
         self.proxy_check.setStyleSheet("QCheckBox { font-size: 13px; font-weight: bold; }")
         proxy_enable_layout.addWidget(self.proxy_check)
         proxy_enable_layout.addStretch()
@@ -2443,9 +2442,9 @@ class VideoDownloaderApp(QMainWindow):
         
         # 代理地址输入行
         proxy_input_layout = QHBoxLayout()
-        proxy_input_layout.addWidget(QLabel("代理地址:"))
+        proxy_input_layout.addWidget(QLabel(t("代理地址:")))
         self.proxy_input = QLineEdit()
-        self.proxy_input.setPlaceholderText("例如: socks5://127.0.0.1:1080 或 http://proxy.com:8080")
+        self.proxy_input.setPlaceholderText(t("例如: socks5://127.0.0.1:1080 或 http://proxy.com:8080"))
         self.proxy_input.setEnabled(False)
         self.proxy_input.setToolTip(
             "支持的格式:\n"
@@ -2471,8 +2470,8 @@ class VideoDownloaderApp(QMainWindow):
         proxy_input_layout.addWidget(self.proxy_input)
         
         # 代理测试按钮
-        self.test_proxy_button = QPushButton("🔍 测试连接")
-        self.test_proxy_button.setToolTip("测试代理连接是否正常")
+        self.test_proxy_button = QPushButton(t("🔍 测试连接"))
+        self.test_proxy_button.setToolTip(t("测试代理连接是否正常"))
         self.test_proxy_button.setEnabled(False)
         self.test_proxy_button.setStyleSheet(
             "QPushButton { "
@@ -2497,7 +2496,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 代理模板选择
         proxy_preset_layout = QHBoxLayout()
-        proxy_preset_layout.addWidget(QLabel("常用模板:"))
+        proxy_preset_layout.addWidget(QLabel(t("常用模板:")))
         self.proxy_preset_combo = QComboBox()
         self.proxy_preset_combo.addItems([
             "选择模板...",
@@ -2509,7 +2508,7 @@ class VideoDownloaderApp(QMainWindow):
             "本地Shadowsocks: socks5://127.0.0.1:1086"
         ])
         self.proxy_preset_combo.setEnabled(False)
-        self.proxy_preset_combo.setToolTip("快速选择常用代理配置")
+        self.proxy_preset_combo.setToolTip(t("快速选择常用代理配置"))
         self.proxy_preset_combo.currentIndexChanged.connect(self.apply_proxy_preset)
         proxy_preset_layout.addWidget(self.proxy_preset_combo)
         proxy_preset_layout.addStretch()
@@ -2525,7 +2524,7 @@ class VideoDownloaderApp(QMainWindow):
         network_content_layout.addWidget(proxy_group)
         
         # === 网络参数设置组 ===
-        network_params_group = QGroupBox("⚙️ 网络参数")
+        network_params_group = QGroupBox(t("⚙️ 网络参数"))
         network_params_group.setStyleSheet(
             "QGroupBox { "
             "font-weight: bold; "
@@ -2548,7 +2547,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 超时设置
         timeout_layout = QHBoxLayout()
-        timeout_layout.addWidget(QLabel("连接超时:"))
+        timeout_layout.addWidget(QLabel(t("连接超时:")))
         self.timeout_setting = QSpinBox()
         self.timeout_setting.setRange(10, 300)
         self.timeout_setting.setValue(30)
@@ -2566,7 +2565,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # IP版本选择
         ip_version_layout = QHBoxLayout()
-        ip_version_layout.addWidget(QLabel("IP版本:"))
+        ip_version_layout.addWidget(QLabel(t("IP版本:")))
         self.ip_version_combo = QComboBox()
         self.ip_version_combo.addItems(["自动", "仅IPv4", "仅IPv6"])
         self.ip_version_combo.setCurrentText("仅IPv4")
@@ -2583,19 +2582,19 @@ class VideoDownloaderApp(QMainWindow):
         
         # 源地址绑定
         source_address_layout = QHBoxLayout()
-        self.source_address_check = QCheckBox("绑定源地址")
-        self.source_address_check.setToolTip("绑定到特定的本地IP地址（多网卡环境使用）")
+        self.source_address_check = QCheckBox(t("绑定源地址"))
+        self.source_address_check.setToolTip(t("绑定到特定的本地IP地址（多网卡环境使用）"))
         source_address_layout.addWidget(self.source_address_check)
         
         self.source_address_input = QLineEdit()
-        self.source_address_input.setPlaceholderText("例如: 192.168.1.100")
+        self.source_address_input.setPlaceholderText(t("例如: 192.168.1.100"))
         self.source_address_input.setEnabled(False)
-        self.source_address_input.setToolTip("输入要绑定的本地网卡IP地址")
+        self.source_address_input.setToolTip(t("输入要绑定的本地网卡IP地址"))
         source_address_layout.addWidget(self.source_address_input)
         
         # 新增：源地址测试按钮
-        self.test_source_address_button = QPushButton("🔍 测试")
-        self.test_source_address_button.setToolTip("测试该IP地址是否可以在本地绑定")
+        self.test_source_address_button = QPushButton(t("🔍 测试"))
+        self.test_source_address_button.setToolTip(t("测试该IP地址是否可以在本地绑定"))
         self.test_source_address_button.setEnabled(False)
         self.test_source_address_button.setFixedWidth(80)
         self.test_source_address_button.setStyleSheet(
@@ -2688,7 +2687,7 @@ class VideoDownloaderApp(QMainWindow):
         time_section_content_layout.addWidget(time_section_info_label)
         
         # === 时间片段设置组 ===
-        time_section_group = QGroupBox("⏰ 时间片段设置")
+        time_section_group = QGroupBox(t("⏰ 时间片段设置"))
         time_section_group.setStyleSheet(
             "QGroupBox { "
             "font-weight: bold; "
@@ -2709,8 +2708,8 @@ class VideoDownloaderApp(QMainWindow):
         time_section_group_layout = QVBoxLayout(time_section_group)
         
         # 启用时间片段下载
-        self.time_section_check = QCheckBox("启用时间片段下载")
-        self.time_section_check.setToolTip("勾选后只下载指定时间段的视频内容，需要 ffmpeg")
+        self.time_section_check = QCheckBox(t("启用时间片段下载"))
+        self.time_section_check.setToolTip(t("勾选后只下载指定时间段的视频内容，需要 ffmpeg"))
         time_section_group_layout.addWidget(self.time_section_check)
         
         # 连接时间片段主控复选框的信号
@@ -2718,23 +2717,23 @@ class VideoDownloaderApp(QMainWindow):
         
         # 快捷按钮区域
         quick_buttons_layout = QHBoxLayout()
-        quick_buttons_layout.addWidget(QLabel("快捷选择:"))
+        quick_buttons_layout.addWidget(QLabel(t("快捷选择:")))
         
         # 前1分钟按钮
-        self.first_minute_btn = QPushButton("前1分钟")
-        self.first_minute_btn.setToolTip("下载视频的前60秒")
+        self.first_minute_btn = QPushButton(t("前1分钟"))
+        self.first_minute_btn.setToolTip(t("下载视频的前60秒"))
         self.first_minute_btn.clicked.connect(lambda: self.add_time_section_quick("0", "0", "0", "0", "1", "0"))
         quick_buttons_layout.addWidget(self.first_minute_btn)
         
         # 后1分钟按钮
-        self.last_minute_btn = QPushButton("后1分钟")
-        self.last_minute_btn.setToolTip("下载视频的最后60秒")
+        self.last_minute_btn = QPushButton(t("后1分钟"))
+        self.last_minute_btn.setToolTip(t("下载视频的最后60秒"))
         self.last_minute_btn.clicked.connect(lambda: self.add_time_section_quick("-1", "0", "0", "inf", "inf", "inf"))
         quick_buttons_layout.addWidget(self.last_minute_btn)
         
         # URL时间按钮
-        self.url_time_btn = QPushButton("URL时间")
-        self.url_time_btn.setToolTip("使用视频URL中的时间参数（如果有）")
+        self.url_time_btn = QPushButton(t("URL时间"))
+        self.url_time_btn.setToolTip(t("使用视频URL中的时间参数（如果有）"))
         self.url_time_btn.clicked.connect(self.add_url_time_section)
         quick_buttons_layout.addWidget(self.url_time_btn)
         
@@ -2747,54 +2746,54 @@ class VideoDownloaderApp(QMainWindow):
         time_input_layout.setContentsMargins(0, 5, 0, 5)
         
         # 开始时间
-        time_input_layout.addWidget(QLabel("开始时间:"), 0, 0)
+        time_input_layout.addWidget(QLabel(t("开始时间:")), 0, 0)
         self.start_hour = QSpinBox()
         self.start_hour.setRange(0, 99)
         self.start_hour.setSuffix(" 时")
-        self.start_hour.setToolTip("开始时间-小时")
+        self.start_hour.setToolTip(t("开始时间-小时"))
         time_input_layout.addWidget(self.start_hour, 0, 1)
         
         self.start_minute = QSpinBox()
         self.start_minute.setRange(0, 59)
         self.start_minute.setSuffix(" 分")
-        self.start_minute.setToolTip("开始时间-分钟")
+        self.start_minute.setToolTip(t("开始时间-分钟"))
         time_input_layout.addWidget(self.start_minute, 0, 2)
         
         self.start_second = QSpinBox()
         self.start_second.setRange(0, 59)
         self.start_second.setSuffix(" 秒")
-        self.start_second.setToolTip("开始时间-秒")
+        self.start_second.setToolTip(t("开始时间-秒"))
         time_input_layout.addWidget(self.start_second, 0, 3)
         
         # 结束时间
-        time_input_layout.addWidget(QLabel("结束时间:"), 1, 0)
+        time_input_layout.addWidget(QLabel(t("结束时间:")), 1, 0)
         self.end_hour = QSpinBox()
         self.end_hour.setRange(0, 99)
         self.end_hour.setSuffix(" 时")
-        self.end_hour.setToolTip("结束时间-小时（填0表示到视频结束）")
+        self.end_hour.setToolTip(t("结束时间-小时（填0表示到视频结束）"))
         time_input_layout.addWidget(self.end_hour, 1, 1)
         
         self.end_minute = QSpinBox()
         self.end_minute.setRange(0, 59)
         self.end_minute.setSuffix(" 分")
-        self.end_minute.setToolTip("结束时间-分钟（填0表示到视频结束）")
+        self.end_minute.setToolTip(t("结束时间-分钟（填0表示到视频结束）"))
         time_input_layout.addWidget(self.end_minute, 1, 2)
         
         self.end_second = QSpinBox()
         self.end_second.setRange(0, 59)
         self.end_second.setSuffix(" 秒")
-        self.end_second.setToolTip("结束时间-秒（填0表示到视频结束）")
+        self.end_second.setToolTip(t("结束时间-秒（填0表示到视频结束）"))
         time_input_layout.addWidget(self.end_second, 1, 3)
         
         # 添加和清空按钮
         buttons_layout = QHBoxLayout()
-        self.add_section_btn = QPushButton("➕ 添加")
-        self.add_section_btn.setToolTip("将上面设置的时间段添加到列表")
+        self.add_section_btn = QPushButton(t("➕ 添加"))
+        self.add_section_btn.setToolTip(t("将上面设置的时间段添加到列表"))
         self.add_section_btn.clicked.connect(self.add_custom_time_section)
         buttons_layout.addWidget(self.add_section_btn)
         
-        self.clear_sections_btn = QPushButton("🗑️ 清空")
-        self.clear_sections_btn.setToolTip("清空所有已添加的时间段")
+        self.clear_sections_btn = QPushButton(t("🗑️ 清空"))
+        self.clear_sections_btn.setToolTip(t("清空所有已添加的时间段"))
         self.clear_sections_btn.clicked.connect(self.clear_time_sections)
         buttons_layout.addWidget(self.clear_sections_btn)
         buttons_layout.addStretch()
@@ -2804,9 +2803,9 @@ class VideoDownloaderApp(QMainWindow):
 
         # 手动输入时间段/章节正则（对齐 yt-dlp --download-sections 文档）
         custom_section_layout = QHBoxLayout()
-        custom_section_layout.addWidget(QLabel("手动输入:"))
+        custom_section_layout.addWidget(QLabel(t("手动输入:")))
         self.custom_section_input = QLineEdit()
-        self.custom_section_input.setPlaceholderText("例如: *10:15-inf 或 *-60-inf 或 intro|opening")
+        self.custom_section_input.setPlaceholderText(t("例如: *10:15-inf 或 *-60-inf 或 intro|opening"))
         self.custom_section_input.setToolTip(
             "支持 yt-dlp --download-sections 语法：\n"
             "• 时间段: *START-END（支持负时间和 inf）\n"
@@ -2816,8 +2815,8 @@ class VideoDownloaderApp(QMainWindow):
         self.custom_section_input.returnPressed.connect(lambda: self.add_download_section(self.custom_section_input.text()))
         custom_section_layout.addWidget(self.custom_section_input)
 
-        self.add_custom_section_btn = QPushButton("添加输入")
-        self.add_custom_section_btn.setToolTip("添加手动输入的时间段/章节规则")
+        self.add_custom_section_btn = QPushButton(t("添加输入"))
+        self.add_custom_section_btn.setToolTip(t("添加手动输入的时间段/章节规则"))
         self.add_custom_section_btn.clicked.connect(lambda: self.add_download_section(self.custom_section_input.text()))
         custom_section_layout.addWidget(self.add_custom_section_btn)
         time_section_group_layout.addLayout(custom_section_layout)
@@ -2825,21 +2824,21 @@ class VideoDownloaderApp(QMainWindow):
         # 已添加的时间段列表
         self.sections_list_widget = QListWidget()
         self.sections_list_widget.setMaximumHeight(72)
-        self.sections_list_widget.setToolTip("已添加的时间段列表，双击可删除")
+        self.sections_list_widget.setToolTip(t("已添加的时间段列表，双击可删除"))
         self.sections_list_widget.itemDoubleClicked.connect(self.remove_time_section)
-        time_section_group_layout.addWidget(QLabel("已添加时间段（双击删除）:"))
+        time_section_group_layout.addWidget(QLabel(t("已添加时间段（双击删除）:")))
         time_section_group_layout.addWidget(self.sections_list_widget)
         
         # 初始化时间段列表
         self.download_sections = []
-        self.current_section_label = QLabel("当前: 无")
+        self.current_section_label = QLabel(t("当前: 无"))
         time_section_group_layout.addWidget(self.current_section_label)
         self.update_sections_display()
         
         time_section_content_layout.addWidget(time_section_group)
         
         # === 章节相关选项组 ===
-        chapter_group = QGroupBox("📑 章节选项")
+        chapter_group = QGroupBox(t("📑 章节选项"))
         chapter_group.setStyleSheet(
             "QGroupBox { "
             "font-weight: bold; "
@@ -2860,7 +2859,7 @@ class VideoDownloaderApp(QMainWindow):
         chapter_group_layout = QVBoxLayout(chapter_group)
         
         # 按章节分割视频
-        self.split_chapters_check = QCheckBox("按章节分割视频")
+        self.split_chapters_check = QCheckBox(t("按章节分割视频"))
         self.split_chapters_check.setToolTip(
             "将视频按内置章节分割成多个文件\n"
             "适用于包含章节信息的视频（如YouTube长视频）"
@@ -2869,26 +2868,26 @@ class VideoDownloaderApp(QMainWindow):
         chapter_group_layout.addWidget(self.split_chapters_check)
         
         # 移除章节快捷按钮
-        remove_chapter_label = QLabel("快捷移除章节:")
+        remove_chapter_label = QLabel(t("快捷移除章节:"))
         chapter_group_layout.addWidget(remove_chapter_label)
         
         remove_chapter_buttons = QHBoxLayout()
         
-        self.remove_intro_btn = QPushButton("移除开场")
+        self.remove_intro_btn = QPushButton(t("移除开场"))
         self.remove_intro_btn.setCheckable(True)
-        self.remove_intro_btn.setToolTip("移除视频开场章节（intro、opening等）")
+        self.remove_intro_btn.setToolTip(t("移除视频开场章节（intro、opening等）"))
         self.remove_intro_btn.clicked.connect(self.update_chapter_removal)
         remove_chapter_buttons.addWidget(self.remove_intro_btn)
         
-        self.remove_outro_btn = QPushButton("移除结尾")
+        self.remove_outro_btn = QPushButton(t("移除结尾"))
         self.remove_outro_btn.setCheckable(True)
-        self.remove_outro_btn.setToolTip("移除视频结尾章节（outro、ending等）")
+        self.remove_outro_btn.setToolTip(t("移除视频结尾章节（outro、ending等）"))
         self.remove_outro_btn.clicked.connect(self.update_chapter_removal)
         remove_chapter_buttons.addWidget(self.remove_outro_btn)
         
-        self.remove_sponsor_btn = QPushButton("移除广告")
+        self.remove_sponsor_btn = QPushButton(t("移除广告"))
         self.remove_sponsor_btn.setCheckable(True)
-        self.remove_sponsor_btn.setToolTip("移除赞助商和广告章节（sponsor、ad等）")
+        self.remove_sponsor_btn.setToolTip(t("移除赞助商和广告章节（sponsor、ad等）"))
         self.remove_sponsor_btn.clicked.connect(self.update_chapter_removal)
         remove_chapter_buttons.addWidget(self.remove_sponsor_btn)
         
@@ -2897,14 +2896,14 @@ class VideoDownloaderApp(QMainWindow):
         
         # 自定义章节名称输入
         custom_chapter_layout = QHBoxLayout()
-        custom_chapter_layout.addWidget(QLabel("其他章节:"))
+        custom_chapter_layout.addWidget(QLabel(t("其他章节:")))
         self.custom_chapter_input = QLineEdit()
-        self.custom_chapter_input.setPlaceholderText("输入章节名称，如: recap")
-        self.custom_chapter_input.setToolTip("输入要移除的章节名称")
+        self.custom_chapter_input.setPlaceholderText(t("输入章节名称，如: recap"))
+        self.custom_chapter_input.setToolTip(t("输入要移除的章节名称"))
         custom_chapter_layout.addWidget(self.custom_chapter_input)
         
-        self.add_chapter_btn = QPushButton("添加")
-        self.add_chapter_btn.setToolTip("添加自定义章节到移除列表")
+        self.add_chapter_btn = QPushButton(t("添加"))
+        self.add_chapter_btn.setToolTip(t("添加自定义章节到移除列表"))
         self.add_chapter_btn.clicked.connect(self.add_custom_chapter)
         custom_chapter_layout.addWidget(self.add_chapter_btn)
         
@@ -2913,13 +2912,13 @@ class VideoDownloaderApp(QMainWindow):
         # 要移除的章节列表
         self.remove_chapters_list = QListWidget()
         self.remove_chapters_list.setMaximumHeight(64)
-        self.remove_chapters_list.setToolTip("要移除的章节列表，双击可删除")
+        self.remove_chapters_list.setToolTip(t("要移除的章节列表，双击可删除"))
         self.remove_chapters_list.itemDoubleClicked.connect(self.remove_chapter_item)
-        chapter_group_layout.addWidget(QLabel("要移除的章节（双击删除）:"))
+        chapter_group_layout.addWidget(QLabel(t("要移除的章节（双击删除）:")))
         chapter_group_layout.addWidget(self.remove_chapters_list)
         
         # 切割处强制关键帧
-        self.force_keyframes_check = QCheckBox("切割处强制关键帧")
+        self.force_keyframes_check = QCheckBox(t("切割处强制关键帧"))
         self.force_keyframes_check.setToolTip(
             "在切割点强制生成关键帧，减少切割处的视觉伪影\n"
             "注意: 需要重新编码，处理速度会较慢"
@@ -2940,11 +2939,11 @@ class VideoDownloaderApp(QMainWindow):
         # 操作按钮
         buttons_layout = QHBoxLayout()
         
-        self.download_button = QPushButton("开始下载")
+        self.download_button = QPushButton(t("开始下载"))
         self.download_button.clicked.connect(self.start_download)
         buttons_layout.addWidget(self.download_button)
         
-        self.cancel_button = QPushButton("取消")
+        self.cancel_button = QPushButton(t("取消"))
         self.cancel_button.clicked.connect(self.cancel_download)
         self.cancel_button.setEnabled(False)
         buttons_layout.addWidget(self.cancel_button)
@@ -2976,7 +2975,7 @@ class VideoDownloaderApp(QMainWindow):
         download_controls_scroll.setWidget(controls_widget)
         
         # 进度显示
-        progress_group = QGroupBox("下载进度")
+        progress_group = QGroupBox(t("下载进度"))
         progress_layout = QVBoxLayout()
         progress_group.setLayout(progress_layout)
 
@@ -3022,13 +3021,13 @@ class VideoDownloaderApp(QMainWindow):
         transcode_tab.file_dropped.connect(self._on_transcode_file_dropped)
         
         # 文件选择区域
-        file_group = QGroupBox("文件选择")
+        file_group = QGroupBox(t("文件选择"))
         file_main_layout = QVBoxLayout()
         file_group.setLayout(file_main_layout)
         file_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         
         # 拖放提示标签
-        transcode_drop_hint_label = QLabel("📁 拖放视频文件到此处，或点击下方按钮选择")
+        transcode_drop_hint_label = QLabel(t("📁 拖放视频文件到此处，或点击下方按钮选择"))
         transcode_drop_hint_label.setAlignment(Qt.AlignCenter)
         transcode_drop_hint_label.setStyleSheet(
             "QLabel { color: #666; padding: 10px; border: 2px dashed #ccc; border-radius: 5px; margin-bottom: 5px; }"
@@ -3038,10 +3037,10 @@ class VideoDownloaderApp(QMainWindow):
         # 文件输入行
         file_layout = QHBoxLayout()
         self.input_file = QLineEdit()
-        self.input_file.setPlaceholderText("选择要转码的视频文件...")
+        self.input_file.setPlaceholderText(t("选择要转码的视频文件..."))
         file_layout.addWidget(self.input_file)
         
-        browse_input_button = QPushButton("浏览...")
+        browse_input_button = QPushButton(t("浏览..."))
         browse_input_button.clicked.connect(self.browse_input_file)
         file_layout.addWidget(browse_input_button)
         
@@ -3050,7 +3049,7 @@ class VideoDownloaderApp(QMainWindow):
         transcode_layout.addWidget(file_group)
         
         # 转码选项区域
-        transcode_options_group = QGroupBox("转码选项")
+        transcode_options_group = QGroupBox(t("转码选项"))
         transcode_options_layout = QFormLayout()
         transcode_options_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         transcode_options_layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
@@ -3153,9 +3152,9 @@ class VideoDownloaderApp(QMainWindow):
         self.quality_label = QLabel("23")
         self.video_quality_slider.valueChanged.connect(lambda v: self.quality_label.setText(str(v)))
         
-        quality_layout.addWidget(QLabel("高质量"))
+        quality_layout.addWidget(QLabel(t("高质量")))
         quality_layout.addWidget(self.video_quality_slider)
-        quality_layout.addWidget(QLabel("低质量"))
+        quality_layout.addWidget(QLabel(t("低质量")))
         quality_layout.addWidget(self.quality_label)
         try:
             quality_layout.setStretch(1, 2)
@@ -3168,7 +3167,7 @@ class VideoDownloaderApp(QMainWindow):
         self.speed_preset = QComboBox()
         self.speed_preset.addItems(["快速", "正常", "高质量"])
         self.speed_preset.setCurrentText("正常")  # 默认正常预设
-        self.speed_preset.setToolTip("转码速度预设：快速转码快但质量一般，正常平衡速度和质量，高质量转码慢但质量最佳")
+        self.speed_preset.setToolTip(t("转码速度预设：快速转码快但质量一般，正常平衡速度和质量，高质量转码慢但质量最佳"))
         transcode_options_layout.addRow("转码速度:", self.speed_preset)
         
         # 线程数控制
@@ -3178,13 +3177,13 @@ class VideoDownloaderApp(QMainWindow):
         self.threads_spinbox.setValue(0)  # 默认0表示自动
         self.threads_spinbox.setSpecialValueText("自动")
         threads_layout.addWidget(self.threads_spinbox)
-        threads_layout.addWidget(QLabel("(0表示自动)"))
+        threads_layout.addWidget(QLabel(t("(0表示自动)")))
         transcode_options_layout.addRow("线程数:", threads_layout)
         
         # GPU加速选项
         gpu_layout = QHBoxLayout()
-        self.gpu_checkbox = QCheckBox("启用GPU加速")
-        self.gpu_checkbox.setToolTip("使用GPU硬件加速编码，可以大幅提高转码速度")
+        self.gpu_checkbox = QCheckBox(t("启用GPU加速"))
+        self.gpu_checkbox.setToolTip(t("使用GPU硬件加速编码，可以大幅提高转码速度"))
         gpu_layout.addWidget(self.gpu_checkbox)
         
         self.gpu_type_combo = QComboBox()
@@ -3199,10 +3198,10 @@ class VideoDownloaderApp(QMainWindow):
         # 输出文件
         output_file_layout = QHBoxLayout()
         self.output_file = QLineEdit()
-        self.output_file.setPlaceholderText("输出文件路径...")
+        self.output_file.setPlaceholderText(t("输出文件路径..."))
         output_file_layout.addWidget(self.output_file)
         
-        browse_output_button = QPushButton("浏览...")
+        browse_output_button = QPushButton(t("浏览..."))
         browse_output_button.clicked.connect(self.browse_output_file)
         output_file_layout.addWidget(browse_output_button)
         
@@ -3213,11 +3212,11 @@ class VideoDownloaderApp(QMainWindow):
         # 转码操作按钮
         transcode_buttons_layout = QHBoxLayout()
         
-        self.transcode_button = QPushButton("开始转码")
+        self.transcode_button = QPushButton(t("开始转码"))
         self.transcode_button.clicked.connect(self.start_transcode)
         transcode_buttons_layout.addWidget(self.transcode_button)
         
-        self.cancel_transcode_button = QPushButton("取消")
+        self.cancel_transcode_button = QPushButton(t("取消"))
         self.cancel_transcode_button.clicked.connect(self.cancel_transcode)
         self.cancel_transcode_button.setEnabled(False)
         transcode_buttons_layout.addWidget(self.cancel_transcode_button)
@@ -3244,7 +3243,7 @@ class VideoDownloaderApp(QMainWindow):
         transcode_controls_scroll.setWidget(transcode_controls_widget)
         
         # 转码进度显示
-        transcode_progress_group = QGroupBox("转码进度")
+        transcode_progress_group = QGroupBox(t("转码进度"))
         transcode_progress_layout = QVBoxLayout()
         transcode_progress_layout.setObjectName("transcode_progress_layout")  # 设置布局名称以便后续查找
         transcode_progress_group.setLayout(transcode_progress_layout)
@@ -3284,7 +3283,7 @@ class VideoDownloaderApp(QMainWindow):
         image_layout = QVBoxLayout(image_tab)
         
         # 图片文件选择区域
-        image_file_group = QGroupBox("文件选择")
+        image_file_group = QGroupBox(t("文件选择"))
         image_file_layout = QVBoxLayout()
         image_file_layout.setContentsMargins(8, 8, 8, 8)
         image_file_layout.setSpacing(6)
@@ -3292,7 +3291,7 @@ class VideoDownloaderApp(QMainWindow):
         image_file_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         
         # 拖放提示标签
-        drop_hint_label = QLabel("📁 拖放图片文件到此处，或点击下方按钮添加")
+        drop_hint_label = QLabel(t("📁 拖放图片文件到此处，或点击下方按钮添加"))
         drop_hint_label.setAlignment(Qt.AlignCenter)
         drop_hint_label.setStyleSheet(
             "QLabel { color: #666; padding: 6px; border: 2px dashed #ccc; border-radius: 5px; margin-bottom: 2px; }"
@@ -3302,25 +3301,25 @@ class VideoDownloaderApp(QMainWindow):
         # 文件列表工具栏
         image_toolbar = QHBoxLayout()
         
-        add_image_btn = QPushButton("添加图片")
-        add_image_btn.setToolTip("选择要处理的图片文件")
+        add_image_btn = QPushButton(t("添加图片"))
+        add_image_btn.setToolTip(t("选择要处理的图片文件"))
         add_image_btn.clicked.connect(self.browse_image_files)
         image_toolbar.addWidget(add_image_btn)
         
-        remove_image_btn = QPushButton("移除选中")
-        remove_image_btn.setToolTip("移除选中的图片")
+        remove_image_btn = QPushButton(t("移除选中"))
+        remove_image_btn.setToolTip(t("移除选中的图片"))
         remove_image_btn.clicked.connect(self.remove_selected_images)
         image_toolbar.addWidget(remove_image_btn)
         
-        clear_image_btn = QPushButton("清空列表")
-        clear_image_btn.setToolTip("清空所有图片")
+        clear_image_btn = QPushButton(t("清空列表"))
+        clear_image_btn.setToolTip(t("清空所有图片"))
         clear_image_btn.clicked.connect(self.clear_image_list)
         image_toolbar.addWidget(clear_image_btn)
         
         image_toolbar.addStretch()
         
         # 图片数量标签
-        self.image_count_label = QLabel("已添加 0 张图片")
+        self.image_count_label = QLabel(t("已添加 0 张图片"))
         image_toolbar.addWidget(self.image_count_label)
         
         image_file_layout.addLayout(image_toolbar)
@@ -3334,13 +3333,13 @@ class VideoDownloaderApp(QMainWindow):
         self.image_list_widget.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.image_list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.image_list_widget.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
-        self.image_list_widget.setToolTip("支持拖放图片文件到此处")
+        self.image_list_widget.setToolTip(t("支持拖放图片文件到此处"))
         image_file_layout.addWidget(self.image_list_widget)
         
         image_layout.addWidget(image_file_group)
         
         # 图片处理选项区域
-        image_options_group = QGroupBox("处理选项")
+        image_options_group = QGroupBox(t("处理选项"))
         image_options_layout = QFormLayout()
         image_options_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         image_options_layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
@@ -3352,7 +3351,7 @@ class VideoDownloaderApp(QMainWindow):
         # 输出格式
         self.image_format_combo = QComboBox()
         self.image_format_combo.addItems(["JPEG", "PNG", "WebP", "BMP", "GIF", "TIFF", "ICO"])
-        self.image_format_combo.setToolTip("选择输出图片格式")
+        self.image_format_combo.setToolTip(t("选择输出图片格式"))
         self.image_format_combo.currentTextChanged.connect(self.on_image_format_changed)
         image_options_layout.addRow("输出格式:", self.image_format_combo)
         
@@ -3369,7 +3368,7 @@ class VideoDownloaderApp(QMainWindow):
         self.image_quality_slider.setTickInterval(10)
         self.image_quality_slider.setSingleStep(1)
         self.image_quality_slider.setPageStep(10)
-        self.image_quality_slider.setToolTip("图片质量 (1-100)，值越高质量越好文件越大")
+        self.image_quality_slider.setToolTip(t("图片质量 (1-100)，值越高质量越好文件越大"))
         self.image_quality_slider.setFixedHeight(18)
         self.image_quality_slider.setStyleSheet(
             """
@@ -3385,8 +3384,8 @@ class VideoDownloaderApp(QMainWindow):
         self.image_quality_label = QLabel("85")
         self.image_quality_slider.valueChanged.connect(lambda v: self.image_quality_label.setText(str(v)))
         
-        self.quality_low_label = QLabel("低")
-        self.quality_high_label = QLabel("高")
+        self.quality_low_label = QLabel(t("低"))
+        self.quality_high_label = QLabel(t("高"))
         quality_row_layout.addWidget(self.quality_low_label)
         quality_row_layout.addWidget(self.image_quality_slider)
         quality_row_layout.addWidget(self.quality_high_label)
@@ -3394,7 +3393,7 @@ class VideoDownloaderApp(QMainWindow):
         quality_row_layout.setStretch(1, 2)
         
         # 动态标签（根据格式变化）
-        self.quality_label = QLabel("压缩质量:")
+        self.quality_label = QLabel(t("压缩质量:"))
         image_options_layout.addRow(self.quality_label, self.quality_row_widget)
         
         # PNG压缩级别滑块（隐藏，与质量滑块共用位置）
@@ -3405,7 +3404,7 @@ class VideoDownloaderApp(QMainWindow):
         self.png_compress_slider.setTickInterval(1)
         self.png_compress_slider.setSingleStep(1)
         self.png_compress_slider.setPageStep(1)
-        self.png_compress_slider.setToolTip("PNG压缩级别 (0-9)，值越高压缩率越高但速度越慢（无损压缩）")
+        self.png_compress_slider.setToolTip(t("PNG压缩级别 (0-9)，值越高压缩率越高但速度越慢（无损压缩）"))
         self.png_compress_slider.setFixedHeight(18)
         self.png_compress_slider.setStyleSheet(
             """
@@ -3428,7 +3427,7 @@ class VideoDownloaderApp(QMainWindow):
         resize_layout = QHBoxLayout()
         self.resize_mode_combo = QComboBox()
         self.resize_mode_combo.addItems(["不调整", "按百分比", "固定尺寸", "最大边长"])
-        self.resize_mode_combo.setToolTip("选择尺寸调整模式")
+        self.resize_mode_combo.setToolTip(t("选择尺寸调整模式"))
         self.resize_mode_combo.currentTextChanged.connect(self.on_resize_mode_changed)
         resize_layout.addWidget(self.resize_mode_combo)
         
@@ -3440,7 +3439,7 @@ class VideoDownloaderApp(QMainWindow):
         self.resize_percent_spin.setRange(1, 500)
         self.resize_percent_spin.setValue(50)
         self.resize_percent_spin.setSuffix("%")
-        percent_layout.addWidget(QLabel("缩放:"))
+        percent_layout.addWidget(QLabel(t("缩放:")))
         percent_layout.addWidget(self.resize_percent_spin)
         self.resize_percent_widget.hide()
         resize_layout.addWidget(self.resize_percent_widget)
@@ -3455,11 +3454,11 @@ class VideoDownloaderApp(QMainWindow):
         self.resize_height_spin = QSpinBox()
         self.resize_height_spin.setRange(1, 10000)
         self.resize_height_spin.setValue(1080)
-        self.keep_ratio_check = QCheckBox("保持比例")
+        self.keep_ratio_check = QCheckBox(t("保持比例"))
         self.keep_ratio_check.setChecked(True)
-        fixed_layout.addWidget(QLabel("宽:"))
+        fixed_layout.addWidget(QLabel(t("宽:")))
         fixed_layout.addWidget(self.resize_width_spin)
-        fixed_layout.addWidget(QLabel("高:"))
+        fixed_layout.addWidget(QLabel(t("高:")))
         fixed_layout.addWidget(self.resize_height_spin)
         fixed_layout.addWidget(self.keep_ratio_check)
         self.resize_fixed_widget.hide()
@@ -3473,7 +3472,7 @@ class VideoDownloaderApp(QMainWindow):
         self.resize_maxside_spin.setRange(1, 10000)
         self.resize_maxside_spin.setValue(1920)
         self.resize_maxside_spin.setSuffix(" px")
-        maxside_layout.addWidget(QLabel("最大:"))
+        maxside_layout.addWidget(QLabel(t("最大:")))
         maxside_layout.addWidget(self.resize_maxside_spin)
         self.resize_maxside_widget.hide()
         resize_layout.addWidget(self.resize_maxside_widget)
@@ -3483,28 +3482,28 @@ class VideoDownloaderApp(QMainWindow):
         # 采样方式
         self.resample_combo = QComboBox()
         self.resample_combo.addItems(["Lanczos (最佳质量)", "双三次", "双线性", "最近邻 (最快)"])
-        self.resample_combo.setToolTip("图片缩放时的采样算法")
+        self.resample_combo.setToolTip(t("图片缩放时的采样算法"))
         image_options_layout.addRow("采样方式:", self.resample_combo)
         
         # 输出目录
         output_dir_layout = QHBoxLayout()
         self.image_output_dir = QLineEdit()
-        self.image_output_dir.setPlaceholderText("选择输出目录（留空则保存到源文件目录）...")
+        self.image_output_dir.setPlaceholderText(t("选择输出目录（留空则保存到源文件目录）..."))
         output_dir_layout.addWidget(self.image_output_dir)
-        browse_output_dir_btn = QPushButton("浏览...")
+        browse_output_dir_btn = QPushButton(t("浏览..."))
         browse_output_dir_btn.clicked.connect(self.browse_image_output_dir)
         output_dir_layout.addWidget(browse_output_dir_btn)
         image_options_layout.addRow("输出目录:", output_dir_layout)
         
         # 文件名后缀
         self.image_suffix_input = QLineEdit()
-        self.image_suffix_input.setPlaceholderText("例如: _compressed")
-        self.image_suffix_input.setToolTip("添加到输出文件名的后缀，留空则使用原文件名")
+        self.image_suffix_input.setPlaceholderText(t("例如: _compressed"))
+        self.image_suffix_input.setToolTip(t("添加到输出文件名的后缀，留空则使用原文件名"))
         image_options_layout.addRow("文件名后缀:", self.image_suffix_input)
         
         # 覆盖选项
-        self.image_overwrite_check = QCheckBox("覆盖已存在的文件")
-        self.image_overwrite_check.setToolTip("如果输出文件已存在，是否覆盖")
+        self.image_overwrite_check = QCheckBox(t("覆盖已存在的文件"))
+        self.image_overwrite_check.setToolTip(t("如果输出文件已存在，是否覆盖"))
         image_options_layout.addRow("", self.image_overwrite_check)
         
         image_layout.addWidget(image_options_group)
@@ -3512,11 +3511,11 @@ class VideoDownloaderApp(QMainWindow):
         # 图片处理按钮（与转码按钮风格一致）
         image_buttons_layout = QHBoxLayout()
         
-        self.start_image_process_btn = QPushButton("开始处理")
+        self.start_image_process_btn = QPushButton(t("开始处理"))
         self.start_image_process_btn.clicked.connect(self.start_image_process)
         image_buttons_layout.addWidget(self.start_image_process_btn)
         
-        self.cancel_image_process_btn = QPushButton("取消")
+        self.cancel_image_process_btn = QPushButton(t("取消"))
         self.cancel_image_process_btn.clicked.connect(self.cancel_image_process)
         self.cancel_image_process_btn.setEnabled(False)
         image_buttons_layout.addWidget(self.cancel_image_process_btn)
@@ -3543,7 +3542,7 @@ class VideoDownloaderApp(QMainWindow):
         image_controls_scroll.setWidget(image_controls_widget)
         
         # 图片处理进度显示
-        image_progress_group = QGroupBox("处理进度")
+        image_progress_group = QGroupBox(t("处理进度"))
         image_progress_layout = QVBoxLayout()
         image_progress_group.setLayout(image_progress_layout)
         image_progress_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -3587,42 +3586,42 @@ class VideoDownloaderApp(QMainWindow):
         self.tabs.addTab(realesrgan_tab, "画质修复")
         realesrgan_layout = QVBoxLayout(realesrgan_tab)
 
-        realesrgan_file_group = QGroupBox("文件选择")
-        realesrgan_file_group.setToolTip("先把要修复的图片或视频加到这里，再开始批量处理。")
+        realesrgan_file_group = QGroupBox(t("文件选择"))
+        realesrgan_file_group.setToolTip(t("先把要修复的图片或视频加到这里，再开始批量处理。"))
         realesrgan_file_layout = QVBoxLayout()
         realesrgan_file_layout.setContentsMargins(8, 8, 8, 8)
         realesrgan_file_layout.setSpacing(6)
         realesrgan_file_group.setLayout(realesrgan_file_layout)
         realesrgan_file_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
 
-        realesrgan_drop_hint = QLabel("📁 支持图片和视频批量修复。选中特定模型后将自动按需下载模型组件。")
+        realesrgan_drop_hint = QLabel(t("📁 支持图片和视频批量修复。选中特定模型后将自动按需下载模型组件。"))
         realesrgan_drop_hint.setAlignment(Qt.AlignCenter)
-        realesrgan_drop_hint.setToolTip("可直接拖入图片或视频，也可以点击下方按钮手动添加。")
+        realesrgan_drop_hint.setToolTip(t("可直接拖入图片或视频，也可以点击下方按钮手动添加。"))
         realesrgan_drop_hint.setStyleSheet(
             "QLabel { color: #666; padding: 6px; border: 2px dashed #ccc; border-radius: 5px; margin-bottom: 2px; }"
         )
         realesrgan_file_layout.addWidget(realesrgan_drop_hint)
 
         realesrgan_toolbar = QHBoxLayout()
-        add_realesrgan_btn = QPushButton("添加媒体")
-        add_realesrgan_btn.setToolTip("选择本地图片或视频，加入当前待修复列表。")
+        add_realesrgan_btn = QPushButton(t("添加媒体"))
+        add_realesrgan_btn.setToolTip(t("选择本地图片或视频，加入当前待修复列表。"))
         add_realesrgan_btn.clicked.connect(self.browse_realesrgan_files)
         realesrgan_toolbar.addWidget(add_realesrgan_btn)
 
-        remove_realesrgan_btn = QPushButton("移除选中")
-        remove_realesrgan_btn.setToolTip("移除当前选中的文件，不会删除原文件。")
+        remove_realesrgan_btn = QPushButton(t("移除选中"))
+        remove_realesrgan_btn.setToolTip(t("移除当前选中的文件，不会删除原文件。"))
         remove_realesrgan_btn.clicked.connect(self.remove_selected_realesrgan_files)
         realesrgan_toolbar.addWidget(remove_realesrgan_btn)
 
-        clear_realesrgan_btn = QPushButton("清空列表")
-        clear_realesrgan_btn.setToolTip("清空整个待修复列表，不会删除磁盘上的原文件。")
+        clear_realesrgan_btn = QPushButton(t("清空列表"))
+        clear_realesrgan_btn.setToolTip(t("清空整个待修复列表，不会删除磁盘上的原文件。"))
         clear_realesrgan_btn.clicked.connect(self.clear_realesrgan_list)
         realesrgan_toolbar.addWidget(clear_realesrgan_btn)
 
         realesrgan_toolbar.addStretch()
 
-        self.realesrgan_count_label = QLabel("已添加 0 个文件")
-        self.realesrgan_count_label.setToolTip("显示当前已加入待修复队列的文件数量。")
+        self.realesrgan_count_label = QLabel(t("已添加 0 个文件"))
+        self.realesrgan_count_label.setToolTip(t("显示当前已加入待修复队列的文件数量。"))
         realesrgan_toolbar.addWidget(self.realesrgan_count_label)
         realesrgan_file_layout.addLayout(realesrgan_toolbar)
 
@@ -3634,12 +3633,12 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_list_widget.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.realesrgan_list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.realesrgan_list_widget.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
-        self.realesrgan_list_widget.setToolTip("这里显示待修复文件。可多选后移除，也可直接拖入新文件。")
+        self.realesrgan_list_widget.setToolTip(t("这里显示待修复文件。可多选后移除，也可直接拖入新文件。"))
         realesrgan_file_layout.addWidget(self.realesrgan_list_widget)
         realesrgan_layout.addWidget(realesrgan_file_group)
 
-        realesrgan_options_group = QGroupBox("修复方案")
-        realesrgan_options_group.setToolTip("选择修复场景和输出方式。大多数情况下只需要选场景和倍率。")
+        realesrgan_options_group = QGroupBox(t("修复方案"))
+        realesrgan_options_group.setToolTip(t("选择修复场景和输出方式。大多数情况下只需要选场景和倍率。"))
         realesrgan_options_layout = QFormLayout()
         realesrgan_options_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         realesrgan_options_layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
@@ -3706,7 +3705,7 @@ class VideoDownloaderApp(QMainWindow):
             preset_key = self.realesrgan_preset_combo.itemData(preset_index)
             preset_desc = self._realesrgan_preset_map.get(preset_key, self._realesrgan_preset_map["general"])[0]
             self.realesrgan_preset_combo.setItemData(preset_index, preset_desc, Qt.ToolTipRole)
-        self.realesrgan_preset_combo.setToolTip("按内容类型选择修复方案。真人和实拍优先选通用修复，动漫内容选动漫方案。")
+        self.realesrgan_preset_combo.setToolTip(t("按内容类型选择修复方案。真人和实拍优先选通用修复，动漫内容选动漫方案。"))
         self.realesrgan_preset_combo.currentIndexChanged.connect(self.on_realesrgan_preset_changed)
         realesrgan_options_layout.addRow("修复场景:", self.realesrgan_preset_combo)
 
@@ -3714,34 +3713,34 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_scale_combo.addItem("2 倍（更快，适合日常）", 2.0)
         self.realesrgan_scale_combo.addItem("4 倍（更清晰，更慢）", 4.0)
         self.realesrgan_scale_combo.setCurrentIndex(1)
-        self.realesrgan_scale_combo.setToolTip("决定输出放大倍率。2 倍更快更稳，4 倍更清晰但更耗时。")
+        self.realesrgan_scale_combo.setToolTip(t("决定输出放大倍率。2 倍更快更稳，4 倍更清晰但更耗时。"))
         realesrgan_options_layout.addRow("放大倍率:", self.realesrgan_scale_combo)
 
         self.realesrgan_runtime_hint = QLabel("")
         self.realesrgan_runtime_hint.setWordWrap(True)
         self.realesrgan_runtime_hint.setStyleSheet("color: #666;")
-        self.realesrgan_runtime_hint.setToolTip("显示当前修复引擎、模型和可用状态。")
+        self.realesrgan_runtime_hint.setToolTip(t("显示当前修复引擎、模型和可用状态。"))
         realesrgan_options_layout.addRow("状态:", self.realesrgan_runtime_hint)
 
-        self.realesrgan_proxy_notice = QLabel("💡 第一次使用需下载所需模型 必须开启代理")
+        self.realesrgan_proxy_notice = QLabel(t("💡 第一次使用需下载所需模型 必须开启代理"))
         self.realesrgan_proxy_notice.setWordWrap(True)
         self.realesrgan_proxy_notice.setStyleSheet(
             "color: #a07d4d; border: none; background: transparent; "
             "padding: 0px; font-weight: bold;"
         )
-        self.realesrgan_proxy_notice.setToolTip("画质修复由于包体积精简，首次使用特定模型时会自动从云端高速补全。")
+        self.realesrgan_proxy_notice.setToolTip(t("画质修复由于包体积精简，首次使用特定模型时会自动从云端高速补全。"))
         realesrgan_options_layout.addRow("提示:", self.realesrgan_proxy_notice)
 
-        self.realesrgan_speed_hint = QLabel("速度信息会在处理开始后显示")
+        self.realesrgan_speed_hint = QLabel(t("速度信息会在处理开始后显示"))
         self.realesrgan_speed_hint.setWordWrap(True)
         self.realesrgan_speed_hint.setStyleSheet("color: #666;")
-        self.realesrgan_speed_hint.setToolTip("处理过程中会显示实时速度和预计剩余时间。")
+        self.realesrgan_speed_hint.setToolTip(t("处理过程中会显示实时速度和预计剩余时间。"))
         realesrgan_options_layout.addRow("速度:", self.realesrgan_speed_hint)
 
-        self.realesrgan_advanced_group = QGroupBox("高级设置（通常不需要改）")
+        self.realesrgan_advanced_group = QGroupBox(t("高级设置（通常不需要改）"))
         self.realesrgan_advanced_group.setCheckable(True)
         self.realesrgan_advanced_group.setChecked(False)
-        self.realesrgan_advanced_group.setToolTip("只有在你明确知道要调什么时再展开。默认设置已经适合大多数用户。")
+        self.realesrgan_advanced_group.setToolTip(t("只有在你明确知道要调什么时再展开。默认设置已经适合大多数用户。"))
         self.realesrgan_advanced_group.setStyleSheet(
             """
             QGroupBox {
@@ -3772,12 +3771,12 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_device_combo = QComboBox()
         self.realesrgan_device_combo.addItem("自动检测硬件（推荐）", "auto")
         self.realesrgan_device_combo.addItem("仅用 CPU", "cpu")
-        self.realesrgan_device_combo.setToolTip("默认自动检测即可。程序会按当前机器和模型自动选择更快的视频后端，并缓存上次测得的更优路径；异常时会自动切换到更稳的后备方案。")
+        self.realesrgan_device_combo.setToolTip(t("默认自动检测即可。程序会按当前机器和模型自动选择更快的视频后端，并缓存上次测得的更优路径；异常时会自动切换到更稳的后备方案。"))
         self.realesrgan_device_combo.currentIndexChanged.connect(lambda _=0: self.check_realesrgan_runtime(silent=True))
         realesrgan_advanced_layout.addRow("运算设备:", self.realesrgan_device_combo)
 
-        self.realesrgan_force_model_check = QCheckBox("手动指定底层模型")
-        self.realesrgan_force_model_check.setToolTip("默认会跟随修复场景自动选模型。只有需要精细控制时再手动指定。")
+        self.realesrgan_force_model_check = QCheckBox(t("手动指定底层模型"))
+        self.realesrgan_force_model_check.setToolTip(t("默认会跟随修复场景自动选模型。只有需要精细控制时再手动指定。"))
         self.realesrgan_model_combo = QComboBox()
         self.realesrgan_model_combo.addItem("通用小模型（realesr-general-x4v3）", "realesr-general-x4v3")
         self.realesrgan_model_combo.addItem("通用强修复（RealESRGAN_x4plus）", "RealESRGAN_x4plus")
@@ -3811,15 +3810,15 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_model_row_layout.addWidget(self.realesrgan_model_combo, 1)
         realesrgan_advanced_layout.addRow("底层模型:", self.realesrgan_model_row)
 
-        self.realesrgan_custom_scale_check = QCheckBox("使用自定义倍率")
-        self.realesrgan_custom_scale_check.setToolTip("默认提供 2 倍和 4 倍。只有你需要更细的倍率时再开启。")
+        self.realesrgan_custom_scale_check = QCheckBox(t("使用自定义倍率"))
+        self.realesrgan_custom_scale_check.setToolTip(t("默认提供 2 倍和 4 倍。只有你需要更细的倍率时再开启。"))
         self.realesrgan_custom_scale_spin = QDoubleSpinBox()
         self.realesrgan_custom_scale_spin.setRange(1.0, 4.0)
         self.realesrgan_custom_scale_spin.setSingleStep(0.1)
         self.realesrgan_custom_scale_spin.setDecimals(1)
         self.realesrgan_custom_scale_spin.setValue(4.0)
         self.realesrgan_custom_scale_spin.setEnabled(False)
-        self.realesrgan_custom_scale_spin.setToolTip("自定义输出倍率。大多数情况保留默认即可。")
+        self.realesrgan_custom_scale_spin.setToolTip(t("自定义输出倍率。大多数情况保留默认即可。"))
         self.realesrgan_custom_scale_check.toggled.connect(self._refresh_realesrgan_model_state)
         self.realesrgan_scale_override_row = QWidget()
         self.realesrgan_scale_override_layout = QHBoxLayout(self.realesrgan_scale_override_row)
@@ -3834,7 +3833,7 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_denoise_spin.setSingleStep(0.1)
         self.realesrgan_denoise_spin.setDecimals(1)
         self.realesrgan_denoise_spin.setValue(0.5)
-        self.realesrgan_denoise_spin.setToolTip("仅对通用小模型 realesr-general-x4v3 有效，用于平衡降噪和细节保留。")
+        self.realesrgan_denoise_spin.setToolTip(t("仅对通用小模型 realesr-general-x4v3 有效，用于平衡降噪和细节保留。"))
         realesrgan_advanced_layout.addRow("降噪强度:", self.realesrgan_denoise_spin)
 
         self.realesrgan_denoise_hint = QLabel("")
@@ -3846,24 +3845,24 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_output_format_combo.addItem("自动保持原格式", "auto")
         self.realesrgan_output_format_combo.addItem("PNG（更稳，体积更大）", "png")
         self.realesrgan_output_format_combo.addItem("JPG（体积更小）", "jpg")
-        self.realesrgan_output_format_combo.setToolTip("默认保持原格式。只有明确需要统一输出格式时再修改。")
+        self.realesrgan_output_format_combo.setToolTip(t("默认保持原格式。只有明确需要统一输出格式时再修改。"))
         realesrgan_advanced_layout.addRow("输出格式:", self.realesrgan_output_format_combo)
 
-        self.realesrgan_memory_safe_check = QCheckBox("稳定模式（大图、长视频或报错时更稳，但更慢）")
-        self.realesrgan_memory_safe_check.setToolTip("遇到大图、长视频、报错或速度不稳定时可开启，处理会更稳但更慢。")
+        self.realesrgan_memory_safe_check = QCheckBox(t("稳定模式（大图、长视频或报错时更稳，但更慢）"))
+        self.realesrgan_memory_safe_check.setToolTip(t("遇到大图、长视频、报错或速度不稳定时可开启，处理会更稳但更慢。"))
         realesrgan_advanced_layout.addRow("", self.realesrgan_memory_safe_check)
 
-        self.realesrgan_keep_face_check = QCheckBox("优先修复人脸细节")
-        self.realesrgan_keep_face_check.setToolTip("适合自拍、证件照、人物特写。动漫方案不会使用这个选项。")
+        self.realesrgan_keep_face_check = QCheckBox(t("优先修复人脸细节"))
+        self.realesrgan_keep_face_check.setToolTip(t("适合自拍、证件照、人物特写。动漫方案不会使用这个选项。"))
         realesrgan_advanced_layout.addRow("", self.realesrgan_keep_face_check)
 
         realesrgan_output_dir_layout = QHBoxLayout()
         self.realesrgan_output_dir = QLineEdit()
-        self.realesrgan_output_dir.setPlaceholderText("留空则保存到原文件所在目录")
-        self.realesrgan_output_dir.setToolTip("可指定修复结果保存位置。留空时，输出到原文件所在目录。")
+        self.realesrgan_output_dir.setPlaceholderText(t("留空则保存到原文件所在目录"))
+        self.realesrgan_output_dir.setToolTip(t("可指定修复结果保存位置。留空时，输出到原文件所在目录。"))
         realesrgan_output_dir_layout.addWidget(self.realesrgan_output_dir)
-        self.browse_realesrgan_output_btn = QPushButton("浏览...")
-        self.browse_realesrgan_output_btn.setToolTip("选择修复结果的保存目录。")
+        self.browse_realesrgan_output_btn = QPushButton(t("浏览..."))
+        self.browse_realesrgan_output_btn.setToolTip(t("选择修复结果的保存目录。"))
         self.browse_realesrgan_output_btn.clicked.connect(self.browse_realesrgan_output_dir)
         realesrgan_output_dir_layout.addWidget(self.browse_realesrgan_output_btn)
         realesrgan_advanced_layout.addRow("输出目录:", realesrgan_output_dir_layout)
@@ -3872,11 +3871,11 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_runtime_python.hide()
 
         self.realesrgan_suffix_input = QLineEdit("_画质修复")
-        self.realesrgan_suffix_input.setToolTip("会追加到输出文件名后面，用来区分原文件和修复结果。")
+        self.realesrgan_suffix_input.setToolTip(t("会追加到输出文件名后面，用来区分原文件和修复结果。"))
         realesrgan_advanced_layout.addRow("文件名后缀:", self.realesrgan_suffix_input)
 
-        self.realesrgan_overwrite_check = QCheckBox("覆盖同名输出文件")
-        self.realesrgan_overwrite_check.setToolTip("勾选后，如果目标文件已存在，会直接覆盖旧结果。")
+        self.realesrgan_overwrite_check = QCheckBox(t("覆盖同名输出文件"))
+        self.realesrgan_overwrite_check.setToolTip(t("勾选后，如果目标文件已存在，会直接覆盖旧结果。"))
         realesrgan_advanced_layout.addRow("", self.realesrgan_overwrite_check)
 
         realesrgan_options_layout.addRow(self.realesrgan_advanced_group)
@@ -3884,14 +3883,14 @@ class VideoDownloaderApp(QMainWindow):
         realesrgan_layout.addWidget(realesrgan_options_group)
 
         realesrgan_buttons_layout = QHBoxLayout()
-        self.start_realesrgan_btn = QPushButton("开始画质修复")
-        self.start_realesrgan_btn.setToolTip("按当前方案批量开始修复列表中的文件。")
+        self.start_realesrgan_btn = QPushButton(t("开始画质修复"))
+        self.start_realesrgan_btn.setToolTip(t("按当前方案批量开始修复列表中的文件。"))
         self.start_realesrgan_btn.clicked.connect(self.start_realesrgan_process)
         realesrgan_buttons_layout.addWidget(self.start_realesrgan_btn)
 
-        self.cancel_realesrgan_btn = QPushButton("取消")
+        self.cancel_realesrgan_btn = QPushButton(t("取消"))
         self.cancel_realesrgan_btn.setEnabled(False)
-        self.cancel_realesrgan_btn.setToolTip("停止当前正在进行的画质修复任务。")
+        self.cancel_realesrgan_btn.setToolTip(t("停止当前正在进行的画质修复任务。"))
         self.cancel_realesrgan_btn.clicked.connect(self.cancel_realesrgan_process)
         realesrgan_buttons_layout.addWidget(self.cancel_realesrgan_btn)
 
@@ -3909,8 +3908,8 @@ class VideoDownloaderApp(QMainWindow):
         realesrgan_controls_scroll.setFrameShape(QFrame.NoFrame)
         realesrgan_controls_scroll.setWidget(realesrgan_controls_widget)
 
-        realesrgan_progress_group = QGroupBox("运行日志")
-        realesrgan_progress_group.setToolTip("这里会显示处理进度、每个文件的结果和错误信息。")
+        realesrgan_progress_group = QGroupBox(t("运行日志"))
+        realesrgan_progress_group.setToolTip(t("这里会显示处理进度、每个文件的结果和错误信息。"))
         realesrgan_progress_layout = QVBoxLayout()
         realesrgan_progress_group.setLayout(realesrgan_progress_layout)
 
@@ -3919,13 +3918,13 @@ class VideoDownloaderApp(QMainWindow):
         self.realesrgan_progress_bar = QProgressBar()
         self.realesrgan_progress_bar.setRange(0, 100)
         self.realesrgan_progress_bar.setValue(0)
-        self.realesrgan_progress_bar.setToolTip("显示当前批量任务的整体处理进度。")
+        self.realesrgan_progress_bar.setToolTip(t("显示当前批量任务的整体处理进度。"))
         realesrgan_progress_layout.addWidget(self.realesrgan_progress_bar)
 
         self.realesrgan_progress_text = QTextEdit()
         self.realesrgan_progress_text.setReadOnly(True)
         self.realesrgan_progress_text.setMinimumHeight(100)
-        self.realesrgan_progress_text.setToolTip("查看每个文件的开始、完成、失败和详细处理日志。")
+        self.realesrgan_progress_text.setToolTip(t("查看每个文件的开始、完成、失败和详细处理日志。"))
         realesrgan_progress_layout.addWidget(self.realesrgan_progress_text)
 
         realesrgan_splitter = QSplitter(Qt.Vertical)
@@ -3952,8 +3951,8 @@ class VideoDownloaderApp(QMainWindow):
         # 历史记录工具栏
         history_toolbar = QHBoxLayout()
         
-        refresh_history_button = QPushButton("🔄 刷新历史")
-        refresh_history_button.setToolTip("刷新历史记录列表")
+        refresh_history_button = QPushButton(t("🔄 刷新历史"))
+        refresh_history_button.setToolTip(t("刷新历史记录列表"))
         refresh_history_button.setStyleSheet(
             "QPushButton { "
             "background-color: #007bff; "
@@ -3973,8 +3972,8 @@ class VideoDownloaderApp(QMainWindow):
         refresh_history_button.clicked.connect(self.refresh_history)
         history_toolbar.addWidget(refresh_history_button)
         
-        clear_history_button = QPushButton("🗑️ 清空所有历史记录")
-        clear_history_button.setToolTip("一键清空所有下载历史记录（不可恢复）")
+        clear_history_button = QPushButton(t("🗑️ 清空所有历史记录"))
+        clear_history_button.setToolTip(t("一键清空所有下载历史记录（不可恢复）"))
         clear_history_button.setStyleSheet(
             "QPushButton { "
             "background-color: #dc3545; "
@@ -3997,11 +3996,11 @@ class VideoDownloaderApp(QMainWindow):
         history_toolbar.addStretch()
         
         # 搜索框
-        search_label = QLabel("搜索:")
+        search_label = QLabel(t("搜索:"))
         history_toolbar.addWidget(search_label)
         
         self.history_search = QLineEdit()
-        self.history_search.setPlaceholderText("搜索标题或URL...")
+        self.history_search.setPlaceholderText(t("搜索标题或URL..."))
         self.history_search.textChanged.connect(self.filter_history)
         history_toolbar.addWidget(self.history_search)
         
@@ -4076,7 +4075,7 @@ class VideoDownloaderApp(QMainWindow):
         disclaimer_layout = QVBoxLayout(disclaimer_frame)
         disclaimer_layout.setSpacing(12)
         
-        disclaimer_header = QLabel("⚖️ 工具免责声明与版权声明")
+        disclaimer_header = QLabel(t("⚖️ 工具免责声明与版权声明"))
         disclaimer_header.setAlignment(Qt.AlignCenter)
         disclaimer_header.setStyleSheet("font-size: 18px; font-weight: 800; color: #d35400; border: none; margin-bottom: 5px;")
         disclaimer_layout.addWidget(disclaimer_header)
@@ -5680,11 +5679,11 @@ class VideoDownloaderApp(QMainWindow):
         layout.setSpacing(12)
         layout.setContentsMargins(18, 18, 18, 18)
 
-        title_label = QLabel("设置")
+        title_label = QLabel(t("设置"))
         title_label.setStyleSheet("font-size: 22px; font-weight: 700; color: #111827;")
         layout.addWidget(title_label)
 
-        subtitle_label = QLabel("保存目录与软件更新")
+        subtitle_label = QLabel(t("保存目录与软件更新"))
         subtitle_label.setStyleSheet("font-size: 12px; color: #6b7280;")
         layout.addWidget(subtitle_label)
 
@@ -5699,11 +5698,11 @@ class VideoDownloaderApp(QMainWindow):
         save_layout.setContentsMargins(16, 16, 16, 16)
         save_layout.setSpacing(10)
 
-        save_title = QLabel("统一保存位置")
+        save_title = QLabel(t("统一保存位置"))
         save_title.setStyleSheet("font-size: 16px; font-weight: 700; color: #111827;")
         save_layout.addWidget(save_title)
 
-        save_hint = QLabel("视频下载、转码输出、图片处理共用同一个目录。")
+        save_hint = QLabel(t("视频下载、转码输出、图片处理共用同一个目录。"))
         save_hint.setWordWrap(True)
         save_hint.setStyleSheet("font-size: 12px; color: #6b7280;")
         save_layout.addWidget(save_hint)
@@ -5711,14 +5710,14 @@ class VideoDownloaderApp(QMainWindow):
         path_layout = QHBoxLayout()
         path_layout.setSpacing(10)
         self.settings_save_path = QLineEdit()
-        self.settings_save_path.setPlaceholderText("选择统一保存目录...")
+        self.settings_save_path.setPlaceholderText(t("选择统一保存目录..."))
         self.settings_save_path.setMinimumHeight(42)
         # 加载当前保存的路径
         current_path = self.settings.value("output_path", os.path.expanduser("~/Downloads"))
         self.settings_save_path.setText(current_path)
         path_layout.addWidget(self.settings_save_path)
 
-        browse_btn = QPushButton("浏览目录")
+        browse_btn = QPushButton(t("浏览目录"))
         browse_btn.setFixedWidth(104)
         browse_btn.setStyleSheet("""
             QPushButton {
@@ -5739,6 +5738,31 @@ class VideoDownloaderApp(QMainWindow):
 
         layout.addWidget(save_group)
 
+        # ==================== 界面语言设置 ====================
+        lang_group = make_section_card()
+        lang_layout = QVBoxLayout(lang_group)
+        lang_layout.setContentsMargins(16, 16, 16, 16)
+        lang_layout.setSpacing(10)
+
+        lang_title = QLabel(t("界面语言"))
+        lang_title.setStyleSheet("font-size: 16px; font-weight: 700; color: #111827;")
+        lang_layout.addWidget(lang_title)
+
+        lang_hint = QLabel(t("选择软件界面显示的语言，切换后重启软件生效。"))
+        lang_hint.setWordWrap(True)
+        lang_hint.setStyleSheet("font-size: 12px; color: #6b7280;")
+        lang_layout.addWidget(lang_hint)
+
+        self.settings_lang_combo = QComboBox()
+        for _lang_code, _lang_name in SUPPORTED_LANGUAGES:
+            self.settings_lang_combo.addItem(_lang_name, _lang_code)
+        _cur_lang = get_language()
+        _cur_idx = self.settings_lang_combo.findData(_cur_lang)
+        self.settings_lang_combo.setCurrentIndex(_cur_idx if _cur_idx >= 0 else 0)
+        self.settings_lang_combo.setMinimumHeight(40)
+        lang_layout.addWidget(self.settings_lang_combo)
+        layout.addWidget(lang_group)
+
         # ==================== 软件更新设置 ====================
         update_group = make_section_card()
         update_layout = QVBoxLayout(update_group)
@@ -5748,7 +5772,7 @@ class VideoDownloaderApp(QMainWindow):
         update_header_row = QHBoxLayout()
         update_header_row.setSpacing(10)
 
-        update_title = QLabel("软件更新")
+        update_title = QLabel(t("软件更新"))
         update_title.setStyleSheet("font-size: 16px; font-weight: 700; color: #111827;")
         update_header_row.addWidget(update_title)
         update_layout.addLayout(update_header_row)
@@ -5756,14 +5780,14 @@ class VideoDownloaderApp(QMainWindow):
         switch_layout = QVBoxLayout()
         switch_layout.setSpacing(8)
 
-        self.settings_update_notification = QCheckBox("启用更新提示音和弹窗")
+        self.settings_update_notification = QCheckBox(t("启用更新提示音和弹窗"))
         # 加载当前设置
         enable_notification = self.settings.value("enable_update_notification", True, type=bool)
         self.enable_update_notification = enable_notification
         self.settings_update_notification.setChecked(enable_notification)
         switch_layout.addWidget(self.settings_update_notification)
 
-        self.settings_auto_check_update = QCheckBox("启动时自动检查软件与依赖更新")
+        self.settings_auto_check_update = QCheckBox(t("启动时自动检查软件与依赖更新"))
         auto_check = self.settings.value("auto_check_update_on_startup", True, type=bool)
         self.settings_auto_check_update.setChecked(auto_check)
         switch_layout.addWidget(self.settings_auto_check_update)
@@ -5792,20 +5816,20 @@ class VideoDownloaderApp(QMainWindow):
         app_update_header_row = QHBoxLayout()
         app_update_header_row.setSpacing(10)
 
-        app_update_title = QLabel("官网版本状态")
+        app_update_title = QLabel(t("官网版本状态"))
         app_update_title.setStyleSheet("font-size: 13px; font-weight: 700; color: #111827;")
         app_update_title.setFrameShape(QFrame.NoFrame)
         app_update_header_row.addWidget(app_update_title)
 
         app_update_header_row.addStretch()
 
-        self.settings_app_update_badge = QLabel("官网更新")
+        self.settings_app_update_badge = QLabel(t("官网更新"))
         self.settings_app_update_badge.setAlignment(Qt.AlignCenter)
         self.settings_app_update_badge.setFrameShape(QFrame.NoFrame)
         app_update_header_row.addWidget(self.settings_app_update_badge)
         app_update_card_layout.addLayout(app_update_header_row)
 
-        self.settings_app_update_status = QLabel("点击下方按钮检查官网新版本")
+        self.settings_app_update_status = QLabel(t("点击下方按钮检查官网新版本"))
         self.settings_app_update_status.setWordWrap(True)
         self.settings_app_update_status.setStyleSheet("color: #6b7280; font-size: 12px;")
         self.settings_app_update_status.setFrameShape(QFrame.NoFrame)
@@ -5816,7 +5840,7 @@ class VideoDownloaderApp(QMainWindow):
         info_layout.setHorizontalSpacing(14)
         info_layout.setVerticalSpacing(6)
 
-        current_label = QLabel("当前版本")
+        current_label = QLabel(t("当前版本"))
         current_label.setStyleSheet("font-size: 12px; color: #6b7280; background: transparent; border: none;")
         current_label.setFrameShape(QFrame.NoFrame)
         self.settings_app_update_current_value = QLabel(f"v{get_app_version()}")
@@ -5825,19 +5849,19 @@ class VideoDownloaderApp(QMainWindow):
         info_layout.addWidget(current_label, 0, 0)
         info_layout.addWidget(self.settings_app_update_current_value, 0, 1)
 
-        latest_label = QLabel("官网版本")
+        latest_label = QLabel(t("官网版本"))
         latest_label.setStyleSheet("font-size: 12px; color: #6b7280; background: transparent; border: none;")
         latest_label.setFrameShape(QFrame.NoFrame)
-        self.settings_app_update_latest_value = QLabel("未检查")
+        self.settings_app_update_latest_value = QLabel(t("未检查"))
         self.settings_app_update_latest_value.setStyleSheet("font-size: 12px; color: #111827; font-weight: 700; background: transparent; border: none;")
         self.settings_app_update_latest_value.setFrameShape(QFrame.NoFrame)
         info_layout.addWidget(latest_label, 1, 0)
         info_layout.addWidget(self.settings_app_update_latest_value, 1, 1)
 
-        last_check_label = QLabel("上次检查")
+        last_check_label = QLabel(t("上次检查"))
         last_check_label.setStyleSheet("font-size: 12px; color: #6b7280; background: transparent; border: none;")
         last_check_label.setFrameShape(QFrame.NoFrame)
-        self.settings_app_update_last_check_value = QLabel("未检查")
+        self.settings_app_update_last_check_value = QLabel(t("未检查"))
         self.settings_app_update_last_check_value.setStyleSheet("font-size: 12px; color: #111827; font-weight: 700; background: transparent; border: none;")
         self.settings_app_update_last_check_value.setFrameShape(QFrame.NoFrame)
         info_layout.addWidget(last_check_label, 2, 0)
@@ -5847,7 +5871,7 @@ class VideoDownloaderApp(QMainWindow):
 
         app_update_btn_row = QHBoxLayout()
         app_update_btn_row.setSpacing(10)
-        self.settings_check_app_update_btn = QPushButton("检查软件更新")
+        self.settings_check_app_update_btn = QPushButton(t("检查软件更新"))
         self.settings_check_app_update_btn.setFixedSize(126, 36)
         self.settings_check_app_update_btn.setStyleSheet("""
             QPushButton {
@@ -5869,7 +5893,7 @@ class VideoDownloaderApp(QMainWindow):
         self.settings_check_app_update_btn.clicked.connect(lambda: self.check_app_update_from_settings(manual=True))
         app_update_btn_row.addWidget(self.settings_check_app_update_btn)
 
-        self.settings_open_website_btn = QPushButton("访问官网")
+        self.settings_open_website_btn = QPushButton(t("访问官网"))
         self.settings_open_website_btn.setFixedSize(126, 36)
         self.settings_open_website_btn.setStyleSheet("""
             QPushButton {
@@ -5927,7 +5951,7 @@ class VideoDownloaderApp(QMainWindow):
         button_layout = QHBoxLayout()
         button_layout.addStretch()
 
-        cancel_btn = QPushButton("取消")
+        cancel_btn = QPushButton(t("取消"))
         cancel_btn.setMinimumWidth(92)
         cancel_btn.setStyleSheet("""
             QPushButton {
@@ -5945,7 +5969,7 @@ class VideoDownloaderApp(QMainWindow):
         cancel_btn.clicked.connect(dialog.reject)
         button_layout.addWidget(cancel_btn)
 
-        save_btn = QPushButton("保存")
+        save_btn = QPushButton(t("保存"))
         save_btn.setMinimumWidth(98)
         save_btn.setStyleSheet("""
             QPushButton {
@@ -6014,8 +6038,22 @@ class VideoDownloaderApp(QMainWindow):
         auto_check = self.settings_auto_check_update.isChecked()
         self.settings.setValue("auto_check_update_on_startup", auto_check)
 
+        # 保存界面语言（重启后生效）
+        try:
+            new_lang = self.settings_lang_combo.currentData() or "zh_CN"
+            old_lang = get_language()
+            self.settings.setValue("language", new_lang)
+            if new_lang != old_lang:
+                set_language(new_lang)
+                self.update_status(
+                    t_format("🌐 语言已切换为「{lang}」，重启软件后完全生效", lang=language_display_name(new_lang)),
+                    "success",
+                )
+        except Exception:
+            pass
+
         # 显示成功提示
-        self.update_status("✅ 设置已保存", "success")
+        self.update_status(t("✅ 设置已保存"), "success")
         dialog.accept()
     
     def play_update_notification_sound(self):
