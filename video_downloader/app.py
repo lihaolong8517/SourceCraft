@@ -6040,14 +6040,14 @@ class VideoDownloaderApp(QMainWindow):
 
         # 保存界面语言（重启后生效）
         try:
-            new_lang = self.settings_lang_combo.currentData() or "zh_CN"
+            new_lang = self.settings_lang_combo.currentData() or "en_US"
             old_lang = get_language()
             self.settings.setValue("language", new_lang)
             if new_lang != old_lang:
                 set_language(new_lang)
-                self.update_status(
-                    t_format("🌐 语言已切换为「{lang}」，重启软件后完全生效", lang=language_display_name(new_lang)),
-                    "success",
+                QMessageBox.information(
+                    self, t("界面语言"),
+                    t_format("语言已切换为「{lang}」。重启软件后，界面将完全显示为所选语言。", lang=language_display_name(new_lang)),
                 )
         except Exception:
             pass
