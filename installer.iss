@@ -2,7 +2,7 @@
 ; Application: SourceCraft
 
 #define MyAppName "SourceCraft"
-#define MyAppVersion "1.1.143"
+#define MyAppVersion "1.1.144"
 #define MyAppPublisher "SourceCraft"
 #define MyAppURL "https://sourcecraft.com"
 #define MyAppExeName "SourceCraft.exe"
