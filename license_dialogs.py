@@ -194,6 +194,7 @@ class PaymentDialog(QDialog):
             "<center>"
             "<span style='color: #95a5a6; font-size: 12px;'>" +
             t("遇到问题？联系邮箱：haolongli84@gmail.com") +
+            t("<br>QQ：378952277") +
             "</span>"
             "</center>"
         )
@@ -989,7 +990,7 @@ class LoginScreen(QDialog):
                 color: #2c3e50;
             }
         """)
-        help_btn.clicked.connect(lambda: QMessageBox.information(self, t("帮助"), t("如有疑问，请联系邮箱：haolongli84@gmail.com")))
+        help_btn.clicked.connect(lambda: QMessageBox.information(self, t("帮助"), t("如有疑问，请联系邮箱：haolongli84@gmail.com") + t("\nQQ：378952277")))
         links_layout.addWidget(help_btn)
         
         content_layout.addLayout(links_layout)

@@ -13121,7 +13121,7 @@ class VideoDownloaderApp(QMainWindow):
         self.help_button.clicked.connect(lambda: QMessageBox.information(
             self, 
             t("联系开发者"), 
-            t("如有问题或建议，请联系开发者：\n\n") + t("📧 邮箱：haolongli84@gmail.com\n\n") + t("感谢您的使用与支持！")
+            t("如有问题或建议，请联系开发者：\n\n") + t("📧 邮箱：haolongli84@gmail.com\n\n") + t("💬 QQ：378952277\n\n") + t("感谢您的使用与支持！")
         ))
         toolbar_layout.addWidget(self.help_button)
         
