@@ -4355,11 +4355,7 @@ class VideoDownloaderApp(QMainWindow):
             # 验证代理地址格式
             if not any(proxy_url.startswith(prefix) for prefix in ['http://', 'https://', 'socks4://', 'socks5://']):
                 QMessageBox.warning(self, t("提示"), 
-                    "代理地址格式不正确！\n\n"
-                    "正确格式示例：\n"
-                    "• http://127.0.0.1:7890\n"
-                    "• socks5://user:pass@127.0.0.1:1080\n"
-                    "• https://proxy.example.com:8080")
+                    t("代理地址格式不正确！\n\n") + t("正确格式示例：\n") + t("• http://127.0.0.1:7890\n") + t("• socks5://user:pass@127.0.0.1:1080\n") + t("• https://proxy.example.com:8080"))
                 return
             
             # 禁用测试按钮避免重复点击
@@ -11015,8 +11011,8 @@ class VideoDownloaderApp(QMainWindow):
             if invalid_messages:
                 QMessageBox.warning(
                     self,
-                    "时间段格式错误",
-                    "以下条目未添加：\n" + "\n".join(invalid_messages[:8]),
+                    t("时间段格式错误"),
+                    t("以下条目未添加：\n") + "\n".join(invalid_messages[:8]),
                 )
             elif added_count == 0 and duplicate_count > 0:
                 QMessageBox.information(self, t("提示"), t("所有时间段已存在，无需重复添加"))
@@ -12491,16 +12487,15 @@ class VideoDownloaderApp(QMainWindow):
                 else:
                     QMessageBox.warning(
                         self,
-                        "显卡不可用",
-                        "你选择了“优先显卡(CUDA)”，但当前画质修复运行时没有可用 CUDA。\n\n"
-                        "请改为“自动选择”或“仅用 CPU”，或者更换为 CUDA 版运行时后再试。"
+                        t("显卡不可用"),
+                        t("你选择了“优先显卡(CUDA)”，但当前画质修复运行时没有可用 CUDA。\n\n") + t("请改为“自动选择”或“仅用 CPU”，或者更换为 CUDA 版运行时后再试。")
                     )
                     return
             if not can_run_with_current_or_external_runtime(options):
                 QMessageBox.warning(
                     self,
-                    "功能异常",
-                    "当前未找到可用的画质修复运行时。请联系开发处理运行时集成。"
+                    t("功能异常"),
+                    t("当前未找到可用的画质修复运行时。请联系开发处理运行时集成。")
                 )
                 return
             missing_deps = get_realesrgan_missing_dependencies(options)

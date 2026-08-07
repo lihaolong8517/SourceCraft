@@ -408,7 +408,7 @@ class FailedVideosDialog(QDialog):
             except Exception as e:
                 QMessageBox.warning(
                     self,
-                    "导出失败",
+                    t("导出失败"),
                     t_format("导出文件时出错:\n{}", str(e))
                 )
 

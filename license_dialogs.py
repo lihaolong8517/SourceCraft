@@ -527,7 +527,7 @@ class ActivationDialog(QDialog):
         """)
         
         if success:
-            QMessageBox.information(self, t("激活成功"), f"🎉 {message}\n\n感谢您的支持！")
+            QMessageBox.information(self, t("激活成功"), f"🎉 {message}" + t("\n\n感谢您的支持！"))
             self.activated.emit(True)
             self.accept()
         else:
@@ -1046,7 +1046,7 @@ class LoginScreen(QDialog):
         self.progress.setStyleSheet("QProgressBar { border: none; background-color: transparent; }")
         
         if success:
-            QMessageBox.information(self, t("激活成功"), f"🎉 {message}\n\n欢迎使用专业版！")
+            QMessageBox.information(self, t("激活成功"), f"🎉 {message}" + t("\n\n欢迎使用专业版！"))
             self.accept()
         else:
             QMessageBox.warning(self, t("激活失败"), _simplify_activation_message(message))

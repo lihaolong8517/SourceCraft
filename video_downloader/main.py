@@ -33,9 +33,9 @@ def check_dependencies():
         )
         process.communicate()
         if process.returncode != 0:
-            return False, "yt-dlp.exe未找到或无法运行"
+            return False, t("yt-dlp.exe未找到或无法运行")
     except Exception:
-        return False, "yt-dlp.exe未找到，请确保已安装yt-dlp或将yt-dlp.exe放在程序目录下"
+        return False, t("yt-dlp.exe未找到，请确保已安装yt-dlp或将yt-dlp.exe放在程序目录下")
     
     # 检查ffmpeg是否存在
     ffmpeg_cmd = None
@@ -69,10 +69,10 @@ def check_dependencies():
             pass
     
     if ffmpeg_cmd is None:
-        return False, "ffmpeg未找到，请确保已安装ffmpeg或将ffmpeg.exe放在程序目录下"
+        return False, t("ffmpeg未找到，请确保已安装ffmpeg或将ffmpeg.exe放在程序目录下")
     
     FFMPEG_CMD = ffmpeg_cmd
-    return True, "依赖检查通过"
+    return True, t("依赖检查通过")
 
 def main():
     if len(sys.argv) >= 3 and sys.argv[1] == "--realesrgan-job":
@@ -100,7 +100,7 @@ def main():
     # 检查依赖
     success, message = check_dependencies()
     if not success:
-        QMessageBox.critical(None, "依赖检查失败", message)
+        QMessageBox.critical(None, t("依赖检查失败"), message)
         sys.exit(1)
     
     # === 【许可证检查】启动时验证授权状态 ===
@@ -122,13 +122,13 @@ def main():
         print(t_format("[Startup] 授权阶段耗时: {:.2f}s", time.perf_counter() - startup_begin))
     except ImportError as e:
         if getattr(sys, "frozen", False):
-            QMessageBox.critical(None, "授权错误", t_format("授权模块缺失或损坏，请重新安装：\n{}", str(e)))
+            QMessageBox.critical(None, t("授权错误"), t_format("授权模块缺失或损坏，请重新安装：\n{}", str(e)))
             sys.exit(1)
         # 开发模式允许无授权模块启动，便于调试
         print(t_format("[App] 许可证模块未加载（开发模式）: {}", e))
     except Exception as e:
         print(t_format("[App] 许可证检查异常: {}", e))
-        QMessageBox.critical(None, "授权错误", t_format("程序授权检查异常，请联系客服：\n{}", str(e)))
+        QMessageBox.critical(None, t("授权错误"), t_format("程序授权检查异常，请联系客服：\n{}", str(e)))
         sys.exit(1)
     
     window_create_begin = time.perf_counter()

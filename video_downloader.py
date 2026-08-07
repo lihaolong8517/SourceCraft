@@ -1322,7 +1322,7 @@ class FailedVideosDialog(QDialog):
             except Exception as e:
                 QMessageBox.warning(
                     self,
-                    "导出失败",
+                    t("导出失败"),
                     t_format("导出文件时出错:\n{}", str(e))
                 )
 
@@ -16360,11 +16360,7 @@ class VideoDownloaderApp(QMainWindow):
             # 验证代理地址格式
             if not any(proxy_url.startswith(prefix) for prefix in ['http://', 'https://', 'socks4://', 'socks5://']):
                 QMessageBox.warning(self, t("提示"), 
-                    "代理地址格式不正确！\n\n"
-                    "正确格式示例：\n"
-                    "• http://127.0.0.1:7890\n"
-                    "• socks5://user:pass@127.0.0.1:1080\n"
-                    "• https://proxy.example.com:8080")
+                    t("代理地址格式不正确！\n\n") + t("正确格式示例：\n") + t("• http://127.0.0.1:7890\n") + t("• socks5://user:pass@127.0.0.1:1080\n") + t("• https://proxy.example.com:8080"))
                 return
             
             # 禁用测试按钮避免重复点击
@@ -23019,8 +23015,8 @@ class VideoDownloaderApp(QMainWindow):
             if invalid_messages:
                 QMessageBox.warning(
                     self,
-                    "时间段格式错误",
-                    "以下条目未添加：\n" + "\n".join(invalid_messages[:8]),
+                    t("时间段格式错误"),
+                    t("以下条目未添加：\n") + "\n".join(invalid_messages[:8]),
                 )
             elif added_count == 0 and duplicate_count > 0:
                 QMessageBox.information(self, t("提示"), t("所有时间段已存在，无需重复添加"))
@@ -24495,16 +24491,15 @@ class VideoDownloaderApp(QMainWindow):
                 else:
                     QMessageBox.warning(
                         self,
-                        "显卡不可用",
-                        "你选择了“优先显卡(CUDA)”，但当前画质修复运行时没有可用 CUDA。\n\n"
-                        "请改为“自动选择”或“仅用 CPU”，或者更换为 CUDA 版运行时后再试。"
+                        t("显卡不可用"),
+                        t("你选择了“优先显卡(CUDA)”，但当前画质修复运行时没有可用 CUDA。\n\n") + t("请改为“自动选择”或“仅用 CPU”，或者更换为 CUDA 版运行时后再试。")
                     )
                     return
             if not can_run_with_current_or_external_runtime(options):
                 QMessageBox.warning(
                     self,
-                    "功能异常",
-                    "当前未找到可用的画质修复运行时。请联系开发处理运行时集成。"
+                    t("功能异常"),
+                    t("当前未找到可用的画质修复运行时。请联系开发处理运行时集成。")
                 )
                 return
             missing_deps = get_realesrgan_missing_dependencies(options)
@@ -24798,9 +24793,9 @@ def check_dependencies():
         )
         process.communicate()
         if process.returncode != 0:
-            return False, "yt-dlp.exe未找到或无法运行"
+            return False, t("yt-dlp.exe未找到或无法运行")
     except Exception:
-        return False, "yt-dlp.exe未找到，请确保已安装yt-dlp或将yt-dlp.exe放在程序目录下"
+        return False, t("yt-dlp.exe未找到，请确保已安装yt-dlp或将yt-dlp.exe放在程序目录下")
     
     # 检查ffmpeg是否存在
     ffmpeg_cmd = None
@@ -24834,10 +24829,10 @@ def check_dependencies():
             pass
     
     if ffmpeg_cmd is None:
-        return False, "ffmpeg未找到，请确保已安装ffmpeg或将ffmpeg.exe放在程序目录下"
+        return False, t("ffmpeg未找到，请确保已安装ffmpeg或将ffmpeg.exe放在程序目录下")
     
     FFMPEG_CMD = ffmpeg_cmd
-    return True, "依赖检查通过"
+    return True, t("依赖检查通过")
 
 def main():
     if len(sys.argv) >= 3 and sys.argv[1] == "--realesrgan-job":
