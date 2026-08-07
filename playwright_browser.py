@@ -507,7 +507,7 @@ def _normalize_browser_display_name(name: str, executable_path: str = "") -> str
 
     if exe_name.endswith(".exe"):
         exe_name = exe_name[:-4]
-    return exe_name.title() or "浏览器"
+    return exe_name.title() or t("浏览器")
 
 
 def _build_browser_info(name: str, executable_path: str, browser_id: str = "", engine: str = "", is_default: bool = False) -> Optional[Dict[str, Any]]:
@@ -2236,7 +2236,7 @@ class MediaCard(QFrame):
         if hasattr(self, 'title_label') and new_info.get('title'):
             old_title = self.title_label.text()
             new_title = new_info.get('title')
-            if new_title and new_title not in ('正在解析...', '未知视频', old_title):
+            if new_title and new_title not in (t('正在解析...'), t('未知视频'), old_title):
                 self.title_label.setText(new_title)
         if hasattr(self, 'size_label') and new_info.get('size'):
             self.size_label.setText(new_info.get('size'))
@@ -2260,9 +2260,9 @@ class MediaCard(QFrame):
             short_url = short_url[:50] + "..." + short_url[-30:]
             
         if hasattr(self, 'title_label'):
-            self.title_label.setToolTip(f"视频标题: {title}\n实际下载/复制的音视频页面链接: {target_url}\n媒体类型: {media_type}")
+            self.title_label.setToolTip(t_format("视频标题: {}\n实际下载/复制的音视频页面链接: {}\n媒体类型: {}", title, target_url, media_type))
         if hasattr(self, 'copy_btn'):
-            self.copy_btn.setToolTip(f"复制完整音视频详情页链接 ({short_url})")
+            self.copy_btn.setToolTip(t_format("复制完整音视频详情页链接 ({})", short_url))
 
     def _setup_ui(self):
         # 主布局
@@ -2391,7 +2391,7 @@ class MediaCard(QFrame):
         
         self.res_combo = AnimatedComboBox()
         self.res_combo.setMinimumWidth(140)
-        self.res_combo.addItem("正在加载格式...")
+        self.res_combo.addItem(t("正在加载格式..."))
         self.res_combo.setEnabled(False)
         actions_layout.addWidget(self.res_combo)
 
@@ -2505,31 +2505,31 @@ class MediaCard(QFrame):
                     text += f" - {res['filesize']/(1024*1024):.1f}MB"
                 self.res_combo.addItem(text, res['id'])
         else:
-            self.res_combo.addItem("默认最佳质量", "best")
+            self.res_combo.addItem(t("默认最佳质量"), "best")
 
     @staticmethod
     def _diagnose_metadata_error(error: Any) -> str:
         text = str(error or "").strip()
         if not text:
-            return "未知错误"
+            return t("未知错误")
         low = text.lower()
         if "403" in low or "forbidden" in low:
-            return "权限受限（403），请先登录并提取 Cookie"
+            return t("权限受限（403），请先登录并提取 Cookie")
         if "401" in low or "unauthorized" in low:
-            return "未授权访问（401），请检查登录状态"
+            return t("未授权访问（401），请检查登录状态")
         if "404" in low or "not found" in low:
-            return "资源不存在或已下线（404）"
+            return t("资源不存在或已下线（404）")
         if "429" in low or "too many requests" in low:
-            return "请求过于频繁（429），请稍后重试"
+            return t("请求过于频繁（429），请稍后重试")
         if "drm" in low or "widevine" in low or "encrypted" in low:
-            return "内容可能受 DRM 保护"
+            return t("内容可能受 DRM 保护")
         if "private" in low or "members only" in low:
-            return "内容受限（私有/会员）"
+            return t("内容受限（私有/会员）")
         if "geo" in low or "region" in low:
-            return "区域限制，当前网络不可访问"
+            return t("区域限制，当前网络不可访问")
         if "timeout" in low or "timed out" in low:
-            return "网络超时，请重试"
-        return "解析失败，请尝试直接链接或切换播放中条目"
+            return t("网络超时，请重试")
+        return t("解析失败，请尝试直接链接或切换播放中条目")
 
     def _on_metadata_error(self, error):
         reason = self._diagnose_metadata_error(error)
@@ -2550,7 +2550,7 @@ class MediaCard(QFrame):
             size_info = self.media_info.get('size', '')
             content_type = self.media_info.get('content_type', '')
             
-            display_text = "直接链接"
+            display_text = t("直接链接")
             if size_info:
                 display_text += f" ({size_info})"
             elif content_type:
@@ -2559,7 +2559,7 @@ class MediaCard(QFrame):
                 display_text += f" ({ct_short})"
             
             self.res_combo.addItem(display_text, "direct")
-            self.res_combo.setToolTip(f"元数据解析失败：{reason}。已回退为直接链接下载。")
+            self.res_combo.setToolTip(t_format("元数据解析失败：{}。已回退为直接链接下载。", reason))
             
             # 尝试加载缩略图：优先使用 JS 提取的页面缩略图
             thumbnail_url = self.media_info.get('thumbnail', '')
@@ -2570,9 +2570,9 @@ class MediaCard(QFrame):
                 self._set_default_thumbnail()
         else:
             # 没有直接链接，显示原有的错误提示
-            self.res_combo.addItem(f"解析失败：{reason}")
-            self.res_combo.addItem("默认最佳质量", "best")
-            self.res_combo.setToolTip(f"元数据解析失败：{reason}")
+            self.res_combo.addItem(t_format("解析失败：{}", reason))
+            self.res_combo.addItem(t("默认最佳质量"), "best")
+            self.res_combo.setToolTip(t_format("元数据解析失败：{}", reason))
         
         self.res_combo.setEnabled(True)
     
@@ -2666,22 +2666,22 @@ class MediaCard(QFrame):
         )
 
         if self.media_info.get("has_drm"):
-            ModernToast.show_message("检测到 DRM 保护，下载可能失败", self, is_error=True)
+            ModernToast.show_message(t("检测到 DRM 保护，下载可能失败"), self, is_error=True)
         elif self.media_info.get("is_preload") and not self.media_info.get("is_playing"):
-            ModernToast.show_message("当前可能是预加载变体，若失败请改选“播放中”条目", self, is_error=True)
+            ModernToast.show_message(t("当前可能是预加载变体，若失败请改选“播放中”条目"), self, is_error=True)
         
         # 如果已经捕获到稳定媒体直链，优先直接下载，避免点得过快时仍回退到页面 URL。
         if format_id == "direct" or prefer_direct:
             url = direct_url
             if not url:
-                ModernToast.show_message("未找到可用媒体链接，请刷新页面后重试", self, is_error=True)
+                ModernToast.show_message(t("未找到可用媒体链接，请刷新页面后重试"), self, is_error=True)
                 return
             self.send_to_downloader.emit(url, title)
         else:
             # 否则使用页面 URL（让 yt-dlp 处理）
             url = page_url or direct_url
             if not url:
-                ModernToast.show_message("未找到可用页面链接，请刷新页面后重试", self, is_error=True)
+                ModernToast.show_message(t("未找到可用页面链接，请刷新页面后重试"), self, is_error=True)
                 return
             # 如果有格式 ID，附加到标题
             if format_id and format_id != "best":
@@ -2706,7 +2706,7 @@ class MediaCard(QFrame):
             clipboard = QApplication.clipboard()
             clipboard.setText(url)
             # 显示复制成功提示
-            ModernToast.show_message("✅ 链接已复制", self)
+            ModernToast.show_message(t("✅ 链接已复制"), self)
 
 # ============ 媒体捕获面板 ============
 
@@ -2796,8 +2796,7 @@ class MediaCaptureWindow(QMainWindow):
         
         # 顶部提示说明
         tip_label = QLabel(
-            "💡 如果没有捕捉到正在播放的视频，请 <b><font color='#e53935'>【清空】</font></b> 后重新播放视频。<br>"
-            "（遇到下载失败请登陆后再次尝试）"
+            t("💡 如果没有捕捉到正在播放的视频，请 <b><font color='#e53935'>【清空】</font></b> 后重新播放视频。<br>") + t("（遇到下载失败请登陆后再次尝试）")
         )
         tip_label.setWordWrap(True)
         tip_label.setStyleSheet("""
@@ -3151,7 +3150,7 @@ class BrowserSelector(QFrame):
                 break
         
         if not current_browser:
-            current_browser = self.browsers[0] if self.browsers else {'id': 'browser', 'name': '未检测到浏览器'}
+            current_browser = self.browsers[0] if self.browsers else {'id': 'browser', 'name': t('未检测到浏览器')}
 
         theme = _get_browser_theme(current_browser['id'], current_browser['name'])
         self.current_icon.setText(theme['letter'])
@@ -5130,7 +5129,7 @@ def run_launcher():
                             elif 'audio/' in ct:
                                 m_type = 'Audio'
                             
-                            title = "未知视频"
+                            title = t("未知视频")
                             page_url = ""
                             try:
                                 title = await response.frame.page.title()
@@ -5877,7 +5876,7 @@ async def run():
                     m_type = 'Media'
                 
                 # 获取页面标题和URL
-                title = "未知视频"
+                title = t("未知视频")
                 page_url = ""
                 try:
                     title = await response.frame.page.title()
@@ -6100,7 +6099,7 @@ class PlaywrightBrowserController(QMainWindow):
     def _choose_quick_site_color(self, button: QPushButton, initial_color: str):
         self._begin_panel_dialog_guard()
         try:
-            color = QColorDialog.getColor(QColor(str(initial_color or "").strip()), self, "选择按钮颜色")
+            color = QColorDialog.getColor(QColor(str(initial_color or "").strip()), self, t("选择按钮颜色"))
         finally:
             self._end_panel_dialog_guard()
         if color.isValid():
@@ -6423,7 +6422,7 @@ class PlaywrightBrowserController(QMainWindow):
         url_layout.setContentsMargins(12, 8, 12, 8)
         
         self.url_edit = QLineEdit()
-        self.url_edit.setPlaceholderText("输入网址...")
+        self.url_edit.setPlaceholderText(t("输入网址..."))
         self.url_edit.returnPressed.connect(self._navigate)
         url_layout.addWidget(self.url_edit, 1)
 
@@ -6517,8 +6516,7 @@ class PlaywrightBrowserController(QMainWindow):
         guide_layout.addWidget(guide_title)
         
         guide_text = QLabel(
-            "1. <b>右上角视频捕获：</b>启动内置浏览器后，播放网页视频时将自动捕获下载地址。<br>"
-            "2. <b>同步账号权限：</b>在浏览器中登录您的视频网站账号（如B站、YouTube等），一键提取 Cookie 后，重新复制链接，即可下载您账号权限范围内的视频。"
+            t("1. <b>右上角视频捕获：</b>启动内置浏览器后，播放网页视频时将自动捕获下载地址。<br>") + t("2. <b>同步账号权限：</b>在浏览器中登录您的视频网站账号（如B站、YouTube等），一键提取 Cookie 后，重新复制链接，即可下载您账号权限范围内的视频。")
         )
         guide_text.setStyleSheet("font-size: 12px; color: #4e5e78; line-height: 18px;")
         guide_text.setWordWrap(True)
@@ -6886,8 +6884,8 @@ class PlaywrightBrowserController(QMainWindow):
             return
 
         menu = QMenu(self)
-        act_color = menu.addAction("设置按钮颜色")
-        act_delete = menu.addAction("删除此按钮")
+        act_color = menu.addAction(t("设置按钮颜色"))
+        act_delete = menu.addAction(t("删除此按钮"))
 
         selected = menu.exec_(button.mapToGlobal(pos))
         if selected is None:
@@ -6954,11 +6952,11 @@ class PlaywrightBrowserController(QMainWindow):
             row_layout.setSpacing(10)
 
             name_edit = QLineEdit(str(site.get("name", "") or ""))
-            name_edit.setPlaceholderText("名称")
+            name_edit.setPlaceholderText(t("名称"))
             row_layout.addWidget(name_edit, 1)
 
             url_edit = QLineEdit(str(site.get("url", "") or ""))
-            url_edit.setPlaceholderText("网址，例如 youtube.com")
+            url_edit.setPlaceholderText(t("网址，例如 youtube.com"))
             row_layout.addWidget(url_edit, 2)
 
             controls = {
@@ -7061,7 +7059,7 @@ class PlaywrightBrowserController(QMainWindow):
             self._browser_settings["quick_sites"] = self._normalize_quick_sites(updated_sites)
             self._save_browser_settings()
             self._refresh_quick_sites_ui()
-            ModernToast.show_message("快捷网址已更新", self)
+            ModernToast.show_message(t("快捷网址已更新"), self)
 
     def _on_auto_hide_toggled(self, checked: bool):
         self._auto_hide_when_running = bool(checked)
@@ -7089,11 +7087,11 @@ class PlaywrightBrowserController(QMainWindow):
     def _apply_status_visual(self, mode: str):
         mode_name = str(mode or "idle").strip().lower()
         styles = {
-            "idle": ("● 就绪", "#7d8798", "rgba(242, 245, 251, 0.92)"),
-            "starting": ("● 正在启动...", "#db9b2b", "rgba(255, 246, 225, 0.96)"),
-            "running": ("● 运行中", "#2e9b72", "rgba(231, 252, 244, 0.96)"),
-            "capture": ("● 捕获中", "#2490c4", "rgba(231, 247, 255, 0.97)"),
-            "error": ("● 启动失败", "#d9534f", "rgba(255, 235, 235, 0.95)"),
+            "idle": (t("● 就绪"), "#7d8798", "rgba(242, 245, 251, 0.92)"),
+            "starting": (t("● 正在启动..."), "#db9b2b", "rgba(255, 246, 225, 0.96)"),
+            "running": (t("● 运行中"), "#2e9b72", "rgba(231, 252, 244, 0.96)"),
+            "capture": (t("● 捕获中"), "#2490c4", "rgba(231, 247, 255, 0.97)"),
+            "error": (t("● 启动失败"), "#d9534f", "rgba(255, 235, 235, 0.95)"),
         }
         text, color, bg = styles.get(mode_name, styles["idle"])
         self.status_label.setText(text)
@@ -7168,7 +7166,7 @@ class PlaywrightBrowserController(QMainWindow):
         """启动浏览器子进程"""
         self._selected_browser = self._choose_browser_id(self._selected_browser)
         if not self._selected_browser:
-            self._show_non_blocking_message(QMessageBox.Warning, "未检测到浏览器", "未检测到可用浏览器，请先安装并设置一个系统浏览器。")
+            self._show_non_blocking_message(QMessageBox.Warning, t("未检测到浏览器"), t("未检测到可用浏览器，请先安装并设置一个系统浏览器。"))
             return
 
         self._browser_closing = False
@@ -7276,7 +7274,7 @@ class PlaywrightBrowserController(QMainWindow):
         except Exception as e:
             self._apply_status_visual("error")
             self.btn_launch.setEnabled(True)
-            self._show_non_blocking_message(QMessageBox.Warning, "启动失败", str(e))
+            self._show_non_blocking_message(QMessageBox.Warning, t("启动失败"), str(e))
     
     def _read_output(self):
         """读取浏览器输出"""
@@ -7336,12 +7334,12 @@ class PlaywrightBrowserController(QMainWindow):
 
             if suggest:
                 ModernToast.show_message(
-                    f"内置 Chromium 对部分视频兼容性有限；如需播放可手动切换到 {suggest}",
+                    t_format("内置 Chromium 对部分视频兼容性有限；如需播放可手动切换到 {}", suggest),
                     self,
                     is_error=True,
                 )
             else:
-                ModernToast.show_message("检测到内置 Chromium 编解码受限，将继续使用当前浏览器", self, is_error=True)
+                ModernToast.show_message(t("检测到内置 Chromium 编解码受限，将继续使用当前浏览器"), self, is_error=True)
 
             self._suppress_codec_stay_toast = True
             self._send_command("CODEC_STAY")
@@ -7349,24 +7347,24 @@ class PlaywrightBrowserController(QMainWindow):
         
         elif line.startswith("[BROWSER] CODEC_SWITCH|"):
             target = line.split("|", 1)[1].strip()
-            ModernToast.show_message(f"已切换到系统浏览器：{target}", self)
+            ModernToast.show_message(t_format("已切换到系统浏览器：{}", target), self)
         
         elif line.startswith("[BROWSER] CODEC_STAY|"):
             if getattr(self, "_suppress_codec_stay_toast", False):
                 self._suppress_codec_stay_toast = False
             else:
-                ModernToast.show_message("已继续使用内置 Chromium", self)
+                ModernToast.show_message(t("已继续使用内置 Chromium"), self)
         
         elif line.startswith("[BROWSER] CODEC_DECISION_TIMEOUT|"):
             self._awaiting_codec_consent = False
-            ModernToast.show_message("未收到确认，继续使用内置 Chromium", self)
+            ModernToast.show_message(t("未收到确认，继续使用内置 Chromium"), self)
         
         elif "内置 Chromium 缺少 H264/AAC，已自动切换系统浏览器" in line:
             # 兼容旧日志
-            ModernToast.show_message("检测到内置 Chromium 编解码受限，已切换系统浏览器播放视频", self)
+            ModernToast.show_message(t("检测到内置 Chromium 编解码受限，已切换系统浏览器播放视频"), self)
         
         elif "WARN: 内置 Chromium 缺少 H264/AAC" in line:
-            ModernToast.show_message("内置 Chromium 编解码受限，部分站点可能无法播放视频，建议切换 Edge/Chrome", self, is_error=True)
+            ModernToast.show_message(t("内置 Chromium 编解码受限，部分站点可能无法播放视频，建议切换 Edge/Chrome"), self, is_error=True)
 
         elif line.startswith("[BROWSER] AUTO_SELECT|"):
             parts = line.split("|", 2)
@@ -7379,7 +7377,7 @@ class PlaywrightBrowserController(QMainWindow):
                     self.browser_selector.setSelectedBrowser(browser_id)
                 except Exception:
                     pass
-            ModernToast.show_message(f"已自动选择可用浏览器：{browser_name}", self)
+            ModernToast.show_message(t_format("已自动选择可用浏览器：{}", browser_name), self)
 
         elif line.startswith("[BROWSER] AUTO_FALLBACK|"):
             parts = line.split("|", 2)
@@ -7392,7 +7390,7 @@ class PlaywrightBrowserController(QMainWindow):
                     self.browser_selector.setSelectedBrowser(browser_id)
                 except Exception:
                     pass
-            ModernToast.show_message(f"当前浏览器启动失败，已自动切换到 {browser_name}", self, is_error=True)
+            ModernToast.show_message(t_format("当前浏览器启动失败，已自动切换到 {}", browser_name), self, is_error=True)
         
         elif "[BROWSER] READY" in line:
             self._startup_ready = True
@@ -7452,7 +7450,7 @@ class PlaywrightBrowserController(QMainWindow):
                     pass
                 fallback_info = self._get_browser_info(fallback_browser_id)
                 fallback_name = (fallback_info or {}).get("name", fallback_browser_id)
-                ModernToast.show_message(f"浏览器启动不稳定，已自动切换到 {fallback_name}", self, is_error=True)
+                ModernToast.show_message(t_format("浏览器启动不稳定，已自动切换到 {}", fallback_name), self, is_error=True)
                 retry_url = self._last_launch_url or self.url_edit.text().strip()
                 QTimer.singleShot(300, lambda: self._start_browser(retry_url, auto_fallback=True))
         
@@ -7482,13 +7480,13 @@ class PlaywrightBrowserController(QMainWindow):
             self.info_label.setText(title)
         
         elif "[BROWSER] Cookie已保存:" in line:
-            ModernToast.show_message("Cookie 已保存！现在可以下载受限视频了 ✨", self)
+            ModernToast.show_message(t("Cookie 已保存！现在可以下载受限视频了 ✨"), self)
         
         elif "[BROWSER] 没有Cookie可保存" in line:
-            ModernToast.show_message("当前页面没有可提取的 Cookie。请尝试刷新网页后再试 ⚠️", self, is_error=True)
+            ModernToast.show_message(t("当前页面没有可提取的 Cookie。请尝试刷新网页后再试 ⚠️"), self, is_error=True)
         
         elif "[BROWSER] Cookie已清除" in line:
-            ModernToast.show_message("Cookie 已清除！所有网站登录状态已重置 ✨", self)
+            ModernToast.show_message(t("Cookie 已清除！所有网站登录状态已重置 ✨"), self)
 
         elif "[BROWSER] 已清空捕获记录" in line:
             pass
@@ -7500,8 +7498,8 @@ class PlaywrightBrowserController(QMainWindow):
             self._restore_panel_visibility()
              
             # 提供更友好的错误提示
-            msg = f"浏览器启动失败：\n\n{error}\n\n建议操作：\n1. 确保已安装所选浏览器\n2. 尝试切换到其他已检测到的浏览器\n3. 检查是否有其他浏览器实例正在运行"
-            self._show_non_blocking_message(QMessageBox.Critical, "启动失败", msg)
+            msg = t_format("浏览器启动失败：\n\n{}\n\n建议操作：\n1. 确保已安装所选浏览器\n2. 尝试切换到其他已检测到的浏览器\n3. 检查是否有其他浏览器实例正在运行", error)
+            self._show_non_blocking_message(QMessageBox.Critical, t("启动失败"), msg)
         
         elif "[浏览器启动失败]" in line:
             # 兼容子进程异常日志格式，确保 UI 状态能恢复
@@ -7520,7 +7518,7 @@ class PlaywrightBrowserController(QMainWindow):
                 now_ts = time.time()
                 if (now_ts - float(getattr(self, "_last_media_parse_error_at", 0.0))) >= 5:
                     self._last_media_parse_error_at = now_ts
-                    ModernToast.show_message("媒体数据解析异常，已自动忽略损坏数据", self, is_error=True)
+                    ModernToast.show_message(t("媒体数据解析异常，已自动忽略损坏数据"), self, is_error=True)
                 print(f"[DEBUG] 媒体解析错误: {e}")
                 pass
         
@@ -7549,7 +7547,7 @@ class PlaywrightBrowserController(QMainWindow):
     def _on_media_selected(self, url: str, title: str):
         """处理用户选择下载媒体"""
         self.media_url_selected.emit(url, title)
-        ModernToast.show_message(f"已发送到下载器 ✨\n{title[:30]}...", self)
+        ModernToast.show_message(t_format("已发送到下载器 ✨\n{}...", title[:30]), self)
         
     def _toggle_media_capture(self, checked):
         """切换媒体捕获状态"""
@@ -7564,13 +7562,13 @@ class PlaywrightBrowserController(QMainWindow):
             self._media_window._clear_media()
             self._send_command("ENABLE_CAPTURE")
             self._send_command("PING")  # 验证连接
-            ModernToast.show_message("媒体捕获已开启，正在监听网络请求... 📡", self)
+            ModernToast.show_message(t("媒体捕获已开启，正在监听网络请求... 📡"), self)
         else:
             self.btn_media_capture.setText(t("📡 媒体捕获: 关"))
             self._apply_status_visual("running" if self._browser_running else "idle")
             self._media_window.hide()
             self._send_command("DISABLE_CAPTURE")
-            ModernToast.show_message("媒体捕获已关闭 🛑", self)
+            ModernToast.show_message(t("媒体捕获已关闭 🛑"), self)
             
     def _on_media_window_closed(self):
         """当媒体捕获窗口被手动关闭时"""
@@ -7579,7 +7577,7 @@ class PlaywrightBrowserController(QMainWindow):
             self.btn_media_capture.setText(t("📡 媒体捕获: 关"))
             self._send_command("DISABLE_CAPTURE")
             self._apply_status_visual("running" if self._browser_running else "idle")
-            ModernToast.show_message("媒体捕获已关闭 🛑", self)
+            ModernToast.show_message(t("媒体捕获已关闭 🛑"), self)
 
     def get_captured_media_snapshot(self):
         try:
@@ -7593,7 +7591,7 @@ class PlaywrightBrowserController(QMainWindow):
         if proc and proc.poll() is None:
             try:
                 if proc.stdin is None:
-                    raise RuntimeError("stdin 不可用")
+                    raise RuntimeError(t("stdin 不可用"))
                 proc.stdin.write(cmd + "\n")
                 proc.stdin.flush()
             except Exception as e:
@@ -7626,8 +7624,8 @@ class PlaywrightBrowserController(QMainWindow):
         """清除浏览器 Cookie"""
         if ModernConfirmDialog.confirm(
             self, 
-            "清除确认", 
-            "确定要清除所有 Cookie 吗？\n这将退出所有已登录的网站，并删除本地保存的 Cookie 文件。"
+            t("清除确认"), 
+            t("确定要清除所有 Cookie 吗？\n这将退出所有已登录的网站，并删除本地保存的 Cookie 文件。")
         ):
             self._send_command("CLEAR_COOKIES")
     
