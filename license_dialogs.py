@@ -19,36 +19,38 @@ from PyQt5.QtGui import QFont, QDesktopServices, QPixmap, QPainter, QColor, QIco
 import webbrowser
 import os
 from license_manager import LicenseManager, TRIAL_DAYS, generate_license_key
+from i18n import t, t_format
 
 PURCHASE_URL = "https://pay.ldxp.cn/shop/Q23SQVYU"
 
 
 def _simplify_activation_message(message: str) -> str:
-    """将底层授权错误归一化为简短中文提示。"""
+    """将底层授权错误归一化为简短提示（当前语言）。"""
     text = str(message or "").strip()
     lowered = text.lower()
+    _l = lowered
     if not text:
-        return "激活码不可用，请核对后重试"
+        return t("激活码不可用，请核对后重试")
 
     if "hw_hash" in lowered or "invalid app" in lowered:
-        return "客户端与授权服务不匹配，请更新安装包后重试"
+        return t("客户端与授权服务不匹配，请更新安装包后重试")
     if "authentication failed" in lowered or "signing key" in lowered or "401" in lowered:
-        return "授权服务校验失败，请使用最新安装包或联系管理员检查服务配置"
-    if "格式" in text:
-        return "激活码格式不正确"
-    if "无效" in text or "invalid" in lowered or "not found" in lowered or "license_key" in lowered:
-        return "激活码无效，请核对后重试"
-    if "过期" in text or "失效" in text:
-        return "激活码已失效"
-    if "其他设备" in text or "已绑定" in text:
-        return "激活码已在其他设备使用"
-    if "网络" in text:
-        return "网络异常，请稍后重试"
-    if "连接" in text or "超时" in text or "服务器" in text:
-        return "连接失败，请稍后重试"
-    if "未配置" in text:
-        return "服务暂不可用，请联系客服"
-    return "激活码不可用，请核对后重试"
+        return t("授权服务校验失败，请使用最新安装包或联系管理员检查服务配置")
+    if "格式" in text or t("格式").lower() in _l:
+        return t("激活码格式不正确")
+    if "无效" in text or "invalid" in lowered or "not found" in lowered or "license_key" in lowered or t("无效").lower() in _l:
+        return t("激活码无效，请核对后重试")
+    if "过期" in text or "失效" in text or t("过期").lower() in _l or t("失效").lower() in _l:
+        return t("激活码已失效")
+    if "其他设备" in text or "已绑定" in text or t("其他设备").lower() in _l:
+        return t("激活码已在其他设备使用")
+    if "网络" in text or t("网络").lower() in _l:
+        return t("网络异常，请稍后重试")
+    if "连接" in text or "超时" in text or "服务器" in text or t("连接").lower() in _l:
+        return t("连接失败，请稍后重试")
+    if "未配置" in text or t("未配置").lower() in _l:
+        return t("服务暂不可用，请联系客服")
+    return t("激活码不可用，请核对后重试")
 
 
 class PaymentDialog(QDialog):
@@ -62,7 +64,7 @@ class PaymentDialog(QDialog):
         self.init_ui()
     
     def init_ui(self):
-        self.setWindowTitle("购买激活码")
+        self.setWindowTitle(t("购买激活码"))
         self.setFixedSize(450, 740)  # 增加高度以容纳商铺链接按钮
         self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint)
         
@@ -71,7 +73,7 @@ class PaymentDialog(QDialog):
         layout.setContentsMargins(30, 20, 30, 20)
         
         # 标题
-        title = QLabel("🛒 扫码购买激活码")
+        title = QLabel(t("🛒 扫码购买激活码"))
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("""
             QLabel {
@@ -86,8 +88,8 @@ class PaymentDialog(QDialog):
         pricing = QLabel(
             "<center>"
             "<span style='font-size: 16px;'>"
-            "终身版 <b style='color: #e74c3c;'>¥28</b> 永久使用"
-            "</span>"
+            + t("终身版 <b style='color: #e74c3c;'>¥28</b> 永久使用")
+            + "</span>"
             "</center>"
         )
         layout.addWidget(pricing)
@@ -110,7 +112,7 @@ class PaymentDialog(QDialog):
         qr_layout.setContentsMargins(10, 10, 10, 10)
         
         # 二维码标题
-        qr_title = QLabel("📱 请扫码支付")
+        qr_title = QLabel(t("📱 请扫码支付"))
         qr_title.setAlignment(Qt.AlignCenter)
         qr_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #3498db;")
         qr_layout.addWidget(qr_title)
@@ -122,7 +124,7 @@ class PaymentDialog(QDialog):
             pixmap = QPixmap(shop_qr_path)
             qr_label.setPixmap(pixmap.scaled(250, 250, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         else:
-            qr_label.setText("二维码未找到\n请确认 shop_qr.png 文件存在")
+            qr_label.setText(t("二维码未找到\n请确认 shop_qr.png 文件存在"))
             qr_label.setStyleSheet("color: #e74c3c; font-size: 14px;")
         qr_label.setAlignment(Qt.AlignCenter)
         qr_label.setMinimumSize(260, 260)
@@ -133,10 +135,10 @@ class PaymentDialog(QDialog):
         # 购买说明
         steps_info = QLabel(
             "<center>"
-            "<span style='color: #7f8c8d; font-size: 13px;'>"
-            "1. 扫码或点击下方链接选择套餐并支付<br>"
-            "2. 支付成功后自动获取激活码<br>"
-            "3. 点击「已购买成功」按钮输入激活码"
+            "<span style='color: #7f8c8d; font-size: 13px;'>" +
+            t("1. 扫码或点击下方链接选择套餐并支付<br>") +
+            t("2. 支付成功后自动获取激活码<br>") +
+            t("3. 点击「已购买成功」按钮输入激活码") +
             "</span>"
             "</center>"
         )
@@ -144,7 +146,7 @@ class PaymentDialog(QDialog):
         layout.addWidget(steps_info)
         
         # 商铺链接按钮（电脑用户可直接点击）
-        shop_btn = QPushButton("🔗 点击打开商铺链接购买")
+        shop_btn = QPushButton(t("🔗 点击打开商铺链接购买"))
         shop_btn.setStyleSheet("""
             QPushButton {
                 background-color: #3498db;
@@ -166,7 +168,7 @@ class PaymentDialog(QDialog):
         layout.addWidget(shop_btn)
         
         # 购买成功按钮
-        success_btn = QPushButton("✅ 已购买成功，输入激活码")
+        success_btn = QPushButton(t("✅ 已购买成功，输入激活码"))
         success_btn.setStyleSheet("""
             QPushButton {
                 background-color: #27ae60;
@@ -190,15 +192,15 @@ class PaymentDialog(QDialog):
         # 联系方式（可选）
         contact_info = QLabel(
             "<center>"
-            "<span style='color: #95a5a6; font-size: 12px;'>"
-            "遇到问题？联系 QQ：3789522776"
+            "<span style='color: #95a5a6; font-size: 12px;'>" +
+            t("遇到问题？联系邮箱：haolongli84@gmail.com") +
             "</span>"
             "</center>"
         )
         layout.addWidget(contact_info)
         
         # 关闭按钮
-        close_btn = QPushButton("暂不购买")
+        close_btn = QPushButton(t("暂不购买"))
         close_btn.setStyleSheet("""
             QPushButton {
                 background-color: #95a5a6;
@@ -253,7 +255,7 @@ class ActivationDialog(QDialog):
         self.raise_()
     
     def init_ui(self):
-        self.setWindowTitle("软件激活")
+        self.setWindowTitle(t("软件激活"))
         self.setFixedSize(450, 450)  # 增加高度以容纳进度条
         # 移除可能导致问题的窗口标志，使用标准对话框标志
         self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint)
@@ -263,7 +265,7 @@ class ActivationDialog(QDialog):
         layout.setContentsMargins(30, 30, 30, 30)
         
         # 标题
-        title = QLabel("🎬 视频下载工具")
+        title = QLabel(t("🎬 视频下载工具"))
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("""
             QLabel {
@@ -309,7 +311,7 @@ class ActivationDialog(QDialog):
         layout.addWidget(line)
         
         # 激活码输入区 - 使用简单布局避免遮挡
-        input_label = QLabel("输入激活码：")
+        input_label = QLabel(t("输入激活码："))
         input_label.setStyleSheet("font-weight: bold; font-size: 13px; color: #2c3e50; margin-top: 10px;")
         layout.addWidget(input_label)
         
@@ -343,7 +345,7 @@ class ActivationDialog(QDialog):
         button_layout.setSpacing(10)
         
         # 购买按钮
-        buy_btn = QPushButton("🛒 购买激活码")
+        buy_btn = QPushButton(t("🛒 购买激活码"))
         buy_btn.setStyleSheet("""
             QPushButton {
                 background-color: #27ae60;
@@ -365,7 +367,7 @@ class ActivationDialog(QDialog):
         button_layout.addWidget(buy_btn)
         
         # 激活按钮
-        self.activate_btn = QPushButton("✓ 激活")
+        self.activate_btn = QPushButton(t("✓ 激活"))
         self.activate_btn.setStyleSheet("""
             QPushButton {
                 background-color: #3498db;
@@ -394,10 +396,9 @@ class ActivationDialog(QDialog):
         # 定价信息
         pricing_label = QLabel(
             "<center>"
-            "<div style='line-height: 1.6;'>"
-            "<span style='color: #7f8c8d;'>💡 定价方案</span><br>"
-            "<span style='color: #2c3e50; font-size: 13px;'>¥28 <b style='color: #e74c3c; font-size: 18px;'>终身免费</b>使用</span>"
-            "</div>"
+            "<div style='line-height: 1.6;'>" +
+            t("<span style='color: #7f8c8d;'>💡 定价方案</span><br>") +
+            t("<span style='color: #2c3e50; font-size: 13px;'>¥28 <b style='color: #e74c3c; font-size: 18px;'>终身免费</b>使用</span>") + t("</div>") +
             "</center>"
         )
         pricing_label.setStyleSheet("margin-top: 10px; min-height: 50px;")
@@ -408,7 +409,7 @@ class ActivationDialog(QDialog):
         
         # 如果是试用中或已激活，显示继续使用按钮
         if status['is_trial'] or status['is_licensed']:
-            continue_btn = QPushButton("继续使用")
+            continue_btn = QPushButton(t("继续使用"))
             continue_btn.setStyleSheet("""
                 QPushButton {
                     background-color: #95a5a6;
@@ -427,7 +428,7 @@ class ActivationDialog(QDialog):
         bottom_layout.addStretch()
         
         # 退出按钮
-        exit_btn = QPushButton("退出程序")
+        exit_btn = QPushButton(t("退出程序"))
         exit_btn.setStyleSheet("""
             QPushButton {
                 background-color: transparent;
@@ -486,12 +487,12 @@ class ActivationDialog(QDialog):
         license_key = self.license_input.text().strip()
         
         if not license_key:
-            QMessageBox.warning(self, "提示", "请输入激活码")
+            QMessageBox.warning(self, t("提示"), t("请输入激活码"))
             return
         
         # 显示加载状态
         self.activate_btn.setEnabled(False)
-        self.activate_btn.setText("验证中...")
+        self.activate_btn.setText(t("验证中..."))
         # 显示进度条（切换背景色）
         self.progress.setStyleSheet("""
             QProgressBar {
@@ -512,7 +513,7 @@ class ActivationDialog(QDialog):
     def _on_activation_result(self, success: bool, message: str):
         """激活结果回调"""
         self.activate_btn.setEnabled(True)
-        self.activate_btn.setText("✓ 激活")
+        self.activate_btn.setText(t("✓ 激活"))
         # 隐藏进度条（切换为透明背景）
         self.progress.setStyleSheet("""
             QProgressBar {
@@ -526,11 +527,11 @@ class ActivationDialog(QDialog):
         """)
         
         if success:
-            QMessageBox.information(self, "激活成功", f"🎉 {message}\n\n感谢您的支持！")
+            QMessageBox.information(self, t("激活成功"), f"🎉 {message}\n\n感谢您的支持！")
             self.activated.emit(True)
             self.accept()
         else:
-            QMessageBox.warning(self, "激活失败", _simplify_activation_message(message))
+            QMessageBox.warning(self, t("激活失败"), _simplify_activation_message(message))
     
     def open_purchase_page(self):
         """打开购买页面 - 显示收款码"""
@@ -542,10 +543,10 @@ class ActivationDialog(QDialog):
         """购买成功回调"""
         QMessageBox.information(
             self, 
-            "购买成功", 
-            "🎉 恭喜您购买成功！\n\n"
-            "请将发卡平台显示的激活码复制粘贴到下方输入框中，\n"
-            "然后点击「激活」按钮完成激活。"
+            t("购买成功"), 
+            t("🎉 恭喜您购买成功！\n\n") +
+            t("请将发卡平台显示的激活码复制粘贴到下方输入框中，\n") +
+            t("然后点击「激活」按钮完成激活。")
         )
         # 将焦点移到激活码输入框
         self.license_input.setFocus()
@@ -561,7 +562,7 @@ class TrialExpiredDialog(QDialog):
         self.init_ui()
     
     def init_ui(self):
-        self.setWindowTitle("试用期已结束")
+        self.setWindowTitle(t("试用期已结束"))
         self.setFixedSize(400, 350)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         
@@ -570,7 +571,7 @@ class TrialExpiredDialog(QDialog):
         layout.setContentsMargins(30, 30, 30, 30)
         
         # 图标和标题
-        title = QLabel("⏰ 试用期已结束")
+        title = QLabel(t("⏰ 试用期已结束"))
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("""
             QLabel {
@@ -583,9 +584,9 @@ class TrialExpiredDialog(QDialog):
         
         # 说明文字
         info = QLabel(
-            "感谢您试用视频下载工具！\n\n"
-            f"您的 {TRIAL_DAYS} 天免费试用已结束。\n"
-            "请购买激活码以继续使用完整功能。"
+            t("感谢您试用视频下载工具！\n\n") +
+            t_format("您的 {} 天免费试用已结束。\n", TRIAL_DAYS) +
+            t("请购买激活码以继续使用完整功能。")
         )
         info.setAlignment(Qt.AlignCenter)
         info.setStyleSheet("""
@@ -601,8 +602,8 @@ class TrialExpiredDialog(QDialog):
         # 定价
         pricing = QLabel(
             "<center>"
-            "<span style='font-size: 16px; color: #27ae60; font-weight: bold;'>"
-            "终身版 ¥28"
+            "<span style='font-size: 16px; color: #27ae60; font-weight: bold;'>" +
+            t("终身版 ¥28") +
             "</span>"
             "</center>"
         )
@@ -613,7 +614,7 @@ class TrialExpiredDialog(QDialog):
         # 按钮
         button_layout = QHBoxLayout()
         
-        activate_btn = QPushButton("🔑 输入激活码")
+        activate_btn = QPushButton(t("🔑 输入激活码"))
         activate_btn.setStyleSheet("""
             QPushButton {
                 background-color: #3498db;
@@ -631,7 +632,7 @@ class TrialExpiredDialog(QDialog):
         activate_btn.clicked.connect(self.show_activation)
         button_layout.addWidget(activate_btn)
         
-        buy_btn = QPushButton("🛒 立即购买")
+        buy_btn = QPushButton(t("🛒 立即购买"))
         buy_btn.setStyleSheet("""
             QPushButton {
                 background-color: #27ae60;
@@ -652,7 +653,7 @@ class TrialExpiredDialog(QDialog):
         layout.addLayout(button_layout)
         
         # 退出按钮
-        exit_btn = QPushButton("退出程序")
+        exit_btn = QPushButton(t("退出程序"))
         exit_btn.setStyleSheet("""
             QPushButton {
                 background-color: transparent;
@@ -750,13 +751,13 @@ class LicenseStatusWidget(QFrame):
                             self.status_label.setStyleSheet("border: none; background: transparent; font-weight: bold; font-size: 12px;")
                         else:
                             # 已过期
-                            self.status_label.setText("🔒 年卡已过期")
+                            self.status_label.setText(t("🔒 年卡已过期"))
                             self.status_label.setStyleSheet("border: none; background: transparent; color: #e74c3c; font-weight: bold; font-size: 12px;")
                         return
                     except:
                         pass
                 # 回退显示
-                self.status_label.setText("🔓 已激活")
+                self.status_label.setText(t("🔓 已激活"))
                 self.status_label.setStyleSheet("border: none; background: transparent; color: #3498db; font-weight: bold; font-size: 12px;")
         elif status['is_trial'] and status['trial_remaining'] > 0:
             # 试用期内：隐藏显示框，不展示任何收费相关信息
@@ -764,7 +765,7 @@ class LicenseStatusWidget(QFrame):
             return
         else:
             # 未激活/过期使用红色
-            self.status_label.setText("🔒 未激活")
+            self.status_label.setText(t("🔒 未激活"))
             self.status_label.setStyleSheet("border: none; background: transparent; color: #e74c3c; font-weight: bold; font-size: 12px;")
     
     def mousePressEvent(self, event):
@@ -786,7 +787,7 @@ class LoginScreen(QDialog):
         self.setModal(True)
         
     def init_ui(self):
-        self.setWindowTitle("软件登录 - 视频下载工具")
+        self.setWindowTitle(t("软件登录 - 视频下载工具"))
         self.setFixedSize(500, 650)
         self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint | Qt.WindowMinimizeButtonHint)
         
@@ -812,7 +813,7 @@ class LoginScreen(QDialog):
         logo_label.setStyleSheet("font-size: 60px; background: transparent;")
         banner_layout.addWidget(logo_label)
         
-        title_label = QLabel("视频下载工具")
+        title_label = QLabel(t("视频下载工具"))
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("""
             font-size: 24px; 
@@ -834,7 +835,7 @@ class LoginScreen(QDialog):
         status = self.license_manager.get_status()
         
         # 欢迎语
-        welcome_label = QLabel("欢迎回来，请激活您的软件")
+        welcome_label = QLabel(t("欢迎回来，请激活您的软件"))
         welcome_label.setStyleSheet("font-size: 16px; color: #7f8c8d;")
         welcome_label.setAlignment(Qt.AlignCenter)
         content_layout.addWidget(welcome_label)
@@ -866,7 +867,7 @@ class LoginScreen(QDialog):
         input_group = QVBoxLayout()
         input_group.setSpacing(8)
         
-        label_key = QLabel("激活码 (License Key)")
+        label_key = QLabel(t("激活码 (License Key)"))
         label_key.setStyleSheet("font-weight: bold; color: #2c3e50;")
         input_group.addWidget(label_key)
         
@@ -893,7 +894,7 @@ class LoginScreen(QDialog):
         content_layout.addLayout(input_group)
         
         # 激活按钮
-        self.activate_btn = QPushButton("立即激活")
+        self.activate_btn = QPushButton(t("立即激活"))
         self.activate_btn.setFixedHeight(50)
         self.activate_btn.setCursor(Qt.PointingHandCursor)
         self.activate_btn.setStyleSheet("""
@@ -921,7 +922,7 @@ class LoginScreen(QDialog):
         # 试用按钮
         if status['is_trial'] and status['trial_remaining'] > 0:
             self.trial_btn = QPushButton(
-                f"开始 {TRIAL_DAYS} 天免费试用 (剩余 {status['trial_remaining']} 天)"
+                t_format("开始 {} 天免费试用 (剩余 {} 天)", TRIAL_DAYS, status['trial_remaining'])
             )
             self.trial_btn.setFixedHeight(45)
             self.trial_btn.setCursor(Qt.PointingHandCursor)
@@ -945,7 +946,7 @@ class LoginScreen(QDialog):
         links_layout = QHBoxLayout()
         links_layout.setContentsMargins(0, 10, 0, 0)
         
-        buy_btn = QPushButton("💳 获取激活码")
+        buy_btn = QPushButton(t("💳 获取激活码"))
         buy_btn.setCursor(Qt.PointingHandCursor)
         buy_btn.setFixedHeight(32)
         buy_btn.setStyleSheet("""
@@ -969,7 +970,7 @@ class LoginScreen(QDialog):
         
         links_layout.addStretch()
         
-        help_btn = QPushButton("💬 咨询与帮助")
+        help_btn = QPushButton(t("💬 咨询与帮助"))
         help_btn.setCursor(Qt.PointingHandCursor)
         help_btn.setFixedHeight(32)
         help_btn.setStyleSheet("""
@@ -988,7 +989,7 @@ class LoginScreen(QDialog):
                 color: #2c3e50;
             }
         """)
-        help_btn.clicked.connect(lambda: QMessageBox.information(self, "帮助", "如有疑问，请联系 QQ：3789522776"))
+        help_btn.clicked.connect(lambda: QMessageBox.information(self, t("帮助"), t("如有疑问，请联系邮箱：haolongli84@gmail.com")))
         links_layout.addWidget(help_btn)
         
         content_layout.addLayout(links_layout)
@@ -1025,11 +1026,11 @@ class LoginScreen(QDialog):
     def activate(self):
         license_key = self.license_input.text().strip()
         if not license_key:
-            QMessageBox.warning(self, "提示", "请输入激活码")
+            QMessageBox.warning(self, t("提示"), t("请输入激活码"))
             return
             
         self.activate_btn.setEnabled(False)
-        self.activate_btn.setText("正在验证授权...")
+        self.activate_btn.setText(t("正在验证授权..."))
         self.progress.setStyleSheet("""
             QProgressBar { border: none; background-color: #ecf0f1; }
             QProgressBar::chunk { background-color: #3498db; }
@@ -1041,14 +1042,14 @@ class LoginScreen(QDialog):
         
     def _on_activation_result(self, success: bool, message: str):
         self.activate_btn.setEnabled(True)
-        self.activate_btn.setText("立即激活")
+        self.activate_btn.setText(t("立即激活"))
         self.progress.setStyleSheet("QProgressBar { border: none; background-color: transparent; }")
         
         if success:
-            QMessageBox.information(self, "激活成功", f"🎉 {message}\n\n欢迎使用专业版！")
+            QMessageBox.information(self, t("激活成功"), f"🎉 {message}\n\n欢迎使用专业版！")
             self.accept()
         else:
-            QMessageBox.warning(self, "激活失败", _simplify_activation_message(message))
+            QMessageBox.warning(self, t("激活失败"), _simplify_activation_message(message))
             
     def open_purchase_page(self):
         webbrowser.open(PURCHASE_URL)

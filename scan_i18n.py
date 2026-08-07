@@ -28,6 +28,8 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(ROOT, "video_downloader
             SCAN_FILES.append(os.path.join(dirpath, fn))
 SCAN_FILES.append(os.path.join(ROOT, "video_downloader.py"))
 SCAN_FILES.append(os.path.join(ROOT, "playwright_browser.py"))
+SCAN_FILES.append(os.path.join(ROOT, "license_dialogs.py"))
+SCAN_FILES.append(os.path.join(ROOT, "license_manager.py"))
 
 # t("...")/t('...') 或 t_format("...")/t_format('...')，key 为含中文的字符串字面量（支持转义）
 T_PAT = re.compile(r'\bt(?:_format)?\(\s*("(?:[^"\\\n]|\\.)*?"|\'(?:[^\'\\\n]|\\.)*?\')\s*[,)]')

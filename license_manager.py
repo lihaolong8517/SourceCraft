@@ -23,6 +23,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Tuple
 from urllib.parse import urlparse
 from cryptography.fernet import Fernet
+from i18n import t, t_format
 
 # 不再全局禁用 SSL 警告
 
@@ -996,11 +997,11 @@ def _trial_endpoint_signing_key() -> str:
 
 def _verify_trial_endpoint_response(data: Dict[str, Any], request_id: str) -> Tuple[bool, str]:
     if not isinstance(data, dict):
-        return (False, "响应不是对象")
+        return (False, t("响应不是对象"))
 
     echoed_request_id = str(data.get("request_id") or "").strip()
     if request_id and echoed_request_id != request_id:
-        return (False, "request_id 缺失或不匹配")
+        return (False, t("request_id 缺失或不匹配"))
 
     server_time_raw = data.get("server_time")
     server_time = _parse_datetime(str(server_time_raw or ""))
@@ -1011,13 +1012,13 @@ def _verify_trial_endpoint_response(data: Dict[str, Any], request_id: str) -> Tu
     has_signature = bool(sig and sig_alg == "HMAC-SHA256")
 
     if not server_time:
-        return (False, "缺少有效 server_time")
+        return (False, t("缺少有效 server_time"))
 
     if not has_signature:
-        return (False, "缺少有效签名字段")
+        return (False, t("缺少有效签名字段"))
 
     if not signing_key:
-        return (False, "未配置试用响应签名密钥")
+        return (False, t("未配置试用响应签名密钥"))
 
     signed_payload = dict(data)
     signed_payload.pop("sig", None)
@@ -1027,7 +1028,7 @@ def _verify_trial_endpoint_response(data: Dict[str, Any], request_id: str) -> Tu
         hashlib.sha256,
     ).hexdigest()
     if not hmac.compare_digest(sig, expected):
-        return (False, "响应签名校验失败")
+        return (False, t("响应签名校验失败"))
 
     return (True, "")
 
@@ -1054,13 +1055,13 @@ def _extract_endpoint_remaining_days(data: Optional[Dict[str, Any]]) -> Optional
 def _post_trial_endpoint(url: str, payload: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
     """向试用服务端点发起 POST 请求（直连优先，失败回退代理）。"""
     if is_release_build() and (not _is_https_url(url)):
-        return (False, "发布版要求试用服务使用 HTTPS", None)
+        return (False, t("发布版要求试用服务使用 HTTPS"), None)
 
     # HMAC 请求签名（禁止静态 API Key 回退）
     signing_key = _trial_endpoint_signing_key()
     if not signing_key:
         print("[Auth] [FAIL] 试用服务签名密钥缺失")
-        return (False, "未配置试用响应签名密钥，拒绝不安全回退", None)
+        return (False, t("未配置试用响应签名密钥，拒绝不安全回退"), None)
     
     headers = {"Content-Type": "application/json"}
 
@@ -1123,11 +1124,11 @@ def _post_trial_endpoint(url: str, payload: Dict[str, Any]) -> Tuple[bool, str, 
                 # 特殊处理 401 Unauthorized：这通常意味着签名校验失败 (Invalid API Key)
                 if response.status_code == 401:
                     advise = "。请检查：1. 电脑系统时间是否准确 (当前校时: {})；2. 服务端 Signing Key 是否匹配。".format("成功" if net_time else "失败")
-                    return (False, (err_msg or "验证失败 (401)") + advise, data)
+                    return (False, (err_msg or t("验证失败 (401)")) + advise, data)
 
                 # 如果得到了服务端明确解析的业务拒绝回复，则中止后续同类重试 (如 proxy)
                 if isinstance(data, dict) and 'ok' in data:
-                    return (False, err_msg or f"请求被拒绝 (状态码 {response.status_code})", data)
+                    return (False, err_msg or t_format("请求被拒绝 (状态码 {})", response.status_code), data)
 
                 if err_msg:
                     errors.append(f"{mode} 状态码 {response.status_code}: {err_msg}")
@@ -1145,7 +1146,7 @@ def _post_trial_endpoint(url: str, payload: Dict[str, Any]) -> Tuple[bool, str, 
                 continue
 
             if data.get("success") is True or data.get("ok") is True:
-                return (True, str(data.get("message") or "请求成功"), data)
+                return (True, str(data.get("message") or t("请求成功")), data)
 
             errors.append(str(data.get("message") or f"{mode} 请求失败"))
         except requests.exceptions.SSLError as e:
@@ -1162,7 +1163,7 @@ def _post_trial_endpoint(url: str, payload: Dict[str, Any]) -> Tuple[bool, str, 
                         verified, verify_msg = _verify_trial_endpoint_response(data, request_id)
                         if verified:
                             print(f"[Security] {mode} certifi 校验失败，系统证书库重试成功")
-                            return (True, str(data.get("message") or "请求成功"), data)
+                            return (True, str(data.get("message") or t("请求成功")), data)
                         errors.append(f"{mode} 系统证书库重试后响应校验失败: {verify_msg}")
                         continue
 
@@ -1171,10 +1172,10 @@ def _post_trial_endpoint(url: str, payload: Dict[str, Any]) -> Tuple[bool, str, 
                         if isinstance(data, dict):
                             err_msg = str(data.get("message") or "")
                         advise = "。请检查：1. 电脑系统时间是否准确 (当前校时: {})；2. 服务端 Signing Key 是否匹配。".format("成功" if net_time else "失败")
-                        return (False, (err_msg or "验证失败 (401)") + advise, data if isinstance(data, dict) else None)
+                        return (False, (err_msg or t("验证失败 (401)")) + advise, data if isinstance(data, dict) else None)
 
                     if isinstance(data, dict) and 'ok' in data:
-                        return (False, str(data.get("message") or f"请求被拒绝 (状态码 {response.status_code})"), data)
+                        return (False, str(data.get("message") or t_format("请求被拒绝 (状态码 {})", response.status_code)), data)
 
                     if response.status_code != 200:
                         if isinstance(data, dict) and data.get("message"):
@@ -1205,7 +1206,7 @@ def _post_trial_endpoint(url: str, payload: Dict[str, Any]) -> Tuple[bool, str, 
                         verified, verify_msg = _verify_trial_endpoint_response(data, request_id)
                         if verified:
                             print(f"[Security] {mode} 放宽校验请求成功且签名验证通过")
-                            return (True, str(data.get("message") or "请求成功"), data)
+                            return (True, str(data.get("message") or t("请求成功")), data)
                 except Exception as ex:
                     print(f"[Security] {mode} 放宽校验尝试失败: {str(ex)}")
 
@@ -1221,7 +1222,7 @@ def _post_trial_endpoint(url: str, payload: Dict[str, Any]) -> Tuple[bool, str, 
         except Exception as e:
             errors.append(f"{mode} 请求失败: {str(e)}")
 
-    return (False, "；".join(errors) if errors else "调用登记服务失败", None)
+    return (False, "；".join(errors) if errors else t("调用登记服务失败"), None)
 
 
 def _derive_trial_status_url(register_endpoint: str) -> str:
@@ -1249,7 +1250,7 @@ def _register_trial_via_endpoint(device_id: str) -> Tuple[bool, str, Optional[Di
     """
     endpoint = _normalize_trial_endpoint(get_trial_register_endpoint() or "")
     if not endpoint:
-        return (False, "试用登记服务地址无效", None)
+        return (False, t("试用登记服务地址无效"), None)
 
     payload = {
         "device_id": device_id,
@@ -1270,7 +1271,7 @@ def _query_trial_status_via_endpoint(device_id: str) -> Tuple[bool, str, Optiona
     """
     endpoint = _normalize_trial_endpoint(get_trial_register_endpoint() or "")
     if not endpoint:
-        return (False, "试用登记服务地址无效", None)
+        return (False, t("试用登记服务地址无效"), None)
 
     status_url = _derive_trial_status_url(endpoint)
     payload = {
@@ -1305,7 +1306,7 @@ def _query_trial_status_via_endpoint(device_id: str) -> Tuple[bool, str, Optiona
 def _verify_license_via_endpoint(license_key: str, device_id: str) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
     endpoint = _normalize_trial_endpoint(get_trial_register_endpoint() or "")
     if not endpoint:
-        return (False, "授权服务地址无效", None)
+        return (False, t("授权服务地址无效"), None)
 
     activate_url = _derive_activate_license_url(endpoint)
     payload = {
@@ -1319,11 +1320,11 @@ def _verify_license_via_endpoint(license_key: str, device_id: str) -> Tuple[bool
     if not ok:
         return (False, msg, None)
     if not isinstance(data, dict):
-        return (False, "授权服务返回异常", None)
+        return (False, t("授权服务返回异常"), None)
 
     response_device = str(data.get("device_id") or "").strip()
     if response_device and response_device != device_id:
-        return (False, "授权服务返回设备不匹配", None)
+        return (False, t("授权服务返回设备不匹配"), None)
 
     normalized = dict(data)
     normalized["license_key"] = license_key
@@ -1331,7 +1332,7 @@ def _verify_license_via_endpoint(license_key: str, device_id: str) -> Tuple[bool
     if plan_type not in ("yearly", "lifetime"):
         plan_type = "yearly"
     normalized["plan_type"] = plan_type
-    return (True, str(data.get("message") or "激活成功"), normalized)
+    return (True, str(data.get("message") or t("激活成功")), normalized)
 
 
 def get_network_time() -> Optional[datetime]:
@@ -1469,7 +1470,7 @@ def get_trial_status() -> Tuple[bool, int, str]:
     """
     # 运行时完整性检查
     if not verify_integrity():
-        return (False, 0, "程序完整性校验失败，可能已被篡改")
+        return (False, 0, t("程序完整性校验失败，可能已被篡改"))
         
     device_id = get_device_id()
     endpoint = _normalize_trial_endpoint(get_trial_register_endpoint() or "")
@@ -1483,7 +1484,7 @@ def get_trial_status() -> Tuple[bool, int, str]:
         ref_time = reference_time or current_time
         start_date = _parse_datetime(start_date_str)
         if not start_date:
-            return (False, 0, "试用数据异常，请稍后重试")
+            return (False, 0, t("试用数据异常，请稍后重试"))
         if remaining_days_hint is None:
             elapsed = ref_time - start_date
             remaining_days = TRIAL_DAYS - elapsed.days
@@ -1498,16 +1499,16 @@ def get_trial_status() -> Tuple[bool, int, str]:
         })
         _save_trial_to_registry(start_date_str, device_id)
         if remaining_days > 0:
-            return (True, remaining_days, f"试用剩余 {remaining_days} 天")
-        return (False, 0, "试用期已结束，请购买激活")
+            return (True, remaining_days, t_format("试用剩余 {} 天", remaining_days))
+        return (False, 0, t("试用期已结束，请购买激活"))
 
     # 发布版至少要有试用/激活服务端在线验证通道。
     if is_release_build() and (not endpoint_available):
-        return (False, 0, "发布版授权配置异常：未配置在线验证通道")
+        return (False, 0, t("发布版授权配置异常：未配置在线验证通道"))
 
     # 商用安全策略：发布版只要启用试用/激活端点，就必须使用 HTTPS。
     if is_release_build() and endpoint_available and (not _is_https_url(endpoint)):
-        return (False, 0, "发布版试用登记服务必须使用 HTTPS 地址")
+        return (False, 0, t("发布版试用登记服务必须使用 HTTPS 地址"))
     
     # 获取当前参考时间（优先使用网络时间，失败则回退到系统时间）
     network_time = get_network_time()
@@ -1518,7 +1519,7 @@ def get_trial_status() -> Tuple[bool, int, str]:
     else:
         print("[Security] 警告: 无法获取网络时间，使用系统本地时间进行验证")
         if is_release_build() and require_strict_online():
-            return (False, 0, "网络时间校验失败，请检查网络后重试")
+            return (False, 0, t("网络时间校验失败，请检查网络后重试"))
     
     # 加载本地缓存数据
     trial_data = load_trial_data()
@@ -1530,7 +1531,7 @@ def get_trial_status() -> Tuple[bool, int, str]:
             last_check = _parse_datetime(last_check_time)
             # 如果当前时间早于上次检查时间，说明时间被回退
             if last_check and current_time < last_check - timedelta(hours=1):
-                return (False, 0, "检测到系统时间异常（可能被回退），请校准后重试")
+                return (False, 0, t("检测到系统时间异常（可能被回退），请校准后重试"))
     
     # ============== 试用服务端在线验证 ==============
     if endpoint_available:
@@ -1562,23 +1563,23 @@ def get_trial_status() -> Tuple[bool, int, str]:
                         remaining_days_hint=_extract_endpoint_remaining_days(ref_data),
                     )
                     if ok:
-                        return (True, days, f"欢迎使用！您有 {TRIAL_DAYS} 天免费试用期")
+                        return (True, days, t_format("欢迎使用！您有 {} 天免费试用期", TRIAL_DAYS))
                     return (ok, days, msg)
-                return (False, 0, "试用登记成功但未返回有效开始时间")
+                return (False, 0, t("试用登记成功但未返回有效开始时间"))
 
             # 仅在明确 not found 场景给出登记失败，其余视为在线失败
             if "not found" in (ep_msg or "").lower():
-                return (False, 0, f"试用登记失败：{reg_msg}")
+                return (False, 0, t_format("试用登记失败：{}", reg_msg))
             if is_release_build() and require_strict_online():
-                return (False, 0, f"在线验证失败：{reg_msg}")
+                return (False, 0, t_format("在线验证失败：{}", reg_msg))
         except Exception as e:
             print(f"试用服务端在线验证失败: {e}")
             if is_release_build() and require_strict_online():
-                return (False, 0, "在线验证失败，请检查网络后重试")
+                return (False, 0, t("在线验证失败，请检查网络后重试"))
 
     # 发布版严格在线模式：未在线通过则拒绝离线回退
     if is_release_build() and require_strict_online():
-        return (False, 0, "发布版需联网验证授权状态")
+        return (False, 0, t("发布版需联网验证授权状态"))
     
     # ============== 本地缓存验证（仅在无法联网时使用） ==============
     
@@ -1594,7 +1595,7 @@ def get_trial_status() -> Tuple[bool, int, str]:
                 'online_verified': False
             }
         elif is_release_build():
-            return (False, 0, "首次使用请连接网络验证试用状态")
+            return (False, 0, t("首次使用请连接网络验证试用状态"))
         else:
             trial_data = {
                 'device_id': device_id,
@@ -1610,11 +1611,11 @@ def get_trial_status() -> Tuple[bool, int, str]:
     if not trial_data.get('online_verified'):
         # 非严格在线模式允许离线试用（无域名/IP直连方案）
         if require_strict_online():
-            return (False, 0, "请连接网络验证试用状态")
+            return (False, 0, t("请连接网络验证试用状态"))
     
     # 检查设备匹配
     if trial_data.get('device_id') != device_id:
-        return (False, 0, "设备已更换，请连接网络重新验证")
+        return (False, 0, t("设备已更换，请连接网络重新验证"))
     
     # 检查本地缓存有效期（发布版 24 小时，开发版 3 天）
     last_check_time = trial_data.get('last_check_time')
@@ -1627,13 +1628,13 @@ def get_trial_status() -> Tuple[bool, int, str]:
             max_offline_days = 1 if is_release_build() else 3
             if cache_age.days >= max_offline_days:
                 if require_strict_online():
-                    return (False, 0, "离线时间过长，请连接网络验证")
+                    return (False, 0, t("离线时间过长，请连接网络验证"))
         except:
             pass
             
     # ============== 虚拟机限制 ==============
     if is_running_in_vm() and not trial_data.get('online_verified'):
-        return (False, 0, "检测到虚拟机环境，试用需在线验证")
+        return (False, 0, t("检测到虚拟机环境，试用需在线验证"))
     
     # 计算剩余天数
     try:
@@ -1644,11 +1645,11 @@ def get_trial_status() -> Tuple[bool, int, str]:
         remaining_days = TRIAL_DAYS - elapsed.days
         
         if remaining_days > 0:
-            return (True, remaining_days, f"[离线模式] 试用剩余 {remaining_days} 天")
+            return (True, remaining_days, t_format("[离线模式] 试用剩余 {} 天", remaining_days))
         else:
-            return (False, 0, "试用期已结束，请购买激活")
+            return (False, 0, t("试用期已结束，请购买激活"))
     except:
-        return (False, 0, "试用数据异常，请购买激活")
+        return (False, 0, t("试用数据异常，请购买激活"))
 
 
 # ============== 许可证管理器 ==============
@@ -1679,7 +1680,7 @@ class LicenseManager:
         endpoint_available = bool(_normalize_trial_endpoint(get_trial_register_endpoint() or ""))
         if endpoint_available:
             return _verify_license_via_endpoint(license_key, self.device_id)
-        return (False, "当前部署未配置激活服务，仅支持试用模式", None)
+        return (False, t("当前部署未配置激活服务，仅支持试用模式"), None)
     
     def _refresh_status(self):
         """刷新许可证状态"""
@@ -1694,7 +1695,7 @@ class LicenseManager:
         if _is_dev_license_bypass_enabled():
             self.is_licensed = True
             self.license_type = "lifetime"
-            self.status_message = "开发模式：已跳过授权校验"
+            self.status_message = t("开发模式：已跳过授权校验")
             return
 
         endpoint_available = bool(_normalize_trial_endpoint(get_trial_register_endpoint() or ""))
@@ -1702,7 +1703,7 @@ class LicenseManager:
 
         # 发布版至少要有一种在线通道（试用服务端或激活服务端）。
         if is_release_build() and (not license_service_available):
-            self.status_message = "发布版授权配置异常：无可用在线服务"
+            self.status_message = t("发布版授权配置异常：无可用在线服务")
             return
 
         # 检查本地许可证
@@ -1714,16 +1715,16 @@ class LicenseManager:
             # 检查设备匹配
             if device_id and device_id != self.device_id:
                 self.license_data = None
-                self.status_message = "设备不匹配，请重新激活"
+                self.status_message = t("设备不匹配，请重新激活")
             elif is_release_build():
                 # 发布版不信任本地缓存，必须在线验权。
                 if not license_key:
                     self.license_data = None
-                    self.status_message = "本地授权信息异常，请重新激活"
+                    self.status_message = t("本地授权信息异常，请重新激活")
                 elif not license_service_available:
                     # 未配置激活服务时，忽略本地已激活缓存，避免误判。
                     self.license_data = None
-                    self.status_message = "当前部署未配置激活服务，仅支持试用模式"
+                    self.status_message = t("当前部署未配置激活服务，仅支持试用模式")
                 else:
                     success, message, online_data = self._verify_license_online(license_key)
                     if success and online_data:
@@ -1731,7 +1732,7 @@ class LicenseManager:
                         self.expires_at = _parse_datetime(online_data.get('expires_at'))
                         if self.expires_at and self.expires_at <= datetime.utcnow():
                             self.license_data = None
-                            self.status_message = "授权已过期，请续费后重试"
+                            self.status_message = t("授权已过期，请续费后重试")
                             return
 
                         # 在线校验通过后刷新本地缓存
@@ -1747,16 +1748,16 @@ class LicenseManager:
 
                         self.is_licensed = True
                         if self.license_type == 'lifetime':
-                            self.status_message = "已激活 (终身版)"
+                            self.status_message = t("已激活 (终身版)")
                         elif self.expires_at:
                             days_left = max((self.expires_at - datetime.utcnow()).days, 0)
-                            self.status_message = f"已激活 ({self.license_type}), 剩余 {days_left} 天"
+                            self.status_message = t_format("已激活 ({}), 剩余 {} 天", self.license_type, days_left)
                         else:
-                            self.status_message = f"已激活 ({self.license_type})"
+                            self.status_message = t_format("已激活 ({})", self.license_type)
                         return
 
                     self.license_data = None
-                    self.status_message = f"授权在线验证失败: {message}"
+                    self.status_message = t_format("授权在线验证失败: {}", message)
             elif expires_at:
                 # 开发模式下允许读取本地缓存（仅便于调试）
                 expire_date = _parse_datetime(expires_at)
@@ -1765,13 +1766,13 @@ class LicenseManager:
                     self.license_type = self.license_data.get('plan_type', 'yearly')
                     self.expires_at = expire_date
                     days_left = max((expire_date - datetime.utcnow()).days, 0)
-                    self.status_message = f"已激活 ({self.license_type}), 剩余 {days_left} 天"
+                    self.status_message = t_format("已激活 ({}), 剩余 {} 天", self.license_type, days_left)
                     return
             elif self.license_data.get('plan_type') == 'lifetime':
                 # 开发模式下终身版可离线读取
                 self.is_licensed = True
                 self.license_type = 'lifetime'
-                self.status_message = "已激活 (终身版)"
+                self.status_message = t("已激活 (终身版)")
                 return
         
         # 检查试用状态
@@ -1803,7 +1804,7 @@ class LicenseManager:
         if is_release_build():
             endpoint_available = bool(_normalize_trial_endpoint(get_trial_register_endpoint() or ""))
             if not endpoint_available:
-                return (False, "发布版授权配置异常：无可用在线服务")
+                return (False, t("发布版授权配置异常：无可用在线服务"))
 
         if self.is_licensed:
             return (True, self.status_message)
@@ -1813,7 +1814,7 @@ class LicenseManager:
 
         if self.status_message:
             return (False, self.status_message)
-        return (False, "试用期已结束，请购买激活码")
+        return (False, t("试用期已结束，请购买激活码"))
     
     def activate(self, license_key: str) -> Tuple[bool, str]:
         """
@@ -1829,15 +1830,15 @@ class LicenseManager:
         license_key = license_key.strip().upper()
         
         if not license_key:
-            return (False, "请输入激活码")
+            return (False, t("请输入激活码"))
 
         if not _is_basic_license_key_shape(license_key):
-            return (False, "激活码格式无效")
+            return (False, t("激活码格式无效"))
         
         # 检查是否存在可用激活服务
         endpoint_available = bool(_normalize_trial_endpoint(get_trial_register_endpoint() or ""))
         if not endpoint_available:
-            return (False, "当前部署未配置激活服务，仅支持试用模式")
+            return (False, t("当前部署未配置激活服务，仅支持试用模式"))
         
         # 在线验证
         success, message, data = self._verify_license_online(license_key)
@@ -1877,7 +1878,7 @@ class LicenseManager:
         2. 获取盐值后可以生成任意有效激活码
         3. 在线验证可确保激活码真实有效且未被滥用
         """
-        return (False, "激活需要网络连接，请确保已连接互联网后重试")
+        return (False, t("激活需要网络连接，请确保已连接互联网后重试"))
     
     def deactivate(self) -> bool:
         """注销当前激活（用于切换设备）"""
