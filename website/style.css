@@ -1685,6 +1685,21 @@ body.cursor-clicking .cursor-ring::after {
   margin-bottom: 0;
 }
 
+.contact-panel-body .contact-email {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0;
+  margin-top: 4px;
+  word-break: break-all;
+}
+.contact-panel-body .contact-email a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.contact-panel-body .contact-email a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 640px) {
   .floating-contact {
     right: 16px;
