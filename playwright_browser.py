@@ -128,6 +128,7 @@ _MEDIA_VARIANT_QUERY_KEYS = {
     "itag", "fmt", "format", "quality", "res", "resolution",
     "codec", "vcodec", "acodec", "abr", "br", "bitrate",
     "id", "rendition", "bandwidth", "variant", "profile",
+    "v",  # YouTube watch?v= 视频ID（页面 URL 兜底去重用）
 }
 
 # 明确判定为易变签名/鉴权参数，不参与去重键
@@ -2351,7 +2352,11 @@ class MediaCard(QFrame):
         tags_layout.setSpacing(8)
 
         m_type = self.media_info.get('type', 'Media')
-        self.type_tag = QLabel(m_type)
+        # YouTubePage 是页面 URL 兜底条目（交给 yt-dlp 官方提取器），显示友好名称
+        type_display = t("YouTube 页面") if m_type == "YouTubePage" else m_type
+        self.type_tag = QLabel(type_display)
+        if m_type == "YouTubePage":
+            self.type_tag.setToolTip(t("通过页面 URL 下载（yt-dlp 官方提取器，最稳定）"))
         self.type_tag.setStyleSheet("""
             background: #f0f0f0; color: #666; padding: 1px 6px; 
             border-radius: 3px; font-size: 10px; border: 1px solid #ddd;
@@ -3442,6 +3447,9 @@ SNIFFER_JS = r'''
                         activeVideo: true,
                         forceUpdate: true
                     });
+                } else if (!src) {
+                    // MSE/blob 场景拿不到直链：兜底上报 YouTube 页面 URL
+                    reportYoutubePageFallback('manual_refresh_fallback');
                 }
             }
 
@@ -4045,10 +4053,43 @@ SNIFFER_JS = r'''
 
     const reportMedia = (data) => {
         if (!data.url || isExcluded(data.url)) return;
-        
+
         const url = normalizeUrl(data.url);
         if (!url) return;
-        
+
+        // YouTube 页面 URL 兜底条目：直接上报，跳过 canBeMediaCandidate 的直链判定
+        if (data.type === 'YouTubePage') {
+            const ct = (data.contentType || '').toLowerCase();
+            if (ct && (ct.includes('application/json') || ct.includes('text/html'))) return;
+            const urlKey = getDedupeKey(url);
+            const prev = capturedUrls.get(urlKey);
+            if (prev && !data.forceUpdate && !data.isPlaying) return;
+            capturedUrls.set(urlKey, { timestamp: Date.now(), is_playing: Boolean(data.isPlaying) });
+            if (capturedUrls.size > 500) capturedUrls.delete(capturedUrls.keys().next().value);
+            const mediaData = {
+                url: url,
+                type: 'YouTubePage',
+                title: data.title || getBestTitle(url),
+                page_url: data.page_url || window.location.href,
+                size: data.size || '',
+                content_type: data.contentType || '',
+                source: data.source || 'yt_page_fallback',
+                is_playing: Boolean(data.isPlaying),
+                is_preload: false,
+                thumbnail: pageThumbnail || '',
+                quality: extractQualityInfo(url),
+                has_drm: drmDetected.size > 0,
+                force_update: Boolean(data.forceUpdate),
+                active_video: Boolean(data.activeVideo)
+            };
+            if (reportMediaReady && window.reportMedia) {
+                window.reportMedia(mediaData).catch(() => {});
+            } else {
+                pendingMedia.push(mediaData);
+            }
+            return;
+        }
+
         if (!canBeMediaCandidate(url, data.contentType || '')) return;
         
         const ct = (data.contentType || '').toLowerCase();
@@ -4107,12 +4148,44 @@ SNIFFER_JS = r'''
         }
     };
 
+    // 【YouTube 兜底】页面在播放但拿不到直链（MSE/blob 场景）时，上报页面 URL 供 yt-dlp 解析
+    const reportYoutubePageFallback = (source = 'yt_page_fallback') => {
+        try {
+            const host = window.location.hostname.toLowerCase();
+            const isYtHost = host.includes('youtube.com') || host === 'youtu.be';
+            if (!isYtHost) return false;
+            const path = window.location.pathname.toLowerCase();
+            const isVideoPage = (
+                path.includes('/watch') || path.startsWith('/shorts/') || path.startsWith('/live/') ||
+                (host === 'youtu.be' && path.length > 1)
+            );
+            if (!isVideoPage) return false;
+            const href = window.location.href;
+            if (!href || href.startsWith('blob:') || href.startsWith('data:') || isExcluded(href)) return false;
+            reportMedia({
+                url: href,
+                type: 'YouTubePage',
+                source,
+                isPlaying: true,
+                activeVideo: true,
+                forceUpdate: true
+            });
+            return true;
+        } catch (e) {
+            return false;
+        }
+    };
+
     const emitActivePlayback = (video, source = 'playback') => {
         const now = Date.now();
         if (now - lastPlaybackReportAt < 1200) return;
         lastPlaybackReportAt = now;
         const url = getVideoLikelyUrl(video);
-        if (!url) return;
+        if (!url) {
+            // MSE/blob 场景拿不到直链：兜底上报 YouTube 页面 URL
+            reportYoutubePageFallback(source + '_fallback');
+            return;
+        }
         currentPlayingUrl = url;
         reportMedia({
             url,
@@ -4286,6 +4359,9 @@ SNIFFER_JS = r'''
                                 forceUpdate: true
                             });
                         }
+                    } else {
+                        // MSE/blob 场景拿不到直链：兜底上报 YouTube 页面 URL
+                        reportYoutubePageFallback('playing_scan_fallback');
                     }
                 }
             }
@@ -5165,6 +5241,26 @@ def run_launcher():
                                 except Exception:
                                     size = ""
                             _safe_print(f"[MEDIA] {json.dumps({'type': m_type, 'url': url, 'size': size, 'content_type': ct, 'title': title, 'page_url': page_url}, ensure_ascii=False)}")
+                            
+                            # 【YouTube 兜底】捕获到 googlevideo 直链时，同时把页面 URL 作为候选发出
+                            # 直链带 expire/ip 绑定有时效，页面 URL 可交给 yt-dlp 官方提取器稳定下载
+                            if m_type == 'YouTube' and page_url:
+                                try:
+                                    page_host = urlparse(page_url).netloc.lower()
+                                    is_yt_page = ('youtube.com' in page_host or 'youtu.be' in page_host)
+                                    page_path = urlparse(page_url).path.lower()
+                                    is_yt_video_page = is_yt_page and (
+                                        '/watch' in page_path or page_path == '/' or page_path == '' or
+                                        '/shorts/' in page_path or '/live/' in page_path or
+                                        page_host == 'youtu.be'
+                                    )
+                                    if is_yt_video_page:
+                                        page_key = _normalize_capture_url_key(page_url)
+                                        if page_key and not _media_seen(page_key):
+                                            _media_mark(page_key)
+                                            _safe_print(f"[MEDIA] {json.dumps({'type': 'YouTubePage', 'url': page_url, 'size': '', 'content_type': '', 'title': title, 'page_url': page_url}, ensure_ascii=False)}")
+                                except Exception:
+                                    pass
                 except Exception as exc:
                     _throttled_media_warn(f"[BROWSER] WARN: 网络媒体捕获异常: {exc}")
             

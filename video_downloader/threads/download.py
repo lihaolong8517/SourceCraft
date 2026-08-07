@@ -65,6 +65,7 @@ class DownloadThread(QThread):
         self.progress_sent = False  # 跟踪是否已发送过进度信号
         self.age_restriction_retry_attempted = False  # 跟踪是否已尝试年龄限制重试
         self.browser_media_fallback_attempted = False  # 跟踪是否已尝试浏览器媒体嗅探回退
+        self.page_url_fallback_attempted = False  # 跟踪是否已尝试直链失败回退页面 URL
         self.ip_location_retry_count = 0  # 跟踪IP位置相关的重试次数
         self.failed_videos = []  # 用于记录下载失败的视频信息
         self.skipped_videos = []  # 用于记录因限制而跳过的视频信息（播放列表模式）
@@ -4945,6 +4946,21 @@ class DownloadThread(QThread):
                 return
 
             error_message = self._generate_simple_error_message(error_output)
+            # 【YouTube 直链回退】googlevideo 直链带 expire/ip 绑定有时效，失败时自动回退页面 URL
+            # 交给 yt-dlp 官方提取器重新解析（带 cookies，成功率最高）
+            if not self.page_url_fallback_attempted:
+                page_url = str((media_info or {}).get("page_url", "") or "").strip()
+                direct_looks_youtube = any(tok in direct_url.lower() for tok in ("googlevideo.com", "videoplayback"))
+                page_looks_youtube = any(host in page_url.lower() for host in ("youtube.com", "youtu.be"))
+                if direct_looks_youtube and page_looks_youtube and page_url and page_url != direct_url:
+                    self.page_url_fallback_attempted = True
+                    self.progress_signal.emit(t_format("↩️ 媒体直链下载失败（直链有时效），自动回退页面 URL 重试: {}", page_url[:160]))
+                    fallback_media = dict(media_info)
+                    fallback_media["url"] = page_url
+                    fallback_media["type"] = "YouTubePage"
+                    fallback_media["page_url"] = page_url
+                    self._retry_with_captured_media(fallback_media)
+                    return
             self.finished_signal.emit(False, t_format("网页URL不受支持，且媒体直链重试失败：{}", error_message))
         except Exception as e:
             self.finished_signal.emit(False, t_format("媒体直链重试失败: {}", e))
