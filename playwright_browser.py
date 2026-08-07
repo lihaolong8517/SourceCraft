@@ -8,7 +8,27 @@ Date: 2025-12-06
 """
 
 import sys
-from i18n import t, t_format
+# i18n 兜底导入：本模块可能被子进程用 importlib 加载（sys.path 不含项目根）。
+# 依次尝试：直接导入 -> 注入模块所在目录/上级目录后再导入 -> 降级原文（永不崩）。
+try:
+    from i18n import t, t_format
+except ImportError:
+    import os as _os
+    _here = _os.path.dirname(_os.path.abspath(__file__))
+    for _cand in (_here, _os.path.dirname(_here), _os.getcwd()):
+        if _cand and _cand not in sys.path:
+            sys.path.insert(0, _cand)
+    try:
+        from i18n import t, t_format
+    except ImportError:
+        def t(text):
+            return text
+
+        def t_format(text, *args, **kwargs):
+            try:
+                return text.format(*args, **kwargs)
+            except Exception:
+                return text
 import os
 import json
 import re
