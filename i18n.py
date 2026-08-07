@@ -38,7 +38,7 @@ en_US.json 是完整参考；其余语言允许渐进式补全（缺的 key 回�
  运行时切换
 ═══════════════════════════════════════════════════════════════
 启动时调用 set_language()（app 启动已从 QSettings 读取 language）；
-默认语言 DEFAULT_LANGUAGE = "en_US"；未翻译 key 回退中文原文。
+默认语言 DEFAULT_LANGUAGE = "zh_CN"；未翻译 key 回退中文原文。
 """
 import json
 import os
@@ -57,7 +57,7 @@ SUPPORTED_LANGUAGES = [
     ("ru_RU", "Русский"),
 ]
 LANG_CODES = [code for code, _ in SUPPORTED_LANGUAGES]
-DEFAULT_LANGUAGE = "en_US"
+DEFAULT_LANGUAGE = "zh_CN"
 
 _current = os.environ.get("SOURCECRAFT_LANG", DEFAULT_LANGUAGE)
 _tables = {}   # lang -> {key: translated}

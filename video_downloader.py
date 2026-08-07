@@ -17981,7 +17981,7 @@ class VideoDownloaderApp(QMainWindow):
 
         # 保存界面语言（重启后生效）
         try:
-            new_lang = self.settings_lang_combo.currentData() or "en_US"
+            new_lang = self.settings_lang_combo.currentData() or "zh_CN"
             old_lang = get_language()
             self.settings.setValue("language", new_lang)
             if new_lang != old_lang:
