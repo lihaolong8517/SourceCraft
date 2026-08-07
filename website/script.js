@@ -13,16 +13,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadUrl = String(release.download_url || '').trim();
     const fileSize = String(release.file_size || '').trim();
 
-    if (version) {
+    const renderVersion = () => {
+      if (!version) return;
       const heroVersion = document.getElementById('hero-version-text');
       if (heroVersion) {
-        heroVersion.textContent = `v${version} · 最新版本`;
+        heroVersion.textContent = window.I18N
+          ? window.I18N.t(`v${version} · 最新版本`)
+          : `v${version} · 最新版本`;
       }
-
       const downloadVersion = document.getElementById('download-version-text');
       if (downloadVersion) {
-        downloadVersion.textContent = `当前版本 v${version} · 适用于 Windows 系统`;
+        downloadVersion.textContent = window.I18N
+          ? window.I18N.t(`当前版本 v${version} · 适用于 Windows 系统`)
+          : `当前版本 v${version} · 适用于 Windows 系统`;
       }
+    };
+
+    if (version) {
+      renderVersion();
+      document.addEventListener('i18n:changed', renderVersion);
     }
 
     if (downloadUrl) {

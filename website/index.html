@@ -1,19 +1,19 @@
-<!DOCTYPE html>
+
 <html lang="zh-CN">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SourceCraft - 免费多媒体下载工具 | 视频下载器 | 官方网站</title>
-  <meta name="description" content="SourceCraft 是一款免费强大的多媒体下载工具，支持多平台视频下载、图片批处理、格式转换。智能浏览器引擎驱动，一键下载任何视频和多媒体资源。支持 Windows 10/11，永久免费使用。">
+  <title data-i18n="SourceCraft - 免费多媒体下载工具 | 视频下载器 | 官方网站">SourceCraft - 免费多媒体下载工具 | 视频下载器 | 官方网站</title>
+  <meta name="description" content="SourceCraft 是一款免费强大的多媒体下载工具，支持多平台视频下载、图片批处理、格式转换。智能浏览器引擎驱动，一键下载任何视频和多媒体资源。支持 Windows 10/11，永久免费使用。" data-i18n="SourceCraft 是一款免费强大的多媒体下载工具，支持多平台视频下载、图片批处理、格式转换。智能浏览器引擎驱动，一键下载任何视频和多媒体资源。支持 Windows 10/11，永久免费使用。">
   <meta name="keywords" content="SourceCraft, 下载工具, 多媒体工具, 视频下载器, 多媒体下载工具, 视频下载, 多媒体下载, 免费下载工具, 批量下载, 图片处理, 格式转换, 视频格式转换, 图片批处理, 视频下载软件, 免费视频下载, 多平台视频下载">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
-  <meta name="msvalidate.01" content="35EAFFDD338087962B5CEDA07BDEE569" />
-  <meta name="baidu-site-verification" content="codeva-uoig7Fh3W2" />
+  <meta name="msvalidate.01" content="35EAFFDD338087962B5CEDA07BDEE569"/>
+  <meta name="baidu-site-verification" content="codeva-uoig7Fh3W2"/>
   <link rel="canonical" href="https://hundunxiazaiqi.cn/">
   <link rel="icon" type="image/png" href="app_icon.png">
 
-  <!-- Open Graph / Facebook -->
+  
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://hundunxiazaiqi.cn/">
   <meta property="og:title" content="SourceCraft - 免费多媒体下载工具 | 视频下载器">
@@ -22,13 +22,13 @@
   <meta property="og:site_name" content="SourceCraft">
   <meta property="og:locale" content="zh_CN">
 
-  <!-- Twitter Card -->
+  
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SourceCraft - 免费多媒体下载工具 | 视频下载器">
   <meta name="twitter:description" content="强大的多媒体下载工具，支持多平台视频下载、图片批处理、格式转换。一键下载任何多媒体资源。">
   <meta name="twitter:image" content="https://hundunxiazaiqi.cn/software_preview_hd.png">
 
-  <!-- JSON-LD Structured Data -->
+  
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -56,7 +56,7 @@
   }
   </script>
 
-  <!-- WebSite Schema for Sitelinks Search -->
+  
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -69,6 +69,68 @@
   </script>
 
   <link rel="stylesheet" href="style.css?v=16">
+  <script src="locales/zh.js?v=3"></script>
+  <script src="locales/en.js?v=3"></script>
+  <script src="i18n.js?v=3"></script>
+  <style>
+.lang-switcher-li { display: flex; align-items: center; margin-left: 12px; }
+.lang-switcher { position: relative; }
+.lang-btn {
+  appearance: none; -webkit-appearance: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.2));
+}
+.lang-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-mid, #6366f1);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+}
+.lang-btn:focus { outline: none; border-color: var(--accent-mid, #6366f1); }
+.lang-btn-globe { font-size: 0.95rem; line-height: 1; }
+.lang-btn-caret { font-size: 0.7rem; color: var(--text-muted, #64748b); transition: transform 0.2s; }
+.lang-btn[aria-expanded="true"] .lang-btn-caret { transform: rotate(180deg); }
+.lang-menu {
+  display: none;
+  position: absolute; top: calc(100% + 8px); right: 0;
+  min-width: 132px;
+  background: var(--bg-secondary, #111827);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  margin: 0; list-style: none;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+.lang-menu.open { display: block; }
+.lang-menu-item {
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.lang-menu-item:hover { background: var(--bg-card-hover, rgba(30,41,59,0.8)); color: var(--text-primary); }
+.lang-menu-item.active {
+  background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(99,102,241,0.35));
+  color: #fff; font-weight: 600;
+}
+@media (max-width: 768px) {
+  .lang-switcher-li { margin-left: 0; margin-top: 12px; justify-content: flex-start; }
+  .lang-menu { right: auto; left: 0; }
+}
+  </style>
 </head>
 
 <body>
@@ -77,12 +139,12 @@
     <canvas class="splash-cursor-canvas" id="fluid-cursor"></canvas>
   </div>
 
-  <!-- Background Glow Effects -->
+  
   <div class="bg-glow bg-glow-1"></div>
   <div class="bg-glow bg-glow-2"></div>
   <div class="bg-glow bg-glow-3"></div>
 
-  <!-- ========== Navbar ========== -->
+  
   <nav class="navbar" id="navbar">
     <div class="container">
       <a href="#" class="navbar-brand">
@@ -90,39 +152,42 @@
         <span>SourceCraft</span>
       </a>
       <ul class="navbar-links" id="nav-links">
-        <li><a href="#features">功能特性</a></li>
-        <li><a href="#showcase">软件演示</a></li>
-        <li><a href="/guide.html">使用教程</a></li>
-        <li><a href="/faq.html">常见问题</a></li>
-        <li><a href="#download" class="btn btn-primary navbar-cta">立即下载</a></li>
-      </ul>
-      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="菜单">☰</button>
+        <li><a href="#features"><span data-i18n="功能特性">功能特性</span></a></li>
+        <li><a href="#showcase"><span data-i18n="软件演示">软件演示</span></a></li>
+        <li><a href="/guide.html"><span data-i18n="使用教程">使用教程</span></a></li>
+        <li><a href="/faq.html"><span data-i18n="常见问题">常见问题</span></a></li>
+        <li><a href="#download" class="btn btn-primary navbar-cta"><span data-i18n="立即下载">立即下载</span></a></li>
+              <li class="lang-switcher-li">
+          <div id="lang-switcher" class="lang-switcher"></div>
+        </li>
+      </ul><button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="菜单" data-i18n-attr="aria-label" data-i18n-attr-key="菜单">☰</button>
     </div>
   </nav>
 
-  <!-- ========== Hero ========== -->
+  
   <section class="hero" id="hero">
     <div class="container">
       <div class="hero-content">
         <div class="hero-badge">
           <span class="dot"></span>
-          <span id="hero-version-text">v1.1.140 · 最新版本</span>
+          <span id="hero-version-text"><span data-i18n="v1.1.140 · 最新版本">v1.1.140 · 最新版本</span></span>
         </div>
-        <h1>
-          强大的<br>
-          <span class="gradient-text">多媒体下载工具</span>
+        <h1><span data-i18n="强大的">
+          强大的</span><br>
+          <span class="gradient-text"><span data-i18n="多媒体下载工具">多媒体下载工具</span></span>
         </h1>
-        <p class="hero-desc">
+        <p class="hero-desc"><span data-i18n="SourceCraft 集成视频下载、图片批处理、格式转换于一体。
+          智能浏览器引擎驱动，一键获取您需要的任何多媒体资源。">
           SourceCraft 集成视频下载、图片批处理、格式转换于一体。
           智能浏览器引擎驱动，一键获取您需要的任何多媒体资源。
-        </p>
+        </span></p>
         <div class="hero-buttons">
-          <a href="#download" class="btn btn-primary btn-large">
+          <a href="#download" class="btn btn-primary btn-large"><span data-i18n="⬇ 免费下载">
             ⬇ 免费下载
-          </a>
-          <a href="#features" class="btn btn-secondary btn-large">
+          </span></a>
+          <a href="#features" class="btn btn-secondary btn-large"><span data-i18n="了解更多 →">
             了解更多 →
-          </a>
+          </span></a>
         </div>
 
       </div>
@@ -144,162 +209,155 @@
     </div>
   </section>
 
-  <!-- ========== Features ========== -->
+  
   <section class="features" id="features">
     <div class="container">
-      <h2 class="section-title reveal">核心功能</h2>
-      <p class="section-subtitle reveal">专业级多媒体处理能力，一站式解决您的下载与转换需求</p>
+      <h2 class="section-title reveal"><span data-i18n="核心功能">核心功能</span></h2>
+      <p class="section-subtitle reveal"><span data-i18n="专业级多媒体处理能力，一站式解决您的下载与转换需求">专业级多媒体处理能力，一站式解决您的下载与转换需求</span></p>
       <div class="features-grid">
         <div class="feature-card reveal reveal-delay-1">
           <div class="feature-icon">🎬</div>
-          <h3>多平台视频下载</h3>
-          <p>支持主流视频平台资源下载，智能解析视频链接，高速稳定下载，支持多种清晰度选择。</p>
+          <h3><span data-i18n="多平台视频下载">多平台视频下载</span></h3>
+          <p><span data-i18n="支持主流视频平台资源下载，智能解析视频链接，高速稳定下载，支持多种清晰度选择。">支持主流视频平台资源下载，智能解析视频链接，高速稳定下载，支持多种清晰度选择。</span></p>
         </div>
         <div class="feature-card reveal reveal-delay-2">
           <div class="feature-icon">🖼️</div>
-          <h3>图片批处理</h3>
-          <p>支持图片格式转换、尺寸调整、压缩质量控制与批量处理，适合日常素材整理。</p>
+          <h3><span data-i18n="图片批处理">图片批处理</span></h3>
+          <p><span data-i18n="支持图片格式转换、尺寸调整、压缩质量控制与批量处理，适合日常素材整理。">支持图片格式转换、尺寸调整、压缩质量控制与批量处理，适合日常素材整理。</span></p>
         </div>
         <div class="feature-card reveal reveal-delay-3">
           <div class="feature-icon">🔄</div>
-          <h3>格式转换</h3>
-          <p>支持视频、音频多种格式互转，内置 FFmpeg 引擎，快速高效完成格式转换任务。</p>
+          <h3><span data-i18n="格式转换">格式转换</span></h3>
+          <p><span data-i18n="支持视频、音频多种格式互转，内置 FFmpeg 引擎，快速高效完成格式转换任务。">支持视频、音频多种格式互转，内置 FFmpeg 引擎，快速高效完成格式转换任务。</span></p>
         </div>
         <div class="feature-card reveal reveal-delay-4">
           <div class="feature-icon">🌐</div>
-          <h3>智能浏览器引擎</h3>
-          <p>Playwright 驱动的智能浏览器，深度解析网页内容，精准捕获多媒体资源。</p>
+          <h3><span data-i18n="智能浏览器引擎">智能浏览器引擎</span></h3>
+          <p><span data-i18n="Playwright 驱动的智能浏览器，深度解析网页内容，精准捕获多媒体资源。">Playwright 驱动的智能浏览器，深度解析网页内容，精准捕获多媒体资源。</span></p>
         </div>
         <div class="feature-card reveal reveal-delay-5">
           <div class="feature-icon">📦</div>
-          <h3>批量处理</h3>
-          <p>支持批量添加下载任务，高效的任务队列管理，一次操作处理大量文件。</p>
+          <h3><span data-i18n="批量处理">批量处理</span></h3>
+          <p><span data-i18n="支持批量添加下载任务，高效的任务队列管理，一次操作处理大量文件。">支持批量添加下载任务，高效的任务队列管理，一次操作处理大量文件。</span></p>
         </div>
         <div class="feature-card reveal reveal-delay-5">
           <div class="feature-icon">🔐</div>
-          <h3>安全可靠</h3>
-          <p>设备绑定激活机制，本地加密存储数据，保障您的使用安全与隐私。</p>
+          <h3><span data-i18n="安全可靠">安全可靠</span></h3>
+          <p><span data-i18n="设备绑定激活机制，本地加密存储数据，保障您的使用安全与隐私。">设备绑定激活机制，本地加密存储数据，保障您的使用安全与隐私。</span></p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ========== Video Demo ========== -->
+  
   <section class="showcase" id="showcase">
     <div class="container">
-      <h2 class="section-title reveal">软件演示</h2>
-      <p class="section-subtitle reveal">观看实际操作演示，了解 SourceCraft 的强大功能</p>
+      <h2 class="section-title reveal"><span data-i18n="软件演示">软件演示</span></h2>
+      <p class="section-subtitle reveal"><span data-i18n="观看实际操作演示，了解 SourceCraft 的强大功能">观看实际操作演示，了解 SourceCraft 的强大功能</span></p>
       <div class="showcase-wrapper reveal">
         <div class="video-demo-shell">
-          <video controls preload="metadata" poster="software_preview_liquid_glass.png?v=1" class="demo-video"
-            id="demo-video">
-            <source src="demo.mp4" type="video/mp4">
+          <video controls="" preload="metadata" poster="software_preview_liquid_glass.png?v=1" class="demo-video" id="demo-video">
+            <source src="demo.mp4" type="video/mp4"><span data-i18n="您的浏览器不支持视频播放。">
             您的浏览器不支持视频播放。
-          </video>
+          </span></video>
         </div>
       </div>
     </div>
   </section>
 
 
-  <!-- ========== Download ========== -->
+  
   <section class="download" id="download">
     <div class="container">
       <div class="download-box reveal">
         <div class="download-icon">⬇️</div>
-        <h2>下载 SourceCraft</h2>
-        <p class="version-info" id="download-version-text">当前版本 v1.1.140 · 适用于 Windows 系统</p>
+        <h2><span data-i18n="下载 SourceCraft">下载 SourceCraft</span></h2>
+        <p class="version-info" id="download-version-text"><span data-i18n="当前版本 v1.1.140 · 适用于 Windows 系统">当前版本 v1.1.140 · 适用于 Windows 系统</span></p>
         <div class="download-buttons">
-          <!-- 主下载链接：现已切换为 123网盘（原备用链接） -->
-          <a href="https://1858527336.share.123pan.cn/123pan/Miobvd-udTSd"
-            class="btn btn-primary btn-large" id="download-btn" target="_blank">
+          
+          <a href="https://1858527336.share.123pan.cn/123pan/Miobvd-udTSd" class="btn btn-primary btn-large" id="download-btn" target="_blank"><span data-i18n="⬇ 立即下载">
             ⬇ 立即下载
-          </a>
-          <!-- 原主下载链接 (OSS直链)，暂时隐藏 -->
-          <!--
-          <a href="https://hundunxiazai.oss-cn-hangzhou.aliyuncs.com/SourceCraft_Installer_v1.1.140.exe" class="btn btn-secondary btn-large"
-            id="backup-download-btn">
-            ☁️ 备用直链下载
-          </a>
-          -->
+          </span></a>
+          
+          
         </div>
         <div class="system-req">
-          <strong>系统要求：</strong>Windows 10 / 11（64位）<br>
-          <strong>安装包大小：</strong><span id="package-size-text">约 1.46 GB</span>
+          <strong><span data-i18n="系统要求：">系统要求：</span></strong><span data-i18n="Windows 10 / 11（64位）">Windows 10 / 11（64位）</span><br>
+          <strong><span data-i18n="安装包大小：">安装包大小：</span></strong><span id="package-size-text"><span data-i18n="约 1.46 GB">约 1.46 GB</span></span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ========== Floating Contact ========== -->
+  
   <div class="floating-contact" id="floating-contact">
-    <div class="floating-contact-btn" id="contact-btn" title="客服咨询">
+    <div class="floating-contact-btn" id="contact-btn" title="客服咨询" data-i18n-attr="title" data-i18n-attr-key="客服咨询">
       💬
     </div>
     <div class="floating-contact-panel" id="contact-panel">
-      <div class="contact-panel-header">客服联系</div>
+      <div class="contact-panel-header"><span data-i18n="客服联系">客服联系</span></div>
       <div class="contact-panel-body">
-        <p>购买咨询 / 技术支持</p>
+        <p><span data-i18n="购买咨询 / 技术支持">购买咨询 / 技术支持</span></p>
         <p class="contact-qq">QQ：<strong>378952277</strong></p>
-        <p class="contact-email">邮箱：<a href="mailto:haolongli84@gmail.com">haolongli84@gmail.com</a></p>
+        <p class="contact-email"><span data-i18n="邮箱：">邮箱：</span><a href="mailto:haolongli84@gmail.com">haolongli84@gmail.com</a></p>
       </div>
     </div>
   </div>
 
-  <!-- ========== Disclaimer ========== -->
+  
   <section class="disclaimer" id="disclaimer">
     <div class="container">
-      <h2 class="disclaimer-title">⚖️ 免责声明</h2>
+      <h2 class="disclaimer-title"><span data-i18n="⚖️ 免责声明">⚖️ 免责声明</span></h2>
       <div class="disclaimer-content">
         <div class="disclaimer-item">
-          <h4>本软件（及相关服务）仅作为技术工具提供</h4>
-          <p>用于合法合规的多媒体文件下载、格式转换与本地管理用途。</p>
+          <h4><span data-i18n="本软件（及相关服务）仅作为技术工具提供">本软件（及相关服务）仅作为技术工具提供</span></h4>
+          <p><span data-i18n="用于合法合规的多媒体文件下载、格式转换与本地管理用途。">用于合法合规的多媒体文件下载、格式转换与本地管理用途。</span></p>
         </div>
         <div class="disclaimer-item">
-          <h4>版权提示</h4>
-          <p>本软件仅用于下载用户拥有版权或已获得合法授权的音视频内容。未经版权方许可，下载、复制、传播受版权保护的内容可能违反当地法律法规。</p>
+          <h4><span data-i18n="版权提示">版权提示</span></h4>
+          <p><span data-i18n="本软件仅用于下载用户拥有版权或已获得合法授权的音视频内容。未经版权方许可，下载、复制、传播受版权保护的内容可能违反当地法律法规。">本软件仅用于下载用户拥有版权或已获得合法授权的音视频内容。未经版权方许可，下载、复制、传播受版权保护的内容可能违反当地法律法规。</span></p>
         </div>
         <div class="disclaimer-item">
-          <h4>使用责任</h4>
-          <p>用户使用本软件进行的所有下载、存储、传播行为，均由用户自行承担全部法律责任。开发者不对用户的使用行为负责，亦不对因用户违规使用导致的任何直接或间接损失承担责任。</p>
+          <h4><span data-i18n="使用责任">使用责任</span></h4>
+          <p><span data-i18n="用户使用本软件进行的所有下载、存储、传播行为，均由用户自行承担全部法律责任。开发者不对用户的使用行为负责，亦不对因用户违规使用导致的任何直接或间接损失承担责任。">用户使用本软件进行的所有下载、存储、传播行为，均由用户自行承担全部法律责任。开发者不对用户的使用行为负责，亦不对因用户违规使用导致的任何直接或间接损失承担责任。</span></p>
         </div>
         <div class="disclaimer-item">
-          <h4>第三方平台声明</h4>
-          <p>本软件与 YouTube、TikTok、Bilibili 及其他第三方平台无任何官方关联，亦未获得上述平台授权。使用本软件可能违反第三方平台服务条款，用户需自行承担相关风险。</p>
+          <h4><span data-i18n="第三方平台声明">第三方平台声明</span></h4>
+          <p><span data-i18n="本软件与 YouTube、TikTok、Bilibili 及其他第三方平台无任何官方关联，亦未获得上述平台授权。使用本软件可能违反第三方平台服务条款，用户需自行承担相关风险。">本软件与 YouTube、TikTok、Bilibili 及其他第三方平台无任何官方关联，亦未获得上述平台授权。使用本软件可能违反第三方平台服务条款，用户需自行承担相关风险。</span></p>
         </div>
         <div class="disclaimer-item">
-          <h4>功能与风险</h4>
-          <p>开发者尽力保证软件稳定性，但不对因网络、平台规则变更、设备问题等导致的下载失败、数据丢失等情况提供担保。</p>
+          <h4><span data-i18n="功能与风险">功能与风险</span></h4>
+          <p><span data-i18n="开发者尽力保证软件稳定性，但不对因网络、平台规则变更、设备问题等导致的下载失败、数据丢失等情况提供担保。">开发者尽力保证软件稳定性，但不对因网络、平台规则变更、设备问题等导致的下载失败、数据丢失等情况提供担保。</span></p>
         </div>
         <div class="disclaimer-item">
-          <h4>法律合规</h4>
-          <p>用户在使用前，应确保其行为符合所在国家 / 地区的法律法规及平台规则。如用户行为违法违规，开发者不承担任何连带责任。</p>
+          <h4><span data-i18n="法律合规">法律合规</span></h4>
+          <p><span data-i18n="用户在使用前，应确保其行为符合所在国家 / 地区的法律法规及平台规则。如用户行为违法违规，开发者不承担任何连带责任。">用户在使用前，应确保其行为符合所在国家 / 地区的法律法规及平台规则。如用户行为违法违规，开发者不承担任何连带责任。</span></p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ========== Footer ========== -->
+  
   <footer class="footer">
     <div class="container">
       <div class="footer-brand">
         <img src="app_icon.png" alt="SourceCraft">
         <span>SourceCraft</span>
       </div>
-      <nav class="footer-nav" aria-label="页脚导航">
-        <a href="/">首页</a>
-        <a href="/features.html">功能介绍</a>
-        <a href="/guide.html">使用教程</a>
-        <a href="/faq.html">常见问题</a>
-        <a href="/privacy.html">隐私政策</a>
-        <a href="/terms.html">服务条款</a>
+      <nav class="footer-nav" aria-label="页脚导航" data-i18n-attr="aria-label" data-i18n-attr-key="页脚导航">
+        <a href="/"><span data-i18n="首页">首页</span></a>
+        <a href="/features.html"><span data-i18n="功能介绍">功能介绍</span></a>
+        <a href="/guide.html"><span data-i18n="使用教程">使用教程</span></a>
+        <a href="/faq.html"><span data-i18n="常见问题">常见问题</span></a>
+        <a href="/privacy.html"><span data-i18n="隐私政策">隐私政策</span></a>
+        <a href="/terms.html"><span data-i18n="服务条款">服务条款</span></a>
       </nav>
       <div class="footer-info">
         © 2026 SourceCraft. All rights reserved.
       </div>
-      <div class="footer-contact">
+      <div class="footer-contact"><span data-i18n="联系我们：QQ 378952277 | 邮箱：haolongli84@gmail.com">
         联系我们：QQ 378952277 | 邮箱：haolongli84@gmail.com
-      </div>
+      </span></div>
     </div>
   </footer>
 

@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>隐私政策 - SourceCraft 多媒体下载工具</title>
-  <meta name="description" content="SourceCraft 隐私政策：我们不收集任何个人数据。所有数据（激活码、下载记录、设置）仅保存在您的本地设备上。">
+  <title data-i18n="隐私政策 - SourceCraft 多媒体下载工具">隐私政策 - SourceCraft 多媒体下载工具</title>
+  <meta name="description" content="SourceCraft 隐私政策：我们不收集任何个人数据。所有数据（激活码、下载记录、设置）仅保存在您的本地设备上。" data-i18n="SourceCraft 隐私政策：我们不收集任何个人数据。所有数据（激活码、下载记录、设置）仅保存在您的本地设备上。">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
   <link rel="canonical" href="https://hundunxiazaiqi.cn/privacy.html">
   <link rel="icon" type="image/png" href="app_icon.png">
@@ -45,6 +45,68 @@
     .cta-section p { color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 32px; max-width: 480px; margin-left: auto; margin-right: auto; }
     @media (max-width: 640px) { .page-hero h1 { font-size: 2rem; } }
   </style>
+  <script src="locales/zh.js?v=3"></script>
+  <script src="locales/en.js?v=3"></script>
+  <script src="i18n.js?v=3"></script>
+  <style>
+.lang-switcher-li { display: flex; align-items: center; margin-left: 12px; }
+.lang-switcher { position: relative; }
+.lang-btn {
+  appearance: none; -webkit-appearance: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.2));
+}
+.lang-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-mid, #6366f1);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+}
+.lang-btn:focus { outline: none; border-color: var(--accent-mid, #6366f1); }
+.lang-btn-globe { font-size: 0.95rem; line-height: 1; }
+.lang-btn-caret { font-size: 0.7rem; color: var(--text-muted, #64748b); transition: transform 0.2s; }
+.lang-btn[aria-expanded="true"] .lang-btn-caret { transform: rotate(180deg); }
+.lang-menu {
+  display: none;
+  position: absolute; top: calc(100% + 8px); right: 0;
+  min-width: 132px;
+  background: var(--bg-secondary, #111827);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  margin: 0; list-style: none;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+.lang-menu.open { display: block; }
+.lang-menu-item {
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.lang-menu-item:hover { background: var(--bg-card-hover, rgba(30,41,59,0.8)); color: var(--text-primary); }
+.lang-menu-item.active {
+  background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(99,102,241,0.35));
+  color: #fff; font-weight: 600;
+}
+@media (max-width: 768px) {
+  .lang-switcher-li { margin-left: 0; margin-top: 12px; justify-content: flex-start; }
+  .lang-menu { right: auto; left: 0; }
+}
+  </style>
 </head>
 <body>
   <div class="bg-glow bg-glow-1"></div>
@@ -55,109 +117,111 @@
     <div class="container">
       <a href="/" class="navbar-brand"><img src="app_icon.png" alt="SourceCraft Logo"><span>SourceCraft</span></a>
       <ul class="navbar-links" id="nav-links">
-        <li><a href="/features.html">功能介绍</a></li>
-        <li><a href="/guide.html">使用教程</a></li>
-        <li><a href="/faq.html">常见问题</a></li>
-        <li><a href="/#download" class="btn btn-primary navbar-cta">立即下载</a></li>
-      </ul>
-      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="菜单">☰</button>
+        <li><a href="/features.html"><span data-i18n="功能介绍">功能介绍</span></a></li>
+        <li><a href="/guide.html"><span data-i18n="使用教程">使用教程</span></a></li>
+        <li><a href="/faq.html"><span data-i18n="常见问题">常见问题</span></a></li>
+        <li><a href="/#download" class="btn btn-primary navbar-cta"><span data-i18n="立即下载">立即下载</span></a></li>
+              <li class="lang-switcher-li">
+          <div id="lang-switcher" class="lang-switcher"></div>
+        </li>
+      </ul><button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="菜单" data-i18n-attr="aria-label" data-i18n-attr-key="菜单">☰</button>
     </div>
   </nav>
 
   <section class="page-hero">
     <div class="container">
-      <nav class="breadcrumb" aria-label="面包屑导航"><a href="/">首页</a><span class="sep">›</span><span>隐私政策</span></nav>
-      <h1><span class="gradient-text">隐私政策</span></h1>
-      <p>简单来说：我们不收集您的任何个人数据。</p>
+      <nav class="breadcrumb" aria-label="面包屑导航" data-i18n-attr="aria-label" data-i18n-attr-key="面包屑导航"><a href="/"><span data-i18n="首页">首页</span></a><span class="sep">›</span><span><span data-i18n="隐私政策">隐私政策</span></span></nav>
+      <h1><span class="gradient-text"><span data-i18n="隐私政策">隐私政策</span></span></h1>
+      <p><span data-i18n="简单来说：我们不收集您的任何个人数据。">简单来说：我们不收集您的任何个人数据。</span></p>
     </div>
   </section>
 
   <section class="legal-content">
     <div class="container">
-      <p class="legal-updated">最近更新日期：2026 年 8 月 7 日</p>
+      <p class="legal-updated"><span data-i18n="最近更新日期：2026 年 8 月 7 日">最近更新日期：2026 年 8 月 7 日</span></p>
 
       <div class="highlight-box">
-        <p><strong>核心承诺：SourceCraft 不收集、不上传、不出售任何个人数据。</strong> 我们无法收集我们从未获取的数据。</p>
+        <p><strong><span data-i18n="核心承诺：SourceCraft 不收集、不上传、不出售任何个人数据。">核心承诺：SourceCraft 不收集、不上传、不出售任何个人数据。</span></strong><span data-i18n="我们无法收集我们从未获取的数据。"> 我们无法收集我们从未获取的数据。</span></p>
       </div>
 
       <div class="legal-section">
-        <h2>1. 我们收集什么数据</h2>
-        <p><strong>我们不收集任何个人数据。</strong> SourceCraft 是一款本地运行的桌面软件，其核心功能（视频下载、格式转换、图片批处理）完全在您的设备上执行，无需任何账号或注册。</p>
+        <h2><span data-i18n="1. 我们收集什么数据">1. 我们收集什么数据</span></h2>
+        <p><strong><span data-i18n="我们不收集任何个人数据。">我们不收集任何个人数据。</span></strong><span data-i18n="SourceCraft 是一款本地运行的桌面软件，其核心功能（视频下载、格式转换、图片批处理）完全在您的设备上执行，无需任何账号或注册。"> SourceCraft 是一款本地运行的桌面软件，其核心功能（视频下载、格式转换、图片批处理）完全在您的设备上执行，无需任何账号或注册。</span></p>
         <ul>
-          <li><strong>不收集：</strong>姓名、邮箱、电话号码、身份证号等任何身份信息</li>
-          <li><strong>不收集：</strong>使用习惯、浏览记录、统计数据或行为分析</li>
-          <li><strong>不收集：</strong>位置信息、IP 地址（除下方"激活验证"所述的必要通信外）</li>
-          <li><strong>无账号系统：</strong>SourceCraft 没有用户账号，也不要求注册</li>
+          <li><strong><span data-i18n="不收集：">不收集：</span></strong><span data-i18n="姓名、邮箱、电话号码、身份证号等任何身份信息">姓名、邮箱、电话号码、身份证号等任何身份信息</span></li>
+          <li><strong><span data-i18n="不收集：">不收集：</span></strong><span data-i18n="使用习惯、浏览记录、统计数据或行为分析">使用习惯、浏览记录、统计数据或行为分析</span></li>
+          <li><strong><span data-i18n="不收集：">不收集：</span></strong><span data-i18n="位置信息、IP 地址（除下方&quot;激活验证&quot;所述的必要通信外）">位置信息、IP 地址（除下方"激活验证"所述的必要通信外）</span></li>
+          <li><strong><span data-i18n="无账号系统：">无账号系统：</span></strong><span data-i18n="SourceCraft 没有用户账号，也不要求注册">SourceCraft 没有用户账号，也不要求注册</span></li>
         </ul>
       </div>
 
       <div class="legal-section">
-        <h2>2. 本地存储的数据</h2>
-        <p>以下数据仅保存在您自己的设备上，不会上传到任何服务器：</p>
+        <h2><span data-i18n="2. 本地存储的数据">2. 本地存储的数据</span></h2>
+        <p><span data-i18n="以下数据仅保存在您自己的设备上，不会上传到任何服务器：">以下数据仅保存在您自己的设备上，不会上传到任何服务器：</span></p>
         <ul>
-          <li><strong>激活状态：</strong>您的激活码及激活状态以加密形式存储在本地</li>
-          <li><strong>下载记录：</strong>下载历史、任务列表和设置项</li>
-          <li><strong>浏览器数据：</strong>内置浏览器产生的书签、历史记录</li>
-          <li><strong>媒体文件：</strong>您下载的视频、音频、图片文件</li>
+          <li><strong><span data-i18n="激活状态：">激活状态：</span></strong><span data-i18n="您的激活码及激活状态以加密形式存储在本地">您的激活码及激活状态以加密形式存储在本地</span></li>
+          <li><strong><span data-i18n="下载记录：">下载记录：</span></strong><span data-i18n="下载历史、任务列表和设置项">下载历史、任务列表和设置项</span></li>
+          <li><strong><span data-i18n="浏览器数据：">浏览器数据：</span></strong><span data-i18n="内置浏览器产生的书签、历史记录">内置浏览器产生的书签、历史记录</span></li>
+          <li><strong><span data-i18n="媒体文件：">媒体文件：</span></strong><span data-i18n="您下载的视频、音频、图片文件">您下载的视频、音频、图片文件</span></li>
         </ul>
-        <p>卸载软件或清除应用数据即可完全删除上述本地数据。</p>
+        <p><span data-i18n="卸载软件或清除应用数据即可完全删除上述本地数据。">卸载软件或清除应用数据即可完全删除上述本地数据。</span></p>
       </div>
 
       <div class="legal-section">
-        <h2>3. 激活验证</h2>
-        <p>当您激活或验证许可证时，软件会向授权服务器发送以下必要信息，仅用于验证激活码是否有效：</p>
+        <h2><span data-i18n="3. 激活验证">3. 激活验证</span></h2>
+        <p><span data-i18n="当您激活或验证许可证时，软件会向授权服务器发送以下必要信息，仅用于验证激活码是否有效：">当您激活或验证许可证时，软件会向授权服务器发送以下必要信息，仅用于验证激活码是否有效：</span></p>
         <ul>
-          <li><strong>激活码本身</strong></li>
-          <li><strong>设备指纹哈希：</strong>由硬件信息生成的一次性哈希摘要（不可逆），用于防止激活码被多设备共享</li>
+          <li><strong><span data-i18n="激活码本身">激活码本身</span></strong></li>
+          <li><strong><span data-i18n="设备指纹哈希：">设备指纹哈希：</span></strong><span data-i18n="由硬件信息生成的一次性哈希摘要（不可逆），用于防止激活码被多设备共享">由硬件信息生成的一次性哈希摘要（不可逆），用于防止激活码被多设备共享</span></li>
         </ul>
-        <p>这些信息仅用于授权验证，不包含您的姓名、邮箱或任何可识别的个人内容，且不会被用于任何其他目的。</p>
+        <p><span data-i18n="这些信息仅用于授权验证，不包含您的姓名、邮箱或任何可识别的个人内容，且不会被用于任何其他目的。">这些信息仅用于授权验证，不包含您的姓名、邮箱或任何可识别的个人内容，且不会被用于任何其他目的。</span></p>
       </div>
 
       <div class="legal-section">
-        <h2>4. 支付与购买</h2>
-        <p>SourceCraft 的付费版本通过第三方自动发卡平台（pay.ldxp.cn）销售激活码。当您购买时：</p>
+        <h2><span data-i18n="4. 支付与购买">4. 支付与购买</span></h2>
+        <p><span data-i18n="SourceCraft 的付费版本通过第三方自动发卡平台（pay.ldxp.cn）销售激活码。当您购买时：">SourceCraft 的付费版本通过第三方自动发卡平台（pay.ldxp.cn）销售激活码。当您购买时：</span></p>
         <ul>
-          <li>您通过扫码或访问商铺链接完成支付，支付信息（如微信、支付宝账号）<strong>直接提供给发卡平台</strong>，我们无法访问</li>
-          <li>支付成功后由发卡平台自动发放激活码，您将激活码输入软件即可解锁高级功能</li>
-          <li>我们仅收到激活码的发放记录，不会收到您的完整支付信息</li>
-        </ul>
-      </div>
-
-      <div class="legal-section">
-        <h2>5. 网络通信</h2>
-        <p>使用下载功能时，软件会直接连接您指定的视频平台服务器以获取媒体资源，这与您在浏览器中访问该网站的网络行为相同。我们无法控制、记录或存储这些第三方站点的数据。</p>
-      </div>
-
-      <div class="legal-section">
-        <h2>6. 第三方服务</h2>
-        <p>本软件可能调用以下第三方服务，其数据处理受各自隐私政策约束：</p>
-        <ul>
-          <li><strong>自动发卡平台</strong>（激活码销售与支付处理）— pay.ldxp.cn</li>
-          <li><strong>视频平台网站</strong>（下载来源，由您自行选择）</li>
-          <li><strong>公共时间服务器</strong>（仅用于获取标准时间，防止时间篡改，不发送任何个人数据）</li>
+          <li><span data-i18n="您通过扫码或访问商铺链接完成支付，支付信息（如微信、支付宝账号）">您通过扫码或访问商铺链接完成支付，支付信息（如微信、支付宝账号）</span><strong><span data-i18n="直接提供给发卡平台">直接提供给发卡平台</span></strong><span data-i18n="，我们无法访问">，我们无法访问</span></li>
+          <li><span data-i18n="支付成功后由发卡平台自动发放激活码，您将激活码输入软件即可解锁高级功能">支付成功后由发卡平台自动发放激活码，您将激活码输入软件即可解锁高级功能</span></li>
+          <li><span data-i18n="我们仅收到激活码的发放记录，不会收到您的完整支付信息">我们仅收到激活码的发放记录，不会收到您的完整支付信息</span></li>
         </ul>
       </div>
 
       <div class="legal-section">
-        <h2>7. 数据安全</h2>
-        <p>本地存储的激活信息使用加密方式保存，设备指纹以单向哈希处理，无法逆向还原为硬件信息。</p>
+        <h2><span data-i18n="5. 网络通信">5. 网络通信</span></h2>
+        <p><span data-i18n="使用下载功能时，软件会直接连接您指定的视频平台服务器以获取媒体资源，这与您在浏览器中访问该网站的网络行为相同。我们无法控制、记录或存储这些第三方站点的数据。">使用下载功能时，软件会直接连接您指定的视频平台服务器以获取媒体资源，这与您在浏览器中访问该网站的网络行为相同。我们无法控制、记录或存储这些第三方站点的数据。</span></p>
       </div>
 
       <div class="legal-section">
-        <h2>8. 儿童隐私</h2>
-        <p>SourceCraft 不针对儿童设计，也不收集任何年龄相关信息。</p>
-      </div>
-
-      <div class="legal-section">
-        <h2>9. 政策更新</h2>
-        <p>如本政策发生变化，我们将在本页面发布更新并修改"最近更新日期"。由于我们不收集您的联系方式，无法单独通知，请定期查看本页面。</p>
-      </div>
-
-      <div class="legal-section">
-        <h2>10. 联系我们</h2>
-        <p>如对本隐私政策有任何疑问，请通过以下方式联系我们：</p>
+        <h2><span data-i18n="6. 第三方服务">6. 第三方服务</span></h2>
+        <p><span data-i18n="本软件可能调用以下第三方服务，其数据处理受各自隐私政策约束：">本软件可能调用以下第三方服务，其数据处理受各自隐私政策约束：</span></p>
         <ul>
-          <li><strong>邮箱：</strong>haolongli84@gmail.com</li>
+          <li><strong><span data-i18n="自动发卡平台">自动发卡平台</span></strong><span data-i18n="（激活码销售与支付处理）— pay.ldxp.cn">（激活码销售与支付处理）— pay.ldxp.cn</span></li>
+          <li><strong><span data-i18n="视频平台网站">视频平台网站</span></strong><span data-i18n="（下载来源，由您自行选择）">（下载来源，由您自行选择）</span></li>
+          <li><strong><span data-i18n="公共时间服务器">公共时间服务器</span></strong><span data-i18n="（仅用于获取标准时间，防止时间篡改，不发送任何个人数据）">（仅用于获取标准时间，防止时间篡改，不发送任何个人数据）</span></li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2><span data-i18n="7. 数据安全">7. 数据安全</span></h2>
+        <p><span data-i18n="本地存储的激活信息使用加密方式保存，设备指纹以单向哈希处理，无法逆向还原为硬件信息。">本地存储的激活信息使用加密方式保存，设备指纹以单向哈希处理，无法逆向还原为硬件信息。</span></p>
+      </div>
+
+      <div class="legal-section">
+        <h2><span data-i18n="8. 儿童隐私">8. 儿童隐私</span></h2>
+        <p><span data-i18n="SourceCraft 不针对儿童设计，也不收集任何年龄相关信息。">SourceCraft 不针对儿童设计，也不收集任何年龄相关信息。</span></p>
+      </div>
+
+      <div class="legal-section">
+        <h2><span data-i18n="9. 政策更新">9. 政策更新</span></h2>
+        <p><span data-i18n="如本政策发生变化，我们将在本页面发布更新并修改&quot;最近更新日期&quot;。由于我们不收集您的联系方式，无法单独通知，请定期查看本页面。">如本政策发生变化，我们将在本页面发布更新并修改"最近更新日期"。由于我们不收集您的联系方式，无法单独通知，请定期查看本页面。</span></p>
+      </div>
+
+      <div class="legal-section">
+        <h2><span data-i18n="10. 联系我们">10. 联系我们</span></h2>
+        <p><span data-i18n="如对本隐私政策有任何疑问，请通过以下方式联系我们：">如对本隐私政策有任何疑问，请通过以下方式联系我们：</span></p>
+        <ul>
+          <li><strong><span data-i18n="邮箱：">邮箱：</span></strong>haolongli84@gmail.com</li>
           <li><strong>QQ：</strong>378952277</li>
         </ul>
       </div>
@@ -166,11 +230,11 @@
 
   <section class="cta-section">
     <div class="container">
-      <h2>隐私优先，本地运行</h2>
-      <p>SourceCraft 的所有核心功能都在您的设备上运行，您的数据只属于您自己。</p>
+      <h2><span data-i18n="隐私优先，本地运行">隐私优先，本地运行</span></h2>
+      <p><span data-i18n="SourceCraft 的所有核心功能都在您的设备上运行，您的数据只属于您自己。">SourceCraft 的所有核心功能都在您的设备上运行，您的数据只属于您自己。</span></p>
       <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-        <a href="/#download" class="btn btn-primary btn-large">⬇ 免费下载 SourceCraft</a>
-        <a href="/terms.html" class="btn btn-secondary btn-large">📄 查看服务条款</a>
+        <a href="/#download" class="btn btn-primary btn-large"><span data-i18n="⬇ 免费下载 SourceCraft">⬇ 免费下载 SourceCraft</span></a>
+        <a href="/terms.html" class="btn btn-secondary btn-large"><span data-i18n="📄 查看服务条款">📄 查看服务条款</span></a>
       </div>
     </div>
   </section>
@@ -178,9 +242,9 @@
   <footer class="footer">
     <div class="container">
       <div class="footer-brand"><img src="app_icon.png" alt="SourceCraft"><span>SourceCraft</span></div>
-      <nav class="footer-nav" aria-label="页脚导航"><a href="/">首页</a><a href="/features.html">功能介绍</a><a href="/guide.html">使用教程</a><a href="/faq.html">常见问题</a><a href="/privacy.html">隐私政策</a><a href="/terms.html">服务条款</a></nav>
+      <nav class="footer-nav" aria-label="页脚导航" data-i18n-attr="aria-label" data-i18n-attr-key="页脚导航"><a href="/"><span data-i18n="首页">首页</span></a><a href="/features.html"><span data-i18n="功能介绍">功能介绍</span></a><a href="/guide.html"><span data-i18n="使用教程">使用教程</span></a><a href="/faq.html"><span data-i18n="常见问题">常见问题</span></a><a href="/privacy.html"><span data-i18n="隐私政策">隐私政策</span></a><a href="/terms.html"><span data-i18n="服务条款">服务条款</span></a></nav>
       <div class="footer-info">© 2026 SourceCraft. All rights reserved.</div>
-      <div class="footer-contact">联系我们：QQ 378952277 | 邮箱：haolongli84@gmail.com</div>
+      <div class="footer-contact"><span data-i18n="联系我们：QQ 378952277 | 邮箱：haolongli84@gmail.com">联系我们：QQ 378952277 | 邮箱：haolongli84@gmail.com</span></div>
     </div>
   </footer>
 
