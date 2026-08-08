@@ -1,4 +1,5 @@
 import ctypes
+from i18n import t_format
 from PyQt5.QtCore import QSettings
 from .constants import RUNTIME_APP_DIR
 """更新相关工具函数"""

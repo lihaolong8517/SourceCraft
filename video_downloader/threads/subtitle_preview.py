@@ -1,4 +1,5 @@
 import json
+from i18n import t_format
 import subprocess
 import auth_utils
 from PyQt5.QtCore import QUrl

@@ -1,5 +1,6 @@
 """下载历史记录管理器"""
 import json
+from i18n import t_format
 import os
 import sys
 import time

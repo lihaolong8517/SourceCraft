@@ -17,6 +17,7 @@ from . import utils
 from .utils import _load_app_icon
 from .app import VideoDownloaderApp
 from . import _set_windows_app_user_model_id
+from i18n import t, t_format
 
 
 def check_dependencies():

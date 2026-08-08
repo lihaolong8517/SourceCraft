@@ -1,4 +1,5 @@
 import sys
+from i18n import t_format
 import os
 import multiprocessing
 import playwright_fix

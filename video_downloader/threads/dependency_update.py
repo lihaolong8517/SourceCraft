@@ -1,4 +1,5 @@
 from ..utils_update import _open_url_with_fallback
+from i18n import t, t_format
 """依赖更新线程 - yt-dlp/FFmpeg/Deno 更新"""
 import sys
 import os

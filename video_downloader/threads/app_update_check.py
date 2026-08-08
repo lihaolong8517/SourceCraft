@@ -1,4 +1,5 @@
 import re
+from i18n import t, t_format
 from ..utils_update import DEFAULT_APP_UPDATE_METADATA_URL, DEFAULT_APP_WEBSITE_URL, _open_url_with_fallback, get_app_version, compare_version_text
 """应用更新检查线程"""
 import json

@@ -1,4 +1,5 @@
 import os
+from i18n import t_format
 """转码拖放控件"""
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt, pyqtSignal

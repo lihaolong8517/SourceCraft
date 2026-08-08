@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QFrame
+from i18n import t, t_format
 """失败视频列表对话框"""
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QTableWidget, QTableWidgetItem, 
