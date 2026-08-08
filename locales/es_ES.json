@@ -218,8 +218,6 @@
  "<b>🎬 字幕功能使用说明：</b><br>": "<b>🎬 Guía de funciones de subtítulos:</b><br>",
  "<b>💡 使用场景说明：</b><br>": "<b>💡 Casos de uso:</b><br>",
  "<b>📊 优化策略说明：</b><br>": "<b>📊 Estrategia de optimización:</b><br>",
- "<span style='color: #2c3e50; font-size: 13px;'>¥28 <b style='color: #e74c3c; font-size: 18px;'>终身免费</b>使用</span>": "<span style='color: #2c3e50; font-size: 13px;'>Licencia de <b style='color: #e74c3c; font-size: 18px;'>por vida de</b> ¥ 28</span>",
- "<span style='color: #7f8c8d;'>💡 定价方案</span><br>": "<span style='color: #7f8c8d;'>💡 Precios</span><br>",
  "AMD GPU不可用，{} 编码器测试失败，回退到CPU编码模式": "GPU AMD no disponible; {} la prueba del codificador falló. Recurrir a la codificación de la CPU",
  "AMD GPU优化配置完成: {}...": "Optimización de GPU AMD configurada: {}....",
  "AMD GPU使用率: {:.1f}% (平均: {:.1f}%)": "Uso de GPU AMD: {:.1f}% (promedio: {:.1f}%)",
@@ -1759,8 +1757,6 @@
  "线程数:": "Hilos:",
  "终止进程时出错: {}": "Error al finalizar el proceso: {}",
  "终止进程组失败: {}": "No se pudo finalizar el grupo de procesos: {}",
- "终身版 <b style='color: #e74c3c;'>¥28</b> 永久使用": "Licencia de por vida <b style='color: #e74c3c;'>¥28</b>",
- "终身版 ¥28": "De por vida ¥28",
  "经典暗黑": "Clásico Oscuro",
  "绑定到特定的本地IP地址（多网卡环境使用）": "Vincularse a una dirección IP local específica (para entornos de múltiples NIC)",
  "绑定源地址": "Vincular dirección de origen",
@@ -2368,5 +2364,6 @@
  "🟡 性能提示: GPU使用率较低，还有优化空间": "🟡 Consejo: el uso de GPU es bajo; hay espacio para la optimización",
  "🟢 性能良好: GPU使用率较高，硬件加速效果显著": "🟢 Bueno: alto uso de GPU; la aceleración es efectiva",
  "🧹 开始清理残余文件...": "🧹Limpiar archivos sobrantes...",
- "🧹 清理完成，共删除 {} 个原始元数据文件": "🧹 Limpieza realizada: {} archivos de metadatos originales eliminados"
+ "🧹 清理完成，共删除 {} 个原始元数据文件": "🧹 Limpieza realizada: {} archivos de metadatos originales eliminados",
+ "终身版 永久使用": "Licencia de por vida"
 }

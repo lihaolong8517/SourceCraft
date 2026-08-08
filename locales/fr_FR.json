@@ -218,8 +218,6 @@
  "<b>🎬 字幕功能使用说明：</b><br>": "<b>🎬 Guide des fonctionnalités de sous-titres :</b><br>",
  "<b>💡 使用场景说明：</b><br>": "<b>💡 Cas d'utilisation :</b><br>",
  "<b>📊 优化策略说明：</b><br>": "<b>📊 Stratégie d'optimisation :</b><br>",
- "<span style='color: #2c3e50; font-size: 13px;'>¥28 <b style='color: #e74c3c; font-size: 18px;'>终身免费</b>使用</span>": "<span style='couleur: #2c3e50; taille de police : 13px;'>¥28 <b style='color: #e74c3c; font-size : 18px;'>Licence à vie</b></span>",
- "<span style='color: #7f8c8d;'>💡 定价方案</span><br>": "<span style='color: #7f8c8d;'>💡 Tarifs</span><br>",
  "AMD GPU不可用，{} 编码器测试失败，回退到CPU编码模式": "GPU AMD indisponible ; Le test de l'encodeur {} a échoué. Revenir au codage CPU",
  "AMD GPU优化配置完成: {}...": "Optimisation du GPU AMD configurée : {}...",
  "AMD GPU使用率: {:.1f}% (平均: {:.1f}%)": "Utilisation du GPU AMD : {:.1f} % (moyenne : {:.1f} %)",
@@ -1759,8 +1757,6 @@
  "线程数:": "Sujets :",
  "终止进程时出错: {}": "Erreur lors de la fin du processus : {}",
  "终止进程组失败: {}": "Échec de la terminaison du groupe de processus : {}",
- "终身版 <b style='color: #e74c3c;'>¥28</b> 永久使用": "Licence à vie <b style='color: #e74c3c;'>28 ¥</b>",
- "终身版 ¥28": "À vie 28 ¥",
  "经典暗黑": "Classique Foncé",
  "绑定到特定的本地IP地址（多网卡环境使用）": "Lier à une adresse IP locale spécifique (pour les environnements multi-NIC)",
  "绑定源地址": "Lier l'adresse source",
@@ -2368,5 +2364,6 @@
  "🟡 性能提示: GPU使用率较低，还有优化空间": "🟡 Astuce : l'utilisation du GPU est faible ; il y a place à l'optimisation",
  "🟢 性能良好: GPU使用率较高，硬件加速效果显著": "🟢 Bon : utilisation élevée du GPU ; l'accélération est efficace",
  "🧹 开始清理残余文件...": "🧹 Nettoyage des fichiers restants...",
- "🧹 清理完成，共删除 {} 个原始元数据文件": "🧹 Nettoyage effectué : {} fichiers de métadonnées d'origine supprimés"
+ "🧹 清理完成，共删除 {} 个原始元数据文件": "🧹 Nettoyage effectué : {} fichiers de métadonnées d'origine supprimés",
+ "终身版 永久使用": "Licence à vie"
 }

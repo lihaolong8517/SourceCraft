@@ -218,8 +218,6 @@
  "<b>🎬 字幕功能使用说明：</b><br>": "<b>🎬 Leitfaden zur Untertitelfunktion:</b><br>",
  "<b>💡 使用场景说明：</b><br>": "<b>💡 Anwendungsfälle:</b><br>",
  "<b>📊 优化策略说明：</b><br>": "<b>📊 Optimierungsstrategie:</b><br>",
- "<span style='color: #2c3e50; font-size: 13px;'>¥28 <b style='color: #e74c3c; font-size: 18px;'>终身免费</b>使用</span>": "<span style='color: #2c3e50; Schriftgröße: 13px;'>¥28 <b style='color: #e74c3c; Schriftgröße: 18px;'>Lebenslange</b> Lizenz</span>",
- "<span style='color: #7f8c8d;'>💡 定价方案</span><br>": "<span style='color: #7f8c8d;'>💡 Preise</span><br>",
  "AMD GPU不可用，{} 编码器测试失败，回退到CPU编码模式": "AMD-GPU nicht verfügbar; {}-Encodertest fehlgeschlagen. Zurückgreifen auf die CPU-Kodierung",
  "AMD GPU优化配置完成: {}...": "AMD GPU-Optimierung konfiguriert: {}...",
  "AMD GPU使用率: {:.1f}% (平均: {:.1f}%)": "AMD GPU-Auslastung: {:.1f} % (Durchschnitt: {:.1f} %)",
@@ -1759,8 +1757,6 @@
  "线程数:": "Themen:",
  "终止进程时出错: {}": "Fehler beim Beenden des Prozesses: {}",
  "终止进程组失败: {}": "Prozessgruppe konnte nicht beendet werden: {}",
- "终身版 <b style='color: #e74c3c;'>¥28</b> 永久使用": "Lebenslange Lizenz <b style='color: #e74c3c;'>¥28</b>",
- "终身版 ¥28": "Lebenszeit ¥28",
  "经典暗黑": "Klassisch dunkel",
  "绑定到特定的本地IP地址（多网卡环境使用）": "An eine bestimmte lokale IP-Adresse binden (für Umgebungen mit mehreren NICs)",
  "绑定源地址": "Quelladresse binden",
@@ -2368,5 +2364,6 @@
  "🟡 性能提示: GPU使用率较低，还有优化空间": "🟡 Tipp: Die GPU-Auslastung ist gering; Es gibt Raum für Optimierung",
  "🟢 性能良好: GPU使用率较高，硬件加速效果显著": "🟢 Gut: hohe GPU-Auslastung; Beschleunigung ist effektiv",
  "🧹 开始清理残余文件...": "🧹 Bereinigen übrig gebliebener Dateien...",
- "🧹 清理完成，共删除 {} 个原始元数据文件": "🧹 Bereinigung abgeschlossen: {} Original-Metadatendateien entfernt"
+ "🧹 清理完成，共删除 {} 个原始元数据文件": "🧹 Bereinigung abgeschlossen: {} Original-Metadatendateien entfernt",
+ "终身版 永久使用": "Lebenslange Lizenz"
 }

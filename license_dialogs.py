@@ -4,7 +4,7 @@
 
 定价：
 - 15天免费试用
-- 终身版 ¥28
+- 终身版（价格以官网/发卡平台为准）
 - 设备限制：1台
 """
 
@@ -84,11 +84,11 @@ class PaymentDialog(QDialog):
         """)
         layout.addWidget(title)
         
-        # 定价信息
+        # 定价信息（价格由发卡平台/官网展示，工具内不显示具体金额，改价无需改代码）
         pricing = QLabel(
             "<center>"
             "<span style='font-size: 16px;'>"
-            + t("终身版 <b style='color: #e74c3c;'>¥28</b> 永久使用")
+            + t("终身版 永久使用")
             + "</span>"
             "</center>"
         )
@@ -394,17 +394,6 @@ class ActivationDialog(QDialog):
         
         layout.addLayout(button_layout)
         
-        # 定价信息
-        pricing_label = QLabel(
-            "<center>"
-            "<div style='line-height: 1.6;'>" +
-            t("<span style='color: #7f8c8d;'>💡 定价方案</span><br>") +
-            t("<span style='color: #2c3e50; font-size: 13px;'>¥28 <b style='color: #e74c3c; font-size: 18px;'>终身免费</b>使用</span>") + t("</div>") +
-            "</center>"
-        )
-        pricing_label.setStyleSheet("margin-top: 10px; min-height: 50px;")
-        layout.addWidget(pricing_label)
-        
         # 底部按钮
         bottom_layout = QHBoxLayout()
         
@@ -599,16 +588,6 @@ class TrialExpiredDialog(QDialog):
         """)
         info.setWordWrap(True)
         layout.addWidget(info)
-        
-        # 定价
-        pricing = QLabel(
-            "<center>"
-            "<span style='font-size: 16px; color: #27ae60; font-weight: bold;'>" +
-            t("终身版 ¥28") +
-            "</span>"
-            "</center>"
-        )
-        layout.addWidget(pricing)
         
         layout.addStretch()
         
