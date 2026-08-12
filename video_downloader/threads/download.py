@@ -1560,6 +1560,12 @@ class DownloadThread(QThread):
                 # 使用 curl_cffi 库模拟 Chrome 浏览器的 TLS 指纹
                 cmd.extend(["--impersonate", "chrome"])
                 self.progress_signal.emit(t("✓ 已启用浏览器指纹模拟 (Chrome)，解决TLS连接问题"))
+                # 【2026-08 修复】YouTube 8月实验：web_safari 客户端字幕/下载被 PO Token 拦截
+                # （登录态触发，无 PO Token 时字幕被丢弃、下载 URL 403）
+                # 强制使用不需要 PO Token 的客户端（web_embedded 优先，default 兜底）
+                # 上游修复后可移除（见 yt-dlp #17404）
+                cmd.extend(["--extractor-args", "youtube:player_client=web_embedded,default"])
+                self.progress_signal.emit(t("✓ 已固定 YouTube 客户端 (web_embedded,default) 绕过 PO Token 实验"))
                 
                 # 根据用户的下载需求智能选择客户端策略：
                 # 1. 如果用户指定了特定分辨率或音频语言，不限制客户端，让yt-dlp自动选择最佳客户端
@@ -5042,6 +5048,10 @@ class DownloadThread(QThread):
             
             # 首先尝试使用标准JSON方法获取信息，同时获取字幕信息
             cmd = ["yt-dlp.exe", "--dump-json", "--list-subs", "--no-playlist", self.url]
+            # 【2026-08 修复】YouTube PO Token 实验：强制 web_embedded,default 客户端，
+            # 否则登录态下 web_safari 字幕被丢弃、无名称（见 yt-dlp #17404）
+            if 'youtube' in (self.url or '').lower() or 'youtu.be' in (self.url or '').lower():
+                cmd.extend(["--extractor-args", "youtube:player_client=web_embedded,default"])
             try:
                 self._attach_internal_cookie(
                     cmd,

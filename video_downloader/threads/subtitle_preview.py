@@ -168,6 +168,10 @@ class SubtitlePreviewThread(QThread):
     def run(self):
         try:
             cmd = ["yt-dlp.exe", "--dump-json", "--list-subs", "--no-playlist", self.url]
+            # 【2026-08 修复】YouTube PO Token 实验：强制 web_embedded,default 客户端，
+            # 否则登录态下 web_safari 字幕被丢弃、无名称（见 yt-dlp #17404）
+            if 'youtube' in (self.url or '').lower() or 'youtu.be' in (self.url or '').lower():
+                cmd.extend(["--extractor-args", "youtube:player_client=web_embedded,default"])
             self._attach_internal_cookie(
                 cmd,
                 url=self.url,
