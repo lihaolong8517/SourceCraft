@@ -2774,6 +2774,26 @@ class DownloadThread(QThread):
         except Exception as e:
             self.progress_signal.emit(t_format("⚠️ 获取播放列表信息出错: {}，将使用实时提取的标题", str(e)))
         
+    _MIN_YTDLP_VERSION = (2026, 6, 9)  # 2026.06.09: aria2c HLS/DASH 支持移除、Deno>=2.3.0 等破坏性变更
+    _ytdlp_version_checked = False
+
+    def _check_ytdlp_version(self):
+        """校验捆绑 yt-dlp 版本，低于最低要求时输出警告（不阻断下载）。"""
+        try:
+            if DownloadThread._ytdlp_version_checked:
+                return
+            DownloadThread._ytdlp_version_checked = True
+            vp = subprocess.Popen(["yt-dlp.exe", "--version"], stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT, universal_newlines=True,
+                                  creationflags=subprocess.CREATE_NO_WINDOW)
+            v = (vp.communicate()[0] or "").strip()
+            parts = [int(x) for x in v.split(".")[:3] if x.isdigit()]
+            if len(parts) == 3 and tuple(parts) < DownloadThread._MIN_YTDLP_VERSION:
+                self.progress_signal.emit(t_format(
+                    "⚠️ yt-dlp 版本过旧 ({}), 最低要求 2026.06.09，可能影响 aria2c/HLS 下载与平台兼容性，建议更新 yt-dlp.exe", v))
+        except Exception:
+            pass
+
     def _apply_base_yt_dlp_safety(self, cmd_list):
         """统一追加yt-dlp基础安全与兼容参数。"""
         try:
@@ -3009,6 +3029,7 @@ class DownloadThread(QThread):
         import os  # 确保 os 在整个 run 方法中可用
         import time  # 确保 time 在整个 run 方法中可用
         import re  # 确保 re 在整个 run 方法中可用
+        self._check_ytdlp_version()
         try:
             # 在任务开始时检查是否已被取消
             if self._cancelled:
@@ -3227,7 +3248,7 @@ class DownloadThread(QThread):
             
             if is_china_platform:
                 # 为中国平台添加专用的User-Agent，模拟真实浏览器
-                china_user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                china_user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
                 cmd.extend([
                     "--user-agent", china_user_agent,
                     "--add-header", "Accept-Language:zh-CN,zh;q=0.9,en;q=0.8",
@@ -3419,13 +3440,10 @@ class DownloadThread(QThread):
                     # 注意：不添加全局format-sort参数，避免与分辨率选择器冲突
                 ]
             
-            # 检查并添加aria2c外部下载器支持（时间片段模式禁用，避免与 ffmpeg 分段冲突）
-            if (not time_section_mode) and self._check_aria2c_available_in_thread():
-                optimization_options.extend([
-                    "--downloader", "aria2c",
-                    "--downloader-args", "aria2c:-x 8 -s 8 -k 1M"
-                ])
-                print("DEBUG: DownloadThread启用aria2c外部下载器")
+            # aria2c 外部下载器已停用（2026-08）：
+            # yt-dlp 2026.06.09 起（CVE-2026-50574 修复）不再支持 aria2c 下载 HLS/DASH，
+            # 且与 --downloader dash,m3u8:native 冲突；统一使用 native 下载器 + 并发分片
+            # print("DEBUG: DownloadThread启用aria2c外部下载器")
             
             # 如果是中国平台，添加额外的网络优化和反爬策略
             if is_china_platform:
@@ -7946,21 +7964,6 @@ class DownloadThread(QThread):
         except Exception as e:
             self.progress_signal.emit(t_format("单一格式下载时发生错误: {}", str(e)))
             self.finished_signal.emit(False, t_format("单一格式下载时发生错误: {}", str(e)))
-    
-    def _check_aria2c_available_in_thread(self):
-        """在下载线程中检查aria2c是否可用"""
-        try:
-            import subprocess
-            result = subprocess.run(
-                ["aria2c", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=3,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
-            return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
-            return False
     
     def stop(self):
         """安全地停止进程 - 改进版，专门处理并发片段下载，并清理残余文件"""
@@ -14625,7 +14628,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加优化策略说明
         optimization_info_label = QLabel(
-            t("<b>📊 优化策略说明：</b><br>") + t("• <b>正常模式</b>: 并发片段8、HTTP块10MB、aria2c 16线程，优先速度<br>") + t("• <b>代理模式</b>: 并发片段3、HTTP块5MB、重试10次、禁用aria2c，优先稳定性<br>") + t("• 启用代理后，工具会自动应用保守的网络优化策略，提高下载成功率")
+            t("<b>📊 优化策略说明：</b><br>") + t("• <b>正常模式</b>: 并发片段6、HTTP块10MB、native下载器，优先速度<br>") + t("• <b>代理模式</b>: 并发片段3、HTTP块5MB、重试10次，优先稳定性<br>") + t("• 启用代理后，工具会自动应用保守的网络优化策略，提高下载成功率")
         )
         optimization_info_label.setWordWrap(True)
         optimization_info_label.setStyleSheet(
@@ -19211,8 +19214,7 @@ class VideoDownloaderApp(QMainWindow):
             options.extend(["--sleep-requests", "0.5"])
             print("DEBUG: - 请求延迟: 0.5秒")
             
-            # 代理环境下禁用 aria2c（可能不稳定）
-            # 不添加 aria2c 相关选项
+            # aria2c 已停用（yt-dlp 2026.06.09 起不支持 HLS/DASH），无需特殊处理
             
         else:
             # 正常模式：不在这里添加优化参数，由 _add_advanced_speed_optimizations() 处理
@@ -19301,21 +19303,6 @@ class VideoDownloaderApp(QMainWindow):
         # 返回选项列表
         return options
         
-    def _check_aria2c_available(self):
-        """检查aria2c是否可用"""
-        try:
-            import subprocess
-            result = subprocess.run(
-                ["aria2c", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
-            return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
-            return False
-    
     def _add_advanced_speed_optimizations(self, options):
         """添加高级下载速度优化选项（安全、无递归）"""
         # HLS优化：使用 mpegts 容器，提升稳定性
@@ -19335,8 +19322,6 @@ class VideoDownloaderApp(QMainWindow):
         print("DEBUG: - HTTP块大小: 10MB")
         print("DEBUG: - 片段重试: 3次")
         print("DEBUG: - 文件访问重试: 2次")
-        if self._check_aria2c_available():
-            print("DEBUG: - 外部下载器: aria2c 仅HTTP/HTTPS (8线程)")
         print("DEBUG: - 重试策略: 指数退避")
         print("DEBUG: - 网络超时: 30秒")
         print("DEBUG: - throttled-rate检测: 100KB/s")
