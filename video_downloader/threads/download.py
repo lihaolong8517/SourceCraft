@@ -1510,8 +1510,9 @@ class DownloadThread(QThread):
                 "--postprocessor-args", postprocessor_args,  # 修复时间戳问题
                 "--no-abort-on-error",                 # 遇到错误不中止（如果用户启用了忽略错误）
                 "--no-check-certificates",             # 不检查SSL证书
-                "--geo-bypass",                        # 尝试绕过地理限制
-                "--geo-bypass-country", "CN",          # 设置绕过国家为中国
+                # 地理限制绕过已移除全局强制（2026-08）：
+                # yt-dlp 自动处理地区绕过；强制 XFF=CN 对海外用户有害（被误判 CN 地区导致视频受限）
+                # 用户可在"限制绕过"面板自行勾选（--xff / --geo-bypass-country 可选国家）
                 "--windows-filenames",                 # 确保文件名在Windows上合法（替换非法字符如: * ? " < > |）
                 "--trim-filenames", "80",              # 限制文件名长度最大80字符，避免过长标题导致[Errno 22]错误
                 "--no-overwrites",                     # 【新增】不覆盖已存在的文件，与重复文件名处理配合使用
@@ -1742,8 +1743,7 @@ class DownloadThread(QThread):
                     "--min-sleep-interval", "1",        # 最小睡眠间隔
                     
                     # 中国网络环境特殊优化
-                    "--geo-bypass",                     # 尝试绕过地理限制
-                    "--geo-bypass-country", "CN",       # 设置绕过国家为中国
+                    # （geo-bypass 全局强制已移除，见基础参数注释；UI 限制绕过面板可选）
                     "--extractor-retries", "3",         # 增加提取器重试次数
                 ])
                 self.progress_signal.emit(t("✓ 已为中国平台添加额外网络优化和反爬策略"))
@@ -4871,7 +4871,8 @@ class DownloadThread(QThread):
                 pass
 
             if referer_url:
-                cmd.extend(["--referer", referer_url])
+                # README 推荐写法：--referer 已废弃（Deprecated options），等价于 --add-header "Referer:URL"
+                cmd.extend(["--add-header", f"Referer:{referer_url}"])
                 parsed_referer = QUrl(referer_url)
                 if parsed_referer.scheme() and parsed_referer.host():
                     cmd.extend(["--add-header", f"Origin:{parsed_referer.scheme()}://{parsed_referer.host()}"])
