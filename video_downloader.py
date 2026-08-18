@@ -1,5 +1,6 @@
 import sys
 import os
+import unicodedata
 import multiprocessing
 import importlib.util
 from collections import deque
@@ -236,7 +237,11 @@ _playwright_browser_module = _load_playwright_browser_module()
 PlaywrightBrowserController = _playwright_browser_module.PlaywrightBrowserController
 launch_browser_controller = _playwright_browser_module.launch_browser_controller
 import auth_utils
-from special_scene_utils import build_wait_for_video_arg, fragment_unavailable_flag
+from special_scene_utils import (
+    build_wait_for_video_arg,
+    fragment_unavailable_flag,
+    live_from_start_supported,
+)
 # WebEngine相关导入已移除 - 限制绕过功能已被删除
 
 
@@ -2481,22 +2486,29 @@ class DownloadThread(QThread):
             _seen.add(_b)
             filter_conditions.append(_b)
         if not filter_conditions:
-            # 无筛选条件：保持用户原格式链（最佳质量 + 默认音频语言），
-            # 不注入单流限制——避免把最佳质量误限制为 1080P。
-            return original
+            # 无筛选条件：注入默认 1080P 上限的单流，避免时间片段模式选中分离流
+            # （分离流多 URL 直读裁剪在新版 ffmpeg 下会失败）。
+            conditions_str = "[height<=1080]"
+        else:
+            conditions_str = "".join(filter_conditions)
 
-        conditions_str = "".join(filter_conditions)
         single_stream_pref = (
-            f"best{conditions_str}[ext=mp4][vcodec^=avc][acodec^=mp4a]/"
-            f"best{conditions_str}[ext=mp4][vcodec*=h264][acodec*=mp4a]/"
-            f"best{conditions_str}[ext=mp4]/"
-            f"best{conditions_str}"
+            f"best{conditions_str}[ext=mp4][vcodec^=avc][acodec^=mp4a][protocol!=m3u8_native]/"
+            f"best{conditions_str}[ext=mp4][vcodec*=h264][acodec*=mp4a][protocol!=m3u8_native]/"
+            f"best{conditions_str}[ext=mp4][protocol!=m3u8_native]/"
+            f"best{conditions_str}[protocol!=m3u8_native]"
         )
         if original.startswith(single_stream_pref):
             return original
-        # 单流仅作兜底（放在用户格式链之后）：保证用户的筛选与最佳质量优先，
-        # 避免单流（HLS 最高 1080P）抢占导致画质被限制。
-        return f"{original}/{single_stream_pref}"
+        # HLS muxed（单 URL 含音视频）优先：配合 --downloader ffmpeg 直读 m3u8，
+        # 只拉取片段区间分片（实测 22x vs 分离流 1.9x），1080P 高清且最快；
+        # 用户格式链（1080P 分离流）次之；单流直读作最终兜底。
+        hls_muxed_pref = (
+            f"best{conditions_str}[vcodec^=avc][acodec^=mp4a][protocol=m3u8_native]/"
+            f"best{conditions_str}[vcodec*=h264][acodec*=mp4a][protocol=m3u8_native]/"
+            f"best{conditions_str}[acodec^=mp4a][protocol=m3u8_native]"
+        )
+        return f"{hls_muxed_pref}/{original}/{single_stream_pref}"
     
     def _get_current_video_index(self):
         """获取当前正在处理的视频索引"""
@@ -3109,7 +3121,7 @@ class DownloadThread(QThread):
                 cmd.extend(["--merge-output-format", "mp4"])
                 self.progress_signal.emit(t("✓ 使用默认最佳质量格式（mp4+m4a优先，最大兼容性）"))
 
-            # 时间片段 + YouTube 场景：优先单流格式，加速中段裁剪；失败时回退到原格式链
+            # 时间片段 + YouTube 场景：HLS muxed 直读优先（快），失败时回退用户格式链/单流
             if time_section_mode and is_youtube_url:
                 explicit_format_id = False
                 try:
@@ -3126,7 +3138,11 @@ class DownloadThread(QThread):
                             new_format = self._build_time_section_friendly_format(old_format)
                             if new_format and new_format != old_format:
                                 cmd[f_index + 1] = new_format
-                                self.progress_signal.emit(t("✓ 时间片段模式：单流格式兜底（用户格式优先，画质不受限）"))
+                                # HLS 走 FFmpegFD 直读 m3u8（只拉取片段区间分片），
+                                # 避免 hlsnative 下载全片导致时间片段极慢
+                                if "--downloader" not in cmd:
+                                    cmd.extend(["--downloader", "ffmpeg"])
+                                self.progress_signal.emit(t("✓ 时间片段模式：HLS直读优先（失败自动回退用户格式）"))
                     except Exception:
                         pass
             
@@ -3535,10 +3551,14 @@ class DownloadThread(QThread):
                                      self.main_app.special_scene_master_check.isChecked())
                 
                 if special_scene_enabled:
-                    # 从开头下载直播
+                    # 从开头下载直播（仅支持 YouTube/Twitch/TVer/mellow-fan，其他平台传参会导致 yt-dlp 报错）
                     if hasattr(self.main_app, 'live_from_start_check') and self.main_app.live_from_start_check.isChecked():
-                        cmd.extend(["--live-from-start"])
-                        self.progress_signal.emit(t("✓ 从开头下载直播"))
+                        live_platform = live_from_start_supported(self.url)
+                        if live_platform:
+                            cmd.extend(["--live-from-start"])
+                            self.progress_signal.emit(t("✓ 从开头下载直播"))
+                        else:
+                            self.progress_signal.emit(t("⚠️ 该平台不支持从开头下载直播（仅支持 YouTube/Twitch/TVer/mellow-fan），已自动忽略该选项"))
                     
                     # 等待视频可用
                     if hasattr(self.main_app, 'wait_for_video_check') and self.main_app.wait_for_video_check.isChecked():
@@ -3591,109 +3611,33 @@ class DownloadThread(QThread):
                 
                 # 播放列表排序参数已移除
 
-            # 添加字幕下载选项 - 与官方yt-dlp完全一致
+            # 添加字幕下载选项 - 由"预览可用字幕→双击行选择"驱动
             if advanced_enabled and self.main_app:
-                preview_langs = getattr(self.main_app, "_last_preview_subtitle_langs", [])
-                # 下载字幕文件
-                if hasattr(self.main_app, 'subtitle_check') and self.main_app.subtitle_check.isChecked():
-                    cmd.extend(["--write-subs"])
-                    self.progress_signal.emit(t("✓ 启用字幕下载"))
-                    
-                    # 字幕语言选择 - 使用用户在UI中选择的语言
-                    if hasattr(self.main_app, 'subtitle_lang'):
-                        selected_lang = self.main_app.subtitle_lang.currentData()
-                        has_sub_langs = "--sub-langs" in cmd
-                        if selected_lang and selected_lang != "all":
-                            lang_pattern, normalized_lang = build_subtitle_lang_pattern(
-                                selected_lang,
-                                available_langs=preview_langs,
-                            )
-                            if not has_sub_langs:
-                                cmd.extend(["--sub-langs", lang_pattern])
-                                self.progress_signal.emit(t_format("✓ 字幕语言: {} (匹配: {})", normalized_lang, lang_pattern))
-                            else:
-                                self.progress_signal.emit(t_format("✓ 字幕语言沿用预设参数: {}", normalized_lang))
-                        elif selected_lang == "all":
-                            lang_pattern, _ = build_subtitle_lang_pattern("all", available_langs=preview_langs)
-                            if not has_sub_langs:
-                                cmd.extend(["--sub-langs", lang_pattern])
-                                self.progress_signal.emit(t("✓ 字幕语言: 全部语言（排除直播聊天）"))
-                            else:
-                                self.progress_signal.emit(t("✓ 字幕语言沿用预设参数: 全部语言"))
-                        else:
-                            default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
-                            if not has_sub_langs:
-                                cmd.extend(["--sub-langs", default_langs])
-                                self.progress_signal.emit(t("✓ 默认字幕语言: 中文和英文"))
-                            else:
-                                self.progress_signal.emit(t("✓ 默认字幕语言沿用预设参数"))
+                selected_subtitle = getattr(self.main_app, '_selected_subtitle', None)
+                if selected_subtitle:
+                    if selected_subtitle.get('type') == 'manual':
+                        cmd.extend(["--write-subs"])
+                        self.progress_signal.emit(t("✓ 启用字幕下载（手动字幕）"))
                     else:
-                        # 兼容旧版本：如果没有新的语言选择器，使用文本框
-                        if hasattr(self.main_app, 'subtitle_langs') and self.main_app.subtitle_langs.text().strip():
-                            langs = self.main_app.subtitle_langs.text().strip()
-                            cmd.extend(["--sub-langs", langs])
-                            self.progress_signal.emit(t_format("✓ 字幕语言: {}", langs))
-                        else:
-                            default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
-                            cmd.extend(["--sub-langs", default_langs])
-                            self.progress_signal.emit(t("✓ 默认字幕语言: 中文和英文"))
+                        cmd.extend(["--write-auto-subs"])
+                        self.progress_signal.emit(t("✓ 启用字幕下载（自动生成字幕）"))
                     
-                    # 字幕格式选择
-                    if hasattr(self.main_app, 'subtitle_format') and self.main_app.subtitle_format.currentData():
-                        sub_format = self.main_app.subtitle_format.currentData()
-                        cmd.extend(["--sub-format", sub_format])
-                        self.progress_signal.emit(t_format("✓ 字幕格式: {}", sub_format))
-                    else:
-                        # 默认优先srt格式
-                        cmd.extend(["--sub-format", "srt/ass/vtt/best"])
-                        self.progress_signal.emit(t("✓ 默认字幕格式: srt/ass/vtt/best"))
-                
-                # 下载自动生成字幕
-                if hasattr(self.main_app, 'auto_subtitle_check') and self.main_app.auto_subtitle_check.isChecked():
-                    cmd.extend(["--write-auto-subs"])
-                    self.progress_signal.emit(t("✓ 启用自动生成字幕下载"))
+                    # 字幕语言：双击选中的精确代码（用户微调语言下拉后走变体匹配）
+                    lang_pattern = self.main_app._build_subtitle_lang_arg(selected_subtitle)
+                    cmd.extend(["--sub-langs", lang_pattern])
+                    self.progress_signal.emit(t_format("✓ 字幕语言: {} (匹配: {})", selected_subtitle.get('lang'), lang_pattern))
                     
-                    # 自动字幕也使用相同的语言和格式设置
-                    if not (hasattr(self.main_app, 'subtitle_check') and self.main_app.subtitle_check.isChecked()):
-                        # 如果没有启用普通字幕，则为自动字幕设置语言和格式
-                        if hasattr(self.main_app, 'subtitle_lang'):
-                            selected_lang = self.main_app.subtitle_lang.currentData()
-                            has_sub_langs = "--sub-langs" in cmd
-                            if selected_lang and selected_lang != "all":
-                                lang_pattern, normalized_lang = build_subtitle_lang_pattern(
-                                    selected_lang,
-                                    available_langs=preview_langs,
-                                )
-                                if not has_sub_langs:
-                                    cmd.extend(["--sub-langs", lang_pattern])
-                                    self.progress_signal.emit(t_format("✓ 自动字幕语言: {} (匹配: {})", normalized_lang, lang_pattern))
-                                else:
-                                    self.progress_signal.emit(t_format("✓ 自动字幕语言沿用预设参数: {}", normalized_lang))
-                            else:
-                                all_langs, _ = build_subtitle_lang_pattern("all", available_langs=preview_langs)
-                                if not has_sub_langs:
-                                    cmd.extend(["--sub-langs", all_langs])
-                                    self.progress_signal.emit(t("✓ 自动字幕语言: 全部语言（排除直播聊天）"))
-                                else:
-                                    self.progress_signal.emit(t("✓ 自动字幕语言沿用预设参数: 全部语言"))
-                        else:
-                            default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
-                            cmd.extend(["--sub-langs", default_langs])
-                            self.progress_signal.emit(t("✓ 默认自动字幕语言: 中文或英语"))
-                        
-                        if hasattr(self.main_app, 'subtitle_format') and self.main_app.subtitle_format.currentData():
-                            sub_format = self.main_app.subtitle_format.currentData()
-                            cmd.extend(["--sub-format", sub_format])
-                        else:
-                            cmd.extend(["--sub-format", "srt/ass/vtt/best"])
+                    # 字幕格式：双击选中的格式 ext + best 兜底
+                    sub_format_arg = self.main_app._build_subtitle_format_arg(selected_subtitle)
+                    cmd.extend(["--sub-format", sub_format_arg])
+                    self.progress_signal.emit(t_format("✓ 字幕格式: {}", sub_format_arg))
                 
                 # 【修复】自动添加字幕格式转换：清除 WebVTT 内联时间标签
                 # 只在以下条件满足时才自动转换：
-                # 1. 至少启用了一种字幕下载（普通字幕或自动字幕）
+                # 1. 已选择字幕（手动或自动）
                 # 2. 用户未手动启用转换功能
                 # 3. 用户选择的格式不是 ASS 或 TTML（这两种格式有自己的样式系统，不需要转换）
-                subtitle_enabled = (hasattr(self.main_app, 'subtitle_check') and self.main_app.subtitle_check.isChecked()) or \
-                                   (hasattr(self.main_app, 'auto_subtitle_check') and self.main_app.auto_subtitle_check.isChecked())
+                subtitle_enabled = selected_subtitle is not None
                 
                 if subtitle_enabled:
                     convert_subs_enabled = hasattr(self.main_app, 'convert_subtitle_check') and self.main_app.convert_subtitle_check.isChecked()
@@ -4051,7 +3995,6 @@ class DownloadThread(QThread):
                     "Members-only", "members-only",
                     "This video is only available",
                     "Sign in to confirm your age",
-                    "age-restricted",
                     "Geographic restriction",
                     "This video contains content from",
                     "blocked it in your country",
@@ -4205,6 +4148,24 @@ class DownloadThread(QThread):
                                 print(t_format("[调试] 跳过重复失败记录 - 标题: '{}' 已存在", video_identifier))
                 
                 # 检测下载成功 - 改为基于实际文件名来去重统计
+                # 【修复】实时移除误报：Merger（合并完成）或进度行 downloaded==total（单流完成）
+                # 均表示当前视频已实际下载成功，按视频ID从失败列表移除。
+                # 不能依赖 "[download] 100%" 文本——--progress-template 覆盖进度输出后该文本永不出现
+                if self.failed_videos and self.current_video_id:
+                    stream_finished = False
+                    if "[Merger] Merging formats into" in stripped_line:
+                        stream_finished = True
+                    elif re.match(r'^\[\d+/\d+\]', stripped_line):
+                        _prog_m = re.match(r'^\[(\d+)/(\d+)\]', stripped_line)
+                        if _prog_m and int(_prog_m.group(2)) > 0 and int(_prog_m.group(1)) == int(_prog_m.group(2)):
+                            stream_finished = True
+                    if stream_finished:
+                        for _fi in range(len(self.failed_videos) - 1, -1, -1):
+                            if self.failed_videos[_fi].get('id') == self.current_video_id:
+                                _removed = self.failed_videos.pop(_fi)
+                                self.progress_signal.emit(t_format("✅ 修正: '{}' 实际下载成功，从失败列表移除", _removed.get('title', self.current_video_id)))
+                                break
+                
                 if "[download] 100%" in stripped_line or "has already been downloaded" in stripped_line:
                     # 【修复】时间片段下载模式：不要在这里发送100%进度
                     # 因为可能还有其他流需要下载，以及ffmpeg后处理
@@ -4849,6 +4810,10 @@ class DownloadThread(QThread):
                                     name_without_ext = os.path.splitext(filename)[0]
                                     name_without_ext = re.sub(r'\.f\d+$', '', name_without_ext)
                                     failed_title_clean = re.sub(r'\.f\d+$', '', failed_title)
+                                    # 【修复】NFKC 归一化：统一全角/半角（如 ｜→|），
+                                    # --windows-filenames 会把标题中的 | 替换为 ｜ 导致匹配失败、误报残留
+                                    name_without_ext = unicodedata.normalize('NFKC', name_without_ext)
+                                    failed_title_clean = unicodedata.normalize('NFKC', failed_title_clean)
                                     
                                     if (name_without_ext in failed_title_clean or 
                                         failed_title_clean in name_without_ext or
@@ -4870,6 +4835,10 @@ class DownloadThread(QThread):
                                                 # 去除临时格式标识（如 .f135, .f140）
                                                 name_without_ext = re.sub(r'\.f\d+$', '', name_without_ext)
                                                 failed_title_clean = re.sub(r'\.f\d+$', '', failed_title)
+                                                # 【修复】NFKC 归一化：统一全角/半角（如 ｜→|），
+                                                # --windows-filenames 会把标题中的 | 替换为 ｜ 导致匹配失败、误报残留
+                                                name_without_ext = unicodedata.normalize('NFKC', name_without_ext)
+                                                failed_title_clean = unicodedata.normalize('NFKC', failed_title_clean)
                                                 
                                                 # 如果文件名包含失败视频的标题（或部分匹配）
                                                 if (name_without_ext in failed_title_clean or 
@@ -5018,7 +4987,7 @@ class DownloadThread(QThread):
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
-                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (最终)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
@@ -5029,7 +4998,7 @@ class DownloadThread(QThread):
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
-                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (最终)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
@@ -5218,7 +5187,11 @@ class DownloadThread(QThread):
                                         name_without_ext = os.path.splitext(filename)[0]
                                         name_without_ext = re.sub(r'\.f\d+$', '', name_without_ext)
                                         failed_title_clean = re.sub(r'\.f\d+$', '', failed_title)
-                                        
+                                        # 【修复】NFKC 归一化：统一全角/半角（如 ｜→|），
+                                        # --windows-filenames 会把标题中的 | 替换为 ｜ 导致匹配失败、误报残留
+                                        name_without_ext = unicodedata.normalize('NFKC', name_without_ext)
+                                        failed_title_clean = unicodedata.normalize('NFKC', failed_title_clean)
+                                    
                                         if (name_without_ext in failed_title_clean or 
                                             failed_title_clean in name_without_ext or
                                             name_without_ext.replace('_', ' ') in failed_title_clean or
@@ -5239,7 +5212,11 @@ class DownloadThread(QThread):
                                                     # 去除临时格式标识（如 .f135, .f140）
                                                     name_without_ext = re.sub(r'\.f\d+$', '', name_without_ext)
                                                     failed_title_clean = re.sub(r'\.f\d+$', '', failed_title)
-                                                    
+                                                    # 【修复】NFKC 归一化：统一全角/半角（如 ｜→|），
+                                                    # --windows-filenames 会把标题中的 | 替换为 ｜ 导致匹配失败、误报残留
+                                                    name_without_ext = unicodedata.normalize('NFKC', name_without_ext)
+                                                    failed_title_clean = unicodedata.normalize('NFKC', failed_title_clean)
+                                                
                                                     # 如果文件名包含失败视频的标题（或部分匹配）
                                                     if (name_without_ext in failed_title_clean or 
                                                         failed_title_clean in name_without_ext or
@@ -5334,7 +5311,7 @@ class DownloadThread(QThread):
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
-                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (最终)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
@@ -5345,7 +5322,7 @@ class DownloadThread(QThread):
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
-                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (最终)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
@@ -13286,7 +13263,7 @@ class VideoDownloaderApp(QMainWindow):
         
         # 添加字幕功能使用说明
         subtitle_usage_label = QLabel(
-            t("<b>🎬 字幕功能使用说明：</b><br>") + t("• <b>基础字幕下载：</b>勾选'下载手动字幕'获取视频原始字幕文件<br>") + t("• <b>自动字幕：</b>勾选'下载自动生成字幕'获取平台AI生成的字幕<br>") + t("• <b>语言选择：</b>选择需要的字幕语言，支持中文、英文等多种语言<br>") + t("• <b>格式转换：</b>推荐使用SRT格式，兼容性最好<br>") + t("• <b>编码转换：</b>勾选'转换字幕为SRT+UTF-8'确保中文字符正常显示")
+            t("<b>🎬 字幕功能使用说明：</b><br>") + t("• <b>选择字幕：</b>点击'预览可用字幕'，在弹窗中双击字幕行即可选中并下载<br>") + t("• <b>手动/自动：</b>手动字幕来自上传者；自动字幕由平台AI生成，双击对应行即可<br>") + t("• <b>语言调整：</b>选中后可在'字幕语言'下拉框中调整语言<br>") + t("• <b>格式转换：</b>推荐使用SRT格式，兼容性最好<br>") + t("• <b>编码转换：</b>勾选'转换字幕为SRT+UTF-8'确保中文字符正常显示")
         )
         subtitle_usage_label.setWordWrap(True)
         subtitle_usage_label.setStyleSheet(
@@ -13347,15 +13324,20 @@ class VideoDownloaderApp(QMainWindow):
         subtitle_preview_layout.addStretch()
         subtitle_download_config_layout.addLayout(subtitle_preview_layout)
         
-        # 基础字幕选项
-        self.subtitle_check = QCheckBox(t("下载手动字幕"))
-        self.subtitle_check.setToolTip(t("下载视频的手动字幕文件"))
-        subtitle_download_config_layout.addWidget(self.subtitle_check)
-        
-        # 自动字幕选项
-        self.auto_subtitle_check = QCheckBox(t("下载自动生成字幕"))
-        self.auto_subtitle_check.setToolTip(t("下载平台自动生成的字幕（如YouTube自动字幕、Bilibili AI字幕等）"))
-        subtitle_download_config_layout.addWidget(self.auto_subtitle_check)
+        # 字幕选择状态：由"预览可用字幕→双击行"驱动（无勾选框，双击即选中）
+        self._selected_subtitle = None  # {lang, name, ext, type: 'manual'|'auto'}
+        selected_subtitle_layout = QHBoxLayout()
+        self.selected_subtitle_label = QLabel(t("未选择字幕：点击'预览可用字幕'，在弹窗中双击字幕行即可选择"))
+        self.selected_subtitle_label.setWordWrap(True)
+        self.selected_subtitle_label.setStyleSheet("QLabel { color: #6c757d; font-size: 12px; }")
+        selected_subtitle_layout.addWidget(self.selected_subtitle_label, 1)
+        self.clear_subtitle_button = QPushButton(t("✕ 清除"))
+        self.clear_subtitle_button.setToolTip(t("清除已选择的字幕"))
+        self.clear_subtitle_button.setFixedWidth(70)
+        self.clear_subtitle_button.setEnabled(False)
+        self.clear_subtitle_button.clicked.connect(self.clear_selected_subtitle)
+        selected_subtitle_layout.addWidget(self.clear_subtitle_button)
+        subtitle_download_config_layout.addLayout(selected_subtitle_layout)
         
         # 字幕语言选择
         subtitle_lang_layout = QHBoxLayout()
@@ -13471,7 +13453,7 @@ class VideoDownloaderApp(QMainWindow):
         # 字幕嵌入选项 - 使用水平布局将复选框和提示放在同一行
         embed_subtitle_layout = QHBoxLayout()
         self.embed_subtitle_check = QCheckBox(t("嵌入字幕到视频文件"))
-        self.embed_subtitle_check.setToolTip(t("将字幕嵌入到视频文件中（需要 ffmpeg）。注意：MP4 对字幕嵌入支持有限，MKV 更稳；建议在高级格式中选择 MKV 或启用重封装为 MKV 提高兼容性。若视频仅有自动字幕，请同时勾选'下载自动生成字幕'。"))
+        self.embed_subtitle_check.setToolTip(t("将字幕嵌入到视频文件中（需要 ffmpeg）。注意：MP4 对字幕嵌入支持有限，MKV 更稳；建议在高级格式中选择 MKV 或启用重封装为 MKV 提高兼容性。若视频仅有自动字幕，请先通过'预览可用字幕'双击选择该自动字幕。"))
         self.embed_subtitle_check.setEnabled(True)
         embed_subtitle_layout.addWidget(self.embed_subtitle_check)
         
@@ -13508,93 +13490,12 @@ class VideoDownloaderApp(QMainWindow):
         
         subtitle_layout.addWidget(subtitle_process_group)
         
-        # 设置字幕选项的联动逻辑
-        def update_subtitle_options():
-            """统一管理字幕相关选项的启用/禁用状态"""
-            # 检查是否启用了任何字幕下载功能
-            subtitle_enabled = self.subtitle_check.isChecked()
-            auto_subtitle_enabled = self.auto_subtitle_check.isChecked()
-            any_subtitle_enabled = subtitle_enabled or auto_subtitle_enabled
-            
-            # 字幕语言和格式选择：只有启用字幕下载时才可用
-            self.subtitle_lang.setEnabled(any_subtitle_enabled)
-            self.subtitle_format.setEnabled(any_subtitle_enabled)
-            
-            # 字幕转换：只有启用字幕下载且高级选项启用时才可用
-            advanced_enabled = hasattr(self, 'advanced_group') and self.advanced_group.isChecked()
-            self.convert_subtitle_check.setEnabled(any_subtitle_enabled and advanced_enabled)
-            if not any_subtitle_enabled:
-                self.convert_subtitle_check.setChecked(False)
-            
-            # 字幕嵌入：可以独立使用（yt-dlp会自动下载字幕用于嵌入）
-            # 但建议同时启用字幕下载以保留外部文件
-            self.embed_subtitle_check.setEnabled(True)
-            
-            # 字幕下载延迟：当启用任何字幕功能（包括嵌入）时可用
-            embed_enabled = self.embed_subtitle_check.isChecked()
-            self.subtitle_delay_spin.setEnabled(any_subtitle_enabled or embed_enabled)
-            
-            # 更新UI提示（单行显示）
-            if embed_enabled and not any_subtitle_enabled:
-                # 仅启用嵌入时的提示
-                self.embed_subtitle_notice.setText(t("ℹ️ 仅嵌入模式：yt-dlp 会自动下载字幕并嵌入后删除外部文件"))
-                self.embed_subtitle_notice.setStyleSheet("QLabel { color: #0066cc; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
-            elif embed_enabled and any_subtitle_enabled:
-                # 同时启用下载和嵌入时的提示
-                self.embed_subtitle_notice.setText(t("ℹ️ 下载+嵌入模式：外部字幕文件将被保留。MP4 对字幕嵌入支持有限，MKV 更稳"))
-                self.embed_subtitle_notice.setStyleSheet("QLabel { color: #6c757d; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
-            else:
-                # 默认提示
-                self.embed_subtitle_notice.setText(t("⚠ MP4 对字幕嵌入支持有限，MKV 更稳.建议在'高级格式'功能中选择 MKV"))
-                self.embed_subtitle_notice.setStyleSheet("QLabel { color: #6c757d; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
-        
-        def on_subtitle_toggled(checked):
-            """处理'下载字幕'复选框的切换"""
-            # 控制自动字幕选项
-            self.auto_subtitle_check.setEnabled(True)  # 自动字幕可以独立启用
-            
-            # 如果取消"下载字幕"，也取消自动字幕
-            if not checked and self.auto_subtitle_check.isChecked():
-                    self.auto_subtitle_check.setChecked(False)
-            
-            # 更新所有字幕选项的状态
-            update_subtitle_options()
-            
-            # 更新字幕转换复选框状态（考虑高级选项状态）
-            advanced_enabled = hasattr(self, 'advanced_group') and self.advanced_group.isChecked()
-            subtitle_enabled = self.subtitle_check.isChecked() or self.auto_subtitle_check.isChecked()
-            self.convert_subtitle_check.setEnabled(advanced_enabled and subtitle_enabled)
-            
-            # 调试信息
-            if checked:
-                print("[INFO] 已启用下载字幕；其他字幕选项现已可用")
-            else:
-                print("[INFO] 已禁用下载字幕；相关选项已禁用")
-        
-        def on_auto_subtitle_toggled(checked):
-            """处理'下载自动生成字幕'复选框的切换"""
-            # 更新所有字幕选项的状态
-            update_subtitle_options()
-            
-            # 更新字幕转换复选框状态（考虑高级选项状态）
-            advanced_enabled = hasattr(self, 'advanced_group') and self.advanced_group.isChecked()
-            subtitle_enabled = self.subtitle_check.isChecked() or self.auto_subtitle_check.isChecked()
-            self.convert_subtitle_check.setEnabled(advanced_enabled and subtitle_enabled)
-            
-            # 调试信息
-            if checked:
-                print("[INFO] 已启用自动生成字幕下载")
-            else:
-                print("[INFO] 已禁用自动生成字幕下载")
-        
+        # 设置字幕选项的联动逻辑（状态统一由 _update_subtitle_ui_state 类方法管理）
         def on_embed_subtitle_toggled(checked):
             """处理'嵌入字幕'复选框的切换"""
-            # 更新所有字幕选项的状态
-            update_subtitle_options()
-            
-            # 调试信息
+            self._update_subtitle_ui_state()
             if checked:
-                if not (self.subtitle_check.isChecked() or self.auto_subtitle_check.isChecked()):
+                if getattr(self, '_selected_subtitle', None) is None:
                     print("[INFO] 已启用仅嵌入字幕模式（yt-dlp将自动下载并嵌入字幕）")
                 else:
                     print("[INFO] 已启用字幕嵌入（外部文件将被保留）")
@@ -13602,12 +13503,10 @@ class VideoDownloaderApp(QMainWindow):
                 print("[INFO] 已禁用字幕嵌入")
         
         # 连接信号
-        self.subtitle_check.toggled.connect(on_subtitle_toggled)
-        self.auto_subtitle_check.toggled.connect(on_auto_subtitle_toggled)
         self.embed_subtitle_check.toggled.connect(on_embed_subtitle_toggled)
         
         # 初始化选项状态
-        update_subtitle_options()
+        self._update_subtitle_ui_state()
         
         # 添加弹性空间
         subtitle_layout.addStretch()
@@ -18669,12 +18568,12 @@ class VideoDownloaderApp(QMainWindow):
         self.playlist_range_button.setEnabled(True)
     
     def _display_and_auto_set_subtitles(self, info):
-        """显示字幕信息并自动设置字幕选项"""
+        """显示字幕信息（新交互：不自动选择字幕，由用户在预览弹窗双击选择）"""
         # 获取字幕信息
         subtitles = info.get('subtitles', {})
         automatic_captions = info.get('automatic_captions', {})
         
-        # 合并手动字幕和自动字幕
+        # 合并手动字幕和自动字幕（供后续语言匹配使用）
         all_subtitles = {}
         all_subtitles.update(subtitles)
         all_subtitles.update(automatic_captions)
@@ -18697,58 +18596,10 @@ class VideoDownloaderApp(QMainWindow):
             if auto_subs:
                 self.progress_text.append(t_format("<b>自动字幕:</b> {}", ', '.join(auto_subs)))
             
-            # 自动选择字幕语言的优先级
-            preferred_langs = ['zh-CN', 'zh', 'en', 'ja', 'ko']
-            selected_lang = None
-            
-            # 首先尝试找到首选语言的手动字幕
-            for lang in preferred_langs:
-                if lang in manual_subs:
-                    selected_lang = lang
-                    break
-            
-            # 如果没有找到首选的手动字幕，尝试自动字幕
-            if not selected_lang:
-                for lang in preferred_langs:
-                    if lang in auto_subs:
-                        selected_lang = lang
-                        break
-            
-            # 如果还是没有找到，选择第一个可用的字幕
-            if not selected_lang and subtitle_langs:
-                selected_lang = subtitle_langs[0]
-            
-            # 自动设置字幕选项
-            if selected_lang:
-                # 自动勾选下载字幕
-                self.subtitle_check.setChecked(True)
-                
-                # 查找并设置对应的语言选项
-                for i in range(self.subtitle_lang.count()):
-                    lang_code = self.subtitle_lang.itemData(i)
-                    if lang_code == selected_lang:
-                        self.subtitle_lang.setCurrentIndex(i)
-                        break
-                else:
-                    # 如果下拉框中没有对应的语言，添加它
-                    lang_name = self._get_language_name(selected_lang)
-                    self.subtitle_lang.addItem(f"{lang_name} ({selected_lang})", selected_lang)
-                    self.subtitle_lang.setCurrentIndex(self.subtitle_lang.count() - 1)
-                
-                # 启用字幕语言选择
-                self.subtitle_lang.setEnabled(True)
-                
-                # 显示自动选择的结果
-                lang_name = self._get_language_name(selected_lang)
-                subtitle_type = "手动字幕" if selected_lang in manual_subs else "自动字幕"
-                self.progress_text.append(t_format("<b>已自动选择:</b> {} ({}) - {}", lang_name, selected_lang, subtitle_type))
-            
+            self.progress_text.append(t("💡 点击'预览可用字幕'，在弹窗中双击字幕行即可选择下载"))
         else:
             self.progress_text.append(t("\n<b>字幕信息:</b> 此视频没有可用的字幕"))
             self._last_preview_subtitle_langs = []
-            # 如果没有字幕，取消勾选字幕选项
-            self.subtitle_check.setChecked(False)
-            self.subtitle_lang.setEnabled(False)
     
     def _get_language_name(self, lang_code):
         """根据语言代码获取语言名称"""
@@ -18780,6 +18631,124 @@ class VideoDownloaderApp(QMainWindow):
             'fi': '芬兰文'
         }
         return lang_names.get(lang_code, lang_code.upper())
+    
+    def _update_subtitle_ui_state(self):
+        """统一管理字幕相关选项的启用/禁用状态（字幕选择由预览弹窗双击驱动）"""
+        selected = getattr(self, '_selected_subtitle', None) is not None
+        advanced_enabled = hasattr(self, 'advanced_group') and self.advanced_group.isChecked()
+        
+        # 字幕语言和格式选择：只有选择了字幕时才可用
+        if hasattr(self, 'subtitle_lang'):
+            self.subtitle_lang.setEnabled(selected)
+        if hasattr(self, 'subtitle_format'):
+            self.subtitle_format.setEnabled(selected)
+        
+        # 字幕转换：只有选择字幕且高级选项启用时才可用
+        if hasattr(self, 'convert_subtitle_check'):
+            self.convert_subtitle_check.setEnabled(selected and advanced_enabled)
+            if not selected:
+                self.convert_subtitle_check.setChecked(False)
+        
+        # 字幕嵌入：可以独立使用（yt-dlp会自动下载字幕用于嵌入）
+        if hasattr(self, 'embed_subtitle_check'):
+            self.embed_subtitle_check.setEnabled(True)
+        
+        # 字幕下载延迟：当选择字幕或启用嵌入时可用
+        if hasattr(self, 'subtitle_delay_spin'):
+            embed_enabled = self.embed_subtitle_check.isChecked() if hasattr(self, 'embed_subtitle_check') else False
+            self.subtitle_delay_spin.setEnabled(selected or embed_enabled)
+        
+        # 更新嵌入提示（单行显示）
+        if hasattr(self, 'embed_subtitle_notice'):
+            embed_enabled = self.embed_subtitle_check.isChecked() if hasattr(self, 'embed_subtitle_check') else False
+            if embed_enabled and not selected:
+                self.embed_subtitle_notice.setText(t("ℹ️ 仅嵌入模式：yt-dlp 会自动下载字幕并嵌入后删除外部文件"))
+                self.embed_subtitle_notice.setStyleSheet("QLabel { color: #0066cc; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
+            elif embed_enabled and selected:
+                self.embed_subtitle_notice.setText(t("ℹ️ 下载+嵌入模式：外部字幕文件将被保留。MP4 对字幕嵌入支持有限，MKV 更稳"))
+                self.embed_subtitle_notice.setStyleSheet("QLabel { color: #6c757d; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
+            else:
+                self.embed_subtitle_notice.setText(t("⚠ MP4 对字幕嵌入支持有限，MKV 更稳.建议在'高级格式'功能中选择 MKV"))
+                self.embed_subtitle_notice.setStyleSheet("QLabel { color: #6c757d; font-size: 10px; margin-left: 15px; white-space: nowrap; }")
+    
+    def _update_selected_subtitle_label(self):
+        """更新'已选择字幕'状态标签与清除按钮"""
+        st = getattr(self, '_selected_subtitle', None)
+        if not st:
+            self.selected_subtitle_label.setText(t("未选择字幕：点击'预览可用字幕'，在弹窗中双击字幕行即可选择"))
+            self.selected_subtitle_label.setStyleSheet("QLabel { color: #6c757d; font-size: 12px; }")
+            self.clear_subtitle_button.setEnabled(False)
+            return
+        lang = st.get('lang', '')
+        name = st.get('name') or self._get_language_name(lang)
+        type_text = t("手动字幕") if st.get('type') == 'manual' else t("自动字幕")
+        ext = st.get('ext') or 'best'
+        self.selected_subtitle_label.setText(t_format("✅ 已选择字幕：{} [{}] · {} · {}", name, lang, type_text, ext))
+        self.selected_subtitle_label.setStyleSheet("QLabel { color: #198754; font-size: 12px; }")
+        self.clear_subtitle_button.setEnabled(True)
+    
+    def _set_selected_subtitle(self, data):
+        """设置选中的字幕（来自预览弹窗双击）。data: {lang, name, ext, type}"""
+        self._selected_subtitle = dict(data)
+        lang = str(data.get('lang') or '').strip()
+        ext = str(data.get('ext') or '').strip()
+        # 同步语言下拉：双击的精确语言代码（含 -orig/-asr 等后缀）不在列表则动态添加
+        if hasattr(self, 'subtitle_lang'):
+            idx = self.subtitle_lang.findData(lang)
+            if idx < 0 and lang:
+                name = self._get_language_name(lang)
+                self.subtitle_lang.addItem(f"{name} ({lang})", lang)
+                idx = self.subtitle_lang.count() - 1
+            if idx >= 0:
+                self.subtitle_lang.setCurrentIndex(idx)
+        # 同步格式下拉：双击的格式 ext 不在列表则动态添加
+        if hasattr(self, 'subtitle_format') and ext:
+            idx = self.subtitle_format.findData(ext)
+            if idx < 0:
+                self.subtitle_format.addItem(f"{ext.upper()} ({ext})", ext)
+                idx = self.subtitle_format.count() - 1
+            self.subtitle_format.setCurrentIndex(idx)
+        self._update_selected_subtitle_label()
+        self._update_subtitle_ui_state()
+        self.progress_text.append(t_format("✅ 已选择字幕：{} [{}] · {} · {}", 
+            data.get('name') or self._get_language_name(lang), lang,
+            t("手动字幕") if data.get('type') == 'manual' else t("自动字幕"),
+            ext or 'best'))
+    
+    def clear_selected_subtitle(self):
+        """清除已选择的字幕"""
+        self._selected_subtitle = None
+        if hasattr(self, 'subtitle_lang'):
+            self.subtitle_lang.setCurrentIndex(0)  # 恢复'全部语言'
+        if hasattr(self, 'subtitle_format'):
+            self.subtitle_format.setCurrentIndex(0)  # 恢复默认格式
+        self._update_selected_subtitle_label()
+        self._update_subtitle_ui_state()
+        if hasattr(self, 'progress_text'):
+            self.progress_text.append(t("已清除字幕选择"))
+    
+    def _build_subtitle_lang_arg(self, selected_subtitle):
+        """构建 --sub-langs 参数：未微调时用双击选中的精确语言代码；微调后按下拉值做变体匹配。"""
+        preview_langs = getattr(self, "_last_preview_subtitle_langs", [])
+        if hasattr(self, 'subtitle_lang'):
+            current = self.subtitle_lang.currentData()
+            if current and current != selected_subtitle.get('lang'):
+                pattern, _ = build_subtitle_lang_pattern(current, available_langs=preview_langs)
+                return pattern
+        return selected_subtitle.get('lang') or "all,-live_chat"
+    
+    def _build_subtitle_format_arg(self, selected_subtitle):
+        """构建 --sub-format 参数：未微调时用双击的格式 ext + best 兜底；微调值直接使用。"""
+        if hasattr(self, 'subtitle_format'):
+            fmt = self.subtitle_format.currentData()
+            if fmt and fmt != selected_subtitle.get('ext'):
+                if fmt == "best" or "/" in str(fmt):
+                    return fmt
+                return f"{fmt}/best"
+        ext = selected_subtitle.get('ext') or 'best'
+        if ext == "best":
+            return "best"
+        return f"{ext}/best"
     
     # update_age_limit_bypass_status方法已移除，年龄限制绕过功能已删除
 
@@ -18876,46 +18845,20 @@ class VideoDownloaderApp(QMainWindow):
         
         # 播放列表排序、下载限制、文件大小过滤、日期过滤选项已移除
         
-        # 字幕选项
-        if self.subtitle_check.isChecked():
-            options.append("--write-subs")
-            selected_lang = self.subtitle_lang.currentData()
-            # 添加调试信息
-            print(t_format("DEBUG: 字幕选项 - 选中的语言数据: {}", selected_lang))
-            print(t_format("DEBUG: 字幕选项 - 当前文本: {}", self.subtitle_lang.currentText()))
-            print(t_format("DEBUG: 字幕选项 - 当前索引: {}", self.subtitle_lang.currentIndex()))
-            
-            if selected_lang and selected_lang != "all":
-                lang_pattern, normalized_lang = build_subtitle_lang_pattern(
-                    selected_lang,
-                    available_langs=preview_langs,
-                )
-                options.extend(["--sub-langs", lang_pattern])
-                print(t_format("DEBUG: 添加字幕语言匹配选项: --sub-langs {} (选择: {})", lang_pattern, normalized_lang))
-            elif selected_lang == "all":
-                lang_pattern, _ = build_subtitle_lang_pattern("all", available_langs=preview_langs)
-                options.extend(["--sub-langs", lang_pattern])
-                print(t_format("DEBUG: 添加全部字幕选项: --sub-langs {}", lang_pattern))
+        # 字幕选项：由"预览可用字幕→双击行选择"驱动
+        selected_subtitle = getattr(self, '_selected_subtitle', None)
+        if selected_subtitle:
+            if selected_subtitle.get('type') == 'manual':
+                options.append("--write-subs")
             else:
-                default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
-                options.extend(["--sub-langs", default_langs])
-                print(t_format("DEBUG: 添加默认字幕选项: --sub-langs {}", default_langs))
+                options.append("--write-auto-subs")
+            lang_pattern = self._build_subtitle_lang_arg(selected_subtitle)
+            options.extend(["--sub-langs", lang_pattern])
+            print(t_format("DEBUG: 添加字幕语言选项: --sub-langs {} (双击选中: {})", lang_pattern, selected_subtitle.get('lang')))
+            sub_format_arg = self._build_subtitle_format_arg(selected_subtitle)
+            options.extend(["--sub-format", sub_format_arg])
+            print(t_format("DEBUG: 添加字幕格式选项: --sub-format {}", sub_format_arg))
         
-        # 处理新增的字幕选项
-        if hasattr(self, 'auto_subtitle_check') and self.auto_subtitle_check.isChecked():
-            options.append("--write-auto-subs")
-            print(t("DEBUG: 添加自动字幕选项: --write-auto-subs"))
-        
-        if hasattr(self, 'subtitle_format') and (self.subtitle_check.isChecked() or (hasattr(self, 'embed_subtitle_check') and self.embed_subtitle_check.isChecked())):
-            selected_format = self.subtitle_format.currentData()
-            if selected_format and selected_format != "best":
-                options.extend(["--sub-format", selected_format])
-                print(t_format("DEBUG: 添加字幕格式选项: --sub-format {}", selected_format))
-            else:
-                options.extend(["--sub-format", "srt/ass/vtt/best"])
-                print(t("DEBUG: 使用字幕格式偏好: --sub-format srt/ass/vtt/best"))
-        
-
         if hasattr(self, 'convert_subtitle_check') and self.convert_subtitle_check.isChecked():
             # 使用--convert-subs 转换字幕格式（支持 ass/lrc/srt/vtt），并强制UTF-8编码
             target = "srt"
@@ -18932,19 +18875,17 @@ class VideoDownloaderApp(QMainWindow):
         if hasattr(self, 'embed_subtitle_check') and self.embed_subtitle_check.isChecked():
             options.append("--embed-subs")
             
-            # 判断字幕下载状态
-            write_subs_enabled = self.subtitle_check.isChecked() or (
-                hasattr(self, 'auto_subtitle_check') and self.auto_subtitle_check.isChecked()
-            )
+            # 判断字幕下载状态（由预览弹窗双击选择驱动）
+            write_subs_enabled = getattr(self, '_selected_subtitle', None) is not None
             
             if write_subs_enabled:
-                # 场景1: 同时勾选"下载字幕"和"嵌入字幕"
+                # 场景1: 已选择字幕 + 嵌入字幕
                 # → yt-dlp 默认会保留外部字幕文件（新版本行为）
-                print(t("DEBUG: 字幕嵌入+外部保留模式（同时下载和嵌入字幕）"))
+                print(t("DEBUG: 字幕嵌入+外部保留模式（已选择字幕并嵌入）"))
                 # 注意：如果将来需要嵌入后删除外部文件，可添加：
                 # options.extend(["--compat-options", "no-keep-subs"])
             else:
-                # 场景2: 只勾选"嵌入字幕"，不勾选"下载字幕"
+                # 场景2: 只勾选"嵌入字幕"，未选择下载字幕
                 # → yt-dlp 会自动下载字幕用于嵌入，然后删除外部文件
                 print(t("DEBUG: 仅嵌入字幕模式（自动下载后删除外部文件）"))
                 
@@ -18967,7 +18908,7 @@ class VideoDownloaderApp(QMainWindow):
                 print("WARN: 未找到 ffmpeg.exe，字幕嵌入/转换可能失败")
         
         # 字幕下载延迟选项
-        if hasattr(self, 'subtitle_delay_spin') and (self.subtitle_check.isChecked() or (hasattr(self, 'embed_subtitle_check') and self.embed_subtitle_check.isChecked())):
+        if hasattr(self, 'subtitle_delay_spin') and (getattr(self, '_selected_subtitle', None) is not None or (hasattr(self, 'embed_subtitle_check') and self.embed_subtitle_check.isChecked())):
             delay_value = self.subtitle_delay_spin.value()
             if delay_value > 0:
                 options.extend(["--sleep-subtitles", str(delay_value)])
@@ -19761,7 +19702,7 @@ class VideoDownloaderApp(QMainWindow):
         layout = QVBoxLayout(dialog)
         
         # 添加说明文本
-        info_label = QLabel(t("以下是该视频的可用字幕信息："))
+        info_label = QLabel(t("双击表格中的字幕行即可选择并下载该字幕（关闭弹窗表示不下载字幕）："))
         layout.addWidget(info_label)
         
         # 创建表格显示字幕信息
@@ -19781,36 +19722,52 @@ class VideoDownloaderApp(QMainWindow):
             set(list(subtitles.keys()) + list(automatic_captions.keys()))
         )
         
-        row_count = 0
+        # 构造排序后的字幕行数据（手动字幕在前，组内按语言/格式排序）
+        rows_data = []
         for lang_code, formats in subtitles.items():
             for fmt in formats:
-                row_count += 1
+                rows_data.append({
+                    'lang': lang_code,
+                    'name': fmt.get('name') or lang_code,
+                    'ext': fmt.get('ext') or 'best',
+                    'type': 'manual',
+                })
         for lang_code, formats in automatic_captions.items():
             for fmt in formats:
-                row_count += 1
-                
-        table.setRowCount(row_count)
+                rows_data.append({
+                    'lang': lang_code,
+                    'name': fmt.get('name') or lang_code,
+                    'ext': fmt.get('ext') or 'best',
+                    'type': 'auto',
+                })
+        rows_data.sort(key=lambda r: (0 if r['type'] == 'manual' else 1, r['lang'], r['ext']))
         
-        row = 0
-        # 添加手动字幕
-        for lang_code, formats in subtitles.items():
-            for fmt in formats:
-                table.setItem(row, 0, QTableWidgetItem(lang_code))
-                table.setItem(row, 1, QTableWidgetItem(fmt.get('name', t('未知'))))
-                table.setItem(row, 2, QTableWidgetItem(fmt.get('ext', t('未知'))))
-                table.setItem(row, 3, QTableWidgetItem(t("手动字幕")))
-                row += 1
-                
-        # 添加自动字幕
-        for lang_code, formats in automatic_captions.items():
-            for fmt in formats:
-                table.setItem(row, 0, QTableWidgetItem(lang_code))
-                table.setItem(row, 1, QTableWidgetItem(fmt.get('name', t('未知'))))
-                table.setItem(row, 2, QTableWidgetItem(fmt.get('ext', t('未知'))))
-                table.setItem(row, 3, QTableWidgetItem(t("自动字幕")))
-                row += 1
+        table.setRowCount(len(rows_data))
+        for row, data in enumerate(rows_data):
+            lang_item = QTableWidgetItem(data['lang'])
+            lang_item.setData(Qt.UserRole, {
+                'lang': data['lang'], 'name': data['name'],
+                'ext': data['ext'], 'type': data['type'],
+            })
+            table.setItem(row, 0, lang_item)
+            table.setItem(row, 1, QTableWidgetItem(data['name']))
+            table.setItem(row, 2, QTableWidgetItem(data['ext']))
+            table.setItem(row, 3, QTableWidgetItem(
+                t("手动字幕") if data['type'] == 'manual' else t("自动字幕")
+            ))
         
         layout.addWidget(table)
+        
+        # 双击行 = 选择该字幕并关闭弹窗（核心交互：双击即选中，下载时自动匹配）
+        def on_row_double_clicked(row, col):
+            item = table.item(row, 0)
+            if item is None:
+                return
+            data = item.data(Qt.UserRole)
+            if data:
+                self._set_selected_subtitle(data)
+                dialog.accept()
+        table.cellDoubleClicked.connect(on_row_double_clicked)
         
         # 添加统计信息
         stats_label = QLabel(t_format("共找到 {} 种手动字幕语言，{} 种自动字幕语言", len(subtitles), len(automatic_captions)))
@@ -19822,7 +19779,7 @@ class VideoDownloaderApp(QMainWindow):
         help_button.clicked.connect(lambda: QMessageBox.information(
             dialog,
             t("字幕预览说明"),
-            t("手动字幕请选择“下载手动字幕”。\n") + t("自动字幕请仅勾选“下载自动生成字幕”。\n") + t("没有预览字幕代表源视频无字幕。")
+            t("双击某一行即可选择该字幕，下载时自动附带对应参数。\n") + t("手动字幕来自视频上传者；自动字幕由平台AI生成。\n") + t("没有预览字幕代表源视频无字幕。")
         ))
         close_button = QPushButton(t("关闭"))
         close_button.clicked.connect(dialog.accept)
@@ -23209,10 +23166,8 @@ class VideoDownloaderApp(QMainWindow):
                     self.keep_fragments_check.setChecked(False)
                 
                 # 取消勾选字幕相关选项
-                if hasattr(self, 'subtitle_check'):
-                    self.subtitle_check.setChecked(False)
-                if hasattr(self, 'auto_subtitle_check'):
-                    self.auto_subtitle_check.setChecked(False)
+                if hasattr(self, 'clear_selected_subtitle'):
+                    self.clear_selected_subtitle()
                 if hasattr(self, 'embed_subtitle_check'):
                     self.embed_subtitle_check.setChecked(False)
                 if hasattr(self, 'convert_subtitle_check'):
@@ -23374,34 +23329,20 @@ class VideoDownloaderApp(QMainWindow):
                 self.keep_fragments_check.setEnabled(checked and master_enabled)
             
             # 控制字幕相关功能的启用状态
-            if hasattr(self, 'subtitle_check'):
-                self.subtitle_check.setEnabled(checked)
-            if hasattr(self, 'auto_subtitle_check'):
-                self.auto_subtitle_check.setEnabled(checked)
+            selected_subtitle = getattr(self, '_selected_subtitle', None) is not None
             if hasattr(self, 'embed_subtitle_check'):
                 self.embed_subtitle_check.setEnabled(checked)
             if hasattr(self, 'convert_subtitle_check'):
-                # 当高级选项启用时，字幕转换默认禁用（需要用户手动勾选字幕下载后才启用）
-                self.convert_subtitle_check.setEnabled(checked and (
-                    (hasattr(self, 'subtitle_check') and self.subtitle_check.isChecked()) or
-                    (hasattr(self, 'auto_subtitle_check') and self.auto_subtitle_check.isChecked())
-                ))
-            # 控制字幕语言和格式选择器（这些通常由字幕复选框控制，但也应该受高级选项影响）
+                # 当高级选项启用时，字幕转换默认禁用（需要用户先通过预览双击选择字幕）
+                self.convert_subtitle_check.setEnabled(checked and selected_subtitle)
+            # 控制字幕语言和格式选择器（受高级选项和字幕选择状态影响）
             if hasattr(self, 'subtitle_lang'):
-                self.subtitle_lang.setEnabled(checked and (
-                    (hasattr(self, 'subtitle_check') and self.subtitle_check.isChecked()) or
-                    (hasattr(self, 'auto_subtitle_check') and self.auto_subtitle_check.isChecked())
-                ))
+                self.subtitle_lang.setEnabled(checked and selected_subtitle)
             if hasattr(self, 'subtitle_format'):
-                self.subtitle_format.setEnabled(checked and (
-                    (hasattr(self, 'subtitle_check') and self.subtitle_check.isChecked()) or
-                    (hasattr(self, 'auto_subtitle_check') and self.auto_subtitle_check.isChecked())
-                ))
+                self.subtitle_format.setEnabled(checked and selected_subtitle)
             if hasattr(self, 'subtitle_delay_spin'):
-                self.subtitle_delay_spin.setEnabled(checked and (
-                    (hasattr(self, 'subtitle_check') and self.subtitle_check.isChecked()) or
-                    (hasattr(self, 'auto_subtitle_check') and self.auto_subtitle_check.isChecked())
-                ))
+                embed_enabled = hasattr(self, 'embed_subtitle_check') and self.embed_subtitle_check.isChecked()
+                self.subtitle_delay_spin.setEnabled(checked and (selected_subtitle or embed_enabled))
             
             # 控制基本选项的启用状态
             if hasattr(self, 'thumbnail_check'):

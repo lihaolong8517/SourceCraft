@@ -11,6 +11,7 @@ import re
 import json
 import time
 import glob
+import unicodedata
 import shutil
 import tempfile
 import subprocess
@@ -29,7 +30,11 @@ import auth_utils
 from download_sections_utils import (
     split_time_range_tokens, parse_time_token_to_seconds, validate_download_section
 )
-from special_scene_utils import build_wait_for_video_arg, fragment_unavailable_flag
+from special_scene_utils import (
+    build_wait_for_video_arg,
+    fragment_unavailable_flag,
+    live_from_start_supported,
+)
 from i18n import t, t_format
 
 
@@ -1895,10 +1900,14 @@ class DownloadThread(QThread):
                                      self.main_app.special_scene_master_check.isChecked())
                 
                 if special_scene_enabled:
-                    # 从开头下载直播
+                    # 从开头下载直播（仅支持 YouTube/Twitch/TVer/mellow-fan，其他平台传参会导致 yt-dlp 报错）
                     if hasattr(self.main_app, 'live_from_start_check') and self.main_app.live_from_start_check.isChecked():
-                        cmd.extend(["--live-from-start"])
-                        self.progress_signal.emit(t("✓ 从开头下载直播"))
+                        live_platform = live_from_start_supported(self.url)
+                        if live_platform:
+                            cmd.extend(["--live-from-start"])
+                            self.progress_signal.emit(t("✓ 从开头下载直播"))
+                        else:
+                            self.progress_signal.emit(t("⚠️ 该平台不支持从开头下载直播（仅支持 YouTube/Twitch/TVer/mellow-fan），已自动忽略该选项"))
                     
                     # 等待视频可用
                     if hasattr(self.main_app, 'wait_for_video_check') and self.main_app.wait_for_video_check.isChecked():
@@ -1951,109 +1960,33 @@ class DownloadThread(QThread):
                 
                 # 播放列表排序参数已移除
 
-            # 添加字幕下载选项 - 与官方yt-dlp完全一致
+            # 添加字幕下载选项 - 由"预览可用字幕→双击行选择"驱动
             if advanced_enabled and self.main_app:
-                preview_langs = getattr(self.main_app, "_last_preview_subtitle_langs", [])
-                # 下载字幕文件
-                if hasattr(self.main_app, 'subtitle_check') and self.main_app.subtitle_check.isChecked():
-                    cmd.extend(["--write-subs"])
-                    self.progress_signal.emit(t("✓ 启用字幕下载"))
-                    
-                    # 字幕语言选择 - 使用用户在UI中选择的语言
-                    if hasattr(self.main_app, 'subtitle_lang'):
-                        selected_lang = self.main_app.subtitle_lang.currentData()
-                        has_sub_langs = "--sub-langs" in cmd
-                        if selected_lang and selected_lang != "all":
-                            lang_pattern, normalized_lang = build_subtitle_lang_pattern(
-                                selected_lang,
-                                available_langs=preview_langs,
-                            )
-                            if not has_sub_langs:
-                                cmd.extend(["--sub-langs", lang_pattern])
-                                self.progress_signal.emit(t_format("✓ 字幕语言: {} (匹配: {})", normalized_lang, lang_pattern))
-                            else:
-                                self.progress_signal.emit(t_format("✓ 字幕语言沿用预设参数: {}", normalized_lang))
-                        elif selected_lang == "all":
-                            lang_pattern, _ = build_subtitle_lang_pattern("all", available_langs=preview_langs)
-                            if not has_sub_langs:
-                                cmd.extend(["--sub-langs", lang_pattern])
-                                self.progress_signal.emit(t("✓ 字幕语言: 全部语言（排除直播聊天）"))
-                            else:
-                                self.progress_signal.emit(t("✓ 字幕语言沿用预设参数: 全部语言"))
-                        else:
-                            default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
-                            if not has_sub_langs:
-                                cmd.extend(["--sub-langs", default_langs])
-                                self.progress_signal.emit(t("✓ 默认字幕语言: 中文和英文"))
-                            else:
-                                self.progress_signal.emit(t("✓ 默认字幕语言沿用预设参数"))
+                selected_subtitle = getattr(self.main_app, '_selected_subtitle', None)
+                if selected_subtitle:
+                    if selected_subtitle.get('type') == 'manual':
+                        cmd.extend(["--write-subs"])
+                        self.progress_signal.emit(t("✓ 启用字幕下载（手动字幕）"))
                     else:
-                        # 兼容旧版本：如果没有新的语言选择器，使用文本框
-                        if hasattr(self.main_app, 'subtitle_langs') and self.main_app.subtitle_langs.text().strip():
-                            langs = self.main_app.subtitle_langs.text().strip()
-                            cmd.extend(["--sub-langs", langs])
-                            self.progress_signal.emit(t_format("✓ 字幕语言: {}", langs))
-                        else:
-                            default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
-                            cmd.extend(["--sub-langs", default_langs])
-                            self.progress_signal.emit(t("✓ 默认字幕语言: 中文和英文"))
+                        cmd.extend(["--write-auto-subs"])
+                        self.progress_signal.emit(t("✓ 启用字幕下载（自动生成字幕）"))
                     
-                    # 字幕格式选择
-                    if hasattr(self.main_app, 'subtitle_format') and self.main_app.subtitle_format.currentData():
-                        sub_format = self.main_app.subtitle_format.currentData()
-                        cmd.extend(["--sub-format", sub_format])
-                        self.progress_signal.emit(t_format("✓ 字幕格式: {}", sub_format))
-                    else:
-                        # 默认优先srt格式
-                        cmd.extend(["--sub-format", "srt/ass/vtt/best"])
-                        self.progress_signal.emit(t("✓ 默认字幕格式: srt/ass/vtt/best"))
-                
-                # 下载自动生成字幕
-                if hasattr(self.main_app, 'auto_subtitle_check') and self.main_app.auto_subtitle_check.isChecked():
-                    cmd.extend(["--write-auto-subs"])
-                    self.progress_signal.emit(t("✓ 启用自动生成字幕下载"))
+                    # 字幕语言：双击选中的精确代码（用户微调语言下拉后走变体匹配）
+                    lang_pattern = self.main_app._build_subtitle_lang_arg(selected_subtitle)
+                    cmd.extend(["--sub-langs", lang_pattern])
+                    self.progress_signal.emit(t_format("✓ 字幕语言: {} (匹配: {})", selected_subtitle.get('lang'), lang_pattern))
                     
-                    # 自动字幕也使用相同的语言和格式设置
-                    if not (hasattr(self.main_app, 'subtitle_check') and self.main_app.subtitle_check.isChecked()):
-                        # 如果没有启用普通字幕，则为自动字幕设置语言和格式
-                        if hasattr(self.main_app, 'subtitle_lang'):
-                            selected_lang = self.main_app.subtitle_lang.currentData()
-                            has_sub_langs = "--sub-langs" in cmd
-                            if selected_lang and selected_lang != "all":
-                                lang_pattern, normalized_lang = build_subtitle_lang_pattern(
-                                    selected_lang,
-                                    available_langs=preview_langs,
-                                )
-                                if not has_sub_langs:
-                                    cmd.extend(["--sub-langs", lang_pattern])
-                                    self.progress_signal.emit(t_format("✓ 自动字幕语言: {} (匹配: {})", normalized_lang, lang_pattern))
-                                else:
-                                    self.progress_signal.emit(t_format("✓ 自动字幕语言沿用预设参数: {}", normalized_lang))
-                            else:
-                                all_langs, _ = build_subtitle_lang_pattern("all", available_langs=preview_langs)
-                                if not has_sub_langs:
-                                    cmd.extend(["--sub-langs", all_langs])
-                                    self.progress_signal.emit(t("✓ 自动字幕语言: 全部语言（排除直播聊天）"))
-                                else:
-                                    self.progress_signal.emit(t("✓ 自动字幕语言沿用预设参数: 全部语言"))
-                        else:
-                            default_langs, _ = build_subtitle_lang_pattern("", available_langs=preview_langs)
-                            cmd.extend(["--sub-langs", default_langs])
-                            self.progress_signal.emit(t("✓ 默认自动字幕语言: 中文或英语"))
-                        
-                        if hasattr(self.main_app, 'subtitle_format') and self.main_app.subtitle_format.currentData():
-                            sub_format = self.main_app.subtitle_format.currentData()
-                            cmd.extend(["--sub-format", sub_format])
-                        else:
-                            cmd.extend(["--sub-format", "srt/ass/vtt/best"])
+                    # 字幕格式：双击选中的格式 ext + best 兜底
+                    sub_format_arg = self.main_app._build_subtitle_format_arg(selected_subtitle)
+                    cmd.extend(["--sub-format", sub_format_arg])
+                    self.progress_signal.emit(t_format("✓ 字幕格式: {}", sub_format_arg))
                 
                 # 【修复】自动添加字幕格式转换：清除 WebVTT 内联时间标签
                 # 只在以下条件满足时才自动转换：
-                # 1. 至少启用了一种字幕下载（普通字幕或自动字幕）
+                # 1. 已选择字幕（手动或自动）
                 # 2. 用户未手动启用转换功能
                 # 3. 用户选择的格式不是 ASS 或 TTML（这两种格式有自己的样式系统，不需要转换）
-                subtitle_enabled = (hasattr(self.main_app, 'subtitle_check') and self.main_app.subtitle_check.isChecked()) or \
-                                   (hasattr(self.main_app, 'auto_subtitle_check') and self.main_app.auto_subtitle_check.isChecked())
+                subtitle_enabled = selected_subtitle is not None
                 
                 if subtitle_enabled:
                     convert_subs_enabled = hasattr(self.main_app, 'convert_subtitle_check') and self.main_app.convert_subtitle_check.isChecked()
@@ -2411,7 +2344,6 @@ class DownloadThread(QThread):
                     "Members-only", "members-only",
                     "This video is only available",
                     "Sign in to confirm your age",
-                    "age-restricted",
                     "Geographic restriction",
                     "This video contains content from",
                     "blocked it in your country",
@@ -2563,6 +2495,24 @@ class DownloadThread(QThread):
                             else:
                                 self.progress_signal.emit(t_format("📊 跳过重复失败记录: {}", video_identifier))
                                 print(t_format("[调试] 跳过重复失败记录 - 标题: '{}' 已存在", video_identifier))
+                
+                # 【修复】实时移除误报：Merger（合并完成）或进度行 downloaded==total（单流完成）
+                # 均表示当前视频已实际下载成功，按视频ID从失败列表移除。
+                # 不能依赖 "[download] 100%" 文本——--progress-template 覆盖进度输出后该文本永不出现
+                if self.failed_videos and self.current_video_id:
+                    stream_finished = False
+                    if "[Merger] Merging formats into" in stripped_line:
+                        stream_finished = True
+                    elif re.match(r'^\[\d+/\d+\]', stripped_line):
+                        _prog_m = re.match(r'^\[(\d+)/(\d+)\]', stripped_line)
+                        if _prog_m and int(_prog_m.group(2)) > 0 and int(_prog_m.group(1)) == int(_prog_m.group(2)):
+                            stream_finished = True
+                    if stream_finished:
+                        for _fi in range(len(self.failed_videos) - 1, -1, -1):
+                            if self.failed_videos[_fi].get('id') == self.current_video_id:
+                                _removed = self.failed_videos.pop(_fi)
+                                self.progress_signal.emit(t_format("✅ 修正: '{}' 实际下载成功，从失败列表移除", _removed.get('title', self.current_video_id)))
+                                break
                 
                 # 检测下载成功 - 改为基于实际文件名来去重统计
                 if "[download] 100%" in stripped_line or "has already been downloaded" in stripped_line:
@@ -3209,6 +3159,10 @@ class DownloadThread(QThread):
                                     name_without_ext = os.path.splitext(filename)[0]
                                     name_without_ext = re.sub(r'\.f\d+$', '', name_without_ext)
                                     failed_title_clean = re.sub(r'\.f\d+$', '', failed_title)
+                                    # 【修复】NFKC 归一化：统一全角/半角（如 ｜→|），
+                                    # --windows-filenames 会把标题中的 | 替换为 ｜ 导致匹配失败、误报残留
+                                    name_without_ext = unicodedata.normalize('NFKC', name_without_ext)
+                                    failed_title_clean = unicodedata.normalize('NFKC', failed_title_clean)
                                     
                                     if (name_without_ext in failed_title_clean or 
                                         failed_title_clean in name_without_ext or
@@ -3230,6 +3184,10 @@ class DownloadThread(QThread):
                                                 # 去除临时格式标识（如 .f135, .f140）
                                                 name_without_ext = re.sub(r'\.f\d+$', '', name_without_ext)
                                                 failed_title_clean = re.sub(r'\.f\d+$', '', failed_title)
+                                                # 【修复】NFKC 归一化：统一全角/半角（如 ｜→|），
+                                                # --windows-filenames 会把标题中的 | 替换为 ｜ 导致匹配失败、误报残留
+                                                name_without_ext = unicodedata.normalize('NFKC', name_without_ext)
+                                                failed_title_clean = unicodedata.normalize('NFKC', failed_title_clean)
                                                 
                                                 # 如果文件名包含失败视频的标题（或部分匹配）
                                                 if (name_without_ext in failed_title_clean or 
@@ -3378,7 +3336,7 @@ class DownloadThread(QThread):
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
-                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (最终)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
@@ -3389,7 +3347,7 @@ class DownloadThread(QThread):
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
-                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (最终)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
@@ -3578,7 +3536,11 @@ class DownloadThread(QThread):
                                         name_without_ext = os.path.splitext(filename)[0]
                                         name_without_ext = re.sub(r'\.f\d+$', '', name_without_ext)
                                         failed_title_clean = re.sub(r'\.f\d+$', '', failed_title)
-                                        
+                                        # 【修复】NFKC 归一化：统一全角/半角（如 ｜→|），
+                                        # --windows-filenames 会把标题中的 | 替换为 ｜ 导致匹配失败、误报残留
+                                        name_without_ext = unicodedata.normalize('NFKC', name_without_ext)
+                                        failed_title_clean = unicodedata.normalize('NFKC', failed_title_clean)
+                                    
                                         if (name_without_ext in failed_title_clean or 
                                             failed_title_clean in name_without_ext or
                                             name_without_ext.replace('_', ' ') in failed_title_clean or
@@ -3599,7 +3561,11 @@ class DownloadThread(QThread):
                                                     # 去除临时格式标识（如 .f135, .f140）
                                                     name_without_ext = re.sub(r'\.f\d+$', '', name_without_ext)
                                                     failed_title_clean = re.sub(r'\.f\d+$', '', failed_title)
-                                                    
+                                                    # 【修复】NFKC 归一化：统一全角/半角（如 ｜→|），
+                                                    # --windows-filenames 会把标题中的 | 替换为 ｜ 导致匹配失败、误报残留
+                                                    name_without_ext = unicodedata.normalize('NFKC', name_without_ext)
+                                                    failed_title_clean = unicodedata.normalize('NFKC', failed_title_clean)
+                                                
                                                     # 如果文件名包含失败视频的标题（或部分匹配）
                                                     if (name_without_ext in failed_title_clean or 
                                                         failed_title_clean in name_without_ext or
@@ -3694,7 +3660,7 @@ class DownloadThread(QThread):
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
-                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (最终)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
@@ -3705,7 +3671,7 @@ class DownloadThread(QThread):
                             if time_sections_enabled:
                                 self.progress_signal.emit(t_format("   ⏱️ 时间片段: {}", sections_summary))
                             self.progress_signal.emit(t_format("   ✅ 成功下载: {} (基于实际文件统计)", self.successful_downloads))
-                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (已移除误报)", len(self.failed_videos)))
+                            self.progress_signal.emit(t_format("   ❌ 下载失败: {} (最终)", len(self.failed_videos)))
                             if restriction_failed > 0:
                                 self.progress_signal.emit(t_format("      └─ 其中因限制失败: {} 个", restriction_failed))
                             if restriction_skipped > 0:
