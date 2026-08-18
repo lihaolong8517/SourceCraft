@@ -1684,6 +1684,26 @@ class SubtitlePreviewThread(QThread):
         except Exception as e:
             self.error_signal.emit(str(e))
 
+def _sanitize_download_url(url):
+    """防御性 URL 清洗（线程内第二道保险）。
+
+    主窗口 extract_url_from_text 已做首层清洗；此函数兜底剥离 AI 工具复制
+    产生的 @url: 前缀/反引号等杂质，防止污染 URL 进入 yt-dlp 命令并传播到
+    ffmpeg 输入（@url: 前缀在旧版 yt-dlp 会导致 "[generic] is not a valid URL"）。
+    未匹配到 http(s) URL 时返回原值，不改变既有行为。
+    """
+    if not url:
+        return url
+    text = str(url).strip()
+    m = re.search(
+        r'(https?://[\w\-\.]+(?:\:\d+)?(?:/[\w\-\.~!$&\'\(\)*+,;=:/?#\[\]%@]+)?)',
+        text, re.IGNORECASE)
+    if not m:
+        return url
+    clean = m.group(1).rstrip(',.;:"\'')
+    return clean if clean != text else url
+
+
 class DownloadThread(QThread):
     progress_signal = pyqtSignal(str)
     progress_percent_signal = pyqtSignal(float)  # 用于传递下载进度百分比
@@ -2988,6 +3008,13 @@ class DownloadThread(QThread):
                 self.cancel_signal.emit()
                 return
                 
+            # 防御性 URL 清洗（第二道保险）：剥离 AI 工具复制的 @url: 前缀等杂质，
+            # 防止污染 URL 进入 yt-dlp 命令并传播到 ffmpeg 输入
+            _clean_url = _sanitize_download_url(self.url)
+            if _clean_url != self.url:
+                self.url = _clean_url
+                self.progress_signal.emit(t_format("已自动清洗URL: {}", _clean_url))
+
             self.progress_signal.emit(t("ℹ 开始执行下载任务..."))
             self.progress_signal.emit(t_format("目标URL: {}", self.url))
             self.progress_signal.emit(t_format("输出路径: {}", self.output_path))
