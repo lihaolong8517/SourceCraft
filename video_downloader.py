@@ -923,12 +923,13 @@ class PlaylistRangeDialog(QDialog):
 class FailedVideosDialog(QDialog):
     """显示播放列表中失败视频的对话框"""
     
-    def __init__(self, failed_videos, total_videos=0, successful_downloads=0, expected_downloads=0, parent=None):
+    def __init__(self, failed_videos, total_videos=0, successful_downloads=0, expected_downloads=0, skipped_videos=None, parent=None):
         super().__init__(parent)
         self.failed_videos = failed_videos
         self.total_videos = total_videos
         self.successful_downloads = successful_downloads
         self.expected_downloads = expected_downloads  # 用户设置的预期下载数量
+        self.skipped_videos = skipped_videos or []  # 因限制跳过的视频（不占用失败名额）
         self.init_ui()
         
     def init_ui(self):
@@ -966,18 +967,13 @@ class FailedVideosDialog(QDialog):
         # 成功下载数：直接使用传递的successful_downloads（已经在下载过程中准确统计）
         actual_successful = self.successful_downloads if self.successful_downloads > 0 else 0
         
-        # 【关键修复】分别统计失败和跳过的视频
-        actual_failed = 0
-        actual_skipped = 0
+        # 【修复】失败数 = 失败列表条数，与下方"失败视频详情"表格完全一致。
+        # 不再按失败原因关键词（年龄/地区/会员限制等）剔除——那些是真实失败，必须计入；
+        # 此前 age/geo 等关键词会把真实失败误归为"跳过"，导致顶部数字与表格条数矛盾。
+        actual_failed = len(self.failed_videos) if self.failed_videos else 0
         
-        if self.failed_videos:
-            for video in self.failed_videos:
-                reason = video.get('reason', '').lower()
-                # 判断是失败还是跳过
-                if any(keyword in reason for keyword in ['跳过', 'skipped', '限制', '年龄', '地区', '会员', 'restricted', 'age', 'geo', 'membership', 'premium']):
-                    actual_skipped += 1
-                else:
-                    actual_failed += 1
+        # 跳过数：下载线程单独统计的因限制跳过的视频（不占用失败名额）
+        actual_skipped = len(self.skipped_videos) if self.skipped_videos else 0
         
         # 总计处理数 = 成功下载数 + 失败数 + 跳过数（实际尝试下载的视频数）
         actual_total = actual_successful + actual_failed + actual_skipped
@@ -990,82 +986,14 @@ class FailedVideosDialog(QDialog):
         if expected_count == 0 and actual_total > 0:
             expected_count = actual_total
         
-        # 【关键修复】构建统计信息文本 - 区分"设置范围"和"整个播放列表"的情况
-        # 判断是否设置了范围：优先检查expected_downloads，但更准确的是检查是否与total_videos不同
-        # 如果expected_downloads > 0 且 < total_videos，说明用户设置了范围
-        has_range_set = (self.expected_downloads > 0 and 
-                        self.expected_downloads < self.total_videos and 
-                        self.total_videos > 0)
-        
-        if has_range_set:
-            # 【情况1】用户设置了范围（如1-10），基于范围统计
-            # 跳过数 = 范围内预期下载数 - 实际处理数（成功+失败）
-            skipped_in_range = max(0, expected_count - actual_total)
-            
-            # 统计因限制失败的视频数（年龄限制、地区限制等）
-            restriction_failed = sum(1 for v in self.failed_videos 
-                                   if any(keyword in v.get('reason', '') 
-                                         for keyword in ['限制', '年龄', '地区', '会员', 'restricted', 
-                                                        'age', 'geo', 'membership', 'premium']))
-            
-            # 统计因限制跳过的视频数（这些视频被记录在失败列表中，但原因是跳过）
-            restriction_skipped = sum(1 for v in self.failed_videos 
-                                   if any(keyword in v.get('reason', '') 
-                                         for keyword in ['跳过', 'skipped', '限制', '年龄', '地区', '会员', 'restricted', 
-                                                        'age', 'geo', 'membership', 'premium']))
-            
-            # 【简化】只显示用户要求的4个核心信息：预计下载数、成功下载数、失败下载数、失败详情
-            stats_text = (
-                t_format("🎯 <b>预计下载:</b> {} 个视频<br>✅ <b>成功下载:</b> {} 个视频<br>❌ <b>下载失败:</b> {} 个视频", expected_count, actual_successful, actual_failed)
-
-            )
-            
-        else:
-            # 【情况2】没有设置范围，或范围等于总数，正常统计
-            playlist_total = self.total_videos if self.total_videos > 0 else expected_count
-            
-            if playlist_total > actual_total and playlist_total > 0:
-                # 有视频被过滤的情况，显示详细说明
-                skipped = playlist_total - actual_total
-                
-                # 【关键修复】分别统计失败和跳过的视频
-                actual_failed = 0
-                actual_skipped = 0
-                
-                if self.failed_videos:
-                    for video in self.failed_videos:
-                        reason = video.get('reason', '').lower()
-                        # 判断是失败还是跳过
-                        if any(keyword in reason for keyword in ['跳过', 'skipped', '限制', '年龄', '地区', '会员', 'restricted', 'age', 'geo', 'membership', 'premium']):
-                            actual_skipped += 1
-                        else:
-                            actual_failed += 1
-                
-                # 【简化】只显示用户要求的4个核心信息
-                stats_text = (
-                    t_format("🎯 <b>预计下载:</b> {} 个视频<br>✅ <b>成功下载:</b> {} 个视频<br>❌ <b>下载失败:</b> {} 个视频", expected_count, actual_successful, actual_failed)
-
-                )
-            else:
-                # 没有过滤的情况，正常显示
-                # 【关键修复】分别统计失败和跳过的视频
-                actual_failed = 0
-                actual_skipped = 0
-                
-                if self.failed_videos:
-                    for video in self.failed_videos:
-                        reason = video.get('reason', '').lower()
-                        # 判断是失败还是跳过
-                        if any(keyword in reason for keyword in ['跳过', 'skipped', '限制', '年龄', '地区', '会员', 'restricted', 'age', 'geo', 'membership', 'premium']):
-                            actual_skipped += 1
-                        else:
-                            actual_failed += 1
-                
-                # 【简化】只显示用户要求的4个核心信息
-                stats_text = (
-                    t_format("🎯 <b>预计下载:</b> {} 个视频<br>✅ <b>成功下载:</b> {} 个视频<br>❌ <b>下载失败:</b> {} 个视频", expected_count, actual_successful, actual_failed)
-
-                )
+        # 【修复】统一构建统计信息文本：预计下载 / 成功下载 / 下载失败，
+        # 有跳过视频时单独追加一行（预计 = 成功 + 失败 + 跳过 勾稽一致）
+        stats_text = (
+            t_format("🎯 <b>预计下载:</b> {} 个视频<br>✅ <b>成功下载:</b> {} 个视频<br>❌ <b>下载失败:</b> {} 个视频",
+                     expected_count, actual_successful, actual_failed)
+        )
+        if actual_skipped > 0:
+            stats_text += "<br>" + t_format("⏭️ 因限制跳过: {} 个", actual_skipped)
         
         stats_info = QLabel(stats_text)
         stats_info.setStyleSheet(
@@ -18601,6 +18529,7 @@ class VideoDownloaderApp(QMainWindow):
             total_videos=total_videos,
             successful_downloads=successful_downloads,
             expected_downloads=expected_downloads,
+            skipped_videos=skipped_videos,
             parent=self
         )
         dialog.exec_()
@@ -20634,8 +20563,14 @@ class VideoDownloaderApp(QMainWindow):
         
         if success:
             self.play_completion_notification_sound()
-            dialog_title = "媒体捕捉下载完成" if is_media_capture_download else "下载完成"
-            self._show_browser_safe_message(QMessageBox.Information, dialog_title, message)
+            # 【修复】播放列表任务：下载报告弹窗（FailedVideosDialog）已展示完整统计，
+            # 跳过重复的"下载完成"小弹窗；单视频/媒体捕捉下载保留原提示
+            is_playlist_job = bool(
+                hasattr(self, 'download_thread') and getattr(self.download_thread, 'playlist_enabled', False)
+            )
+            if not is_playlist_job:
+                dialog_title = "媒体捕捉下载完成" if is_media_capture_download else "下载完成"
+                self._show_browser_safe_message(QMessageBox.Information, dialog_title, message)
         else:
             # 将错误消息转换为小写用于匹配
             message_lower = message.lower()

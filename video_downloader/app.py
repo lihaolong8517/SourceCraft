@@ -6562,6 +6562,7 @@ class VideoDownloaderApp(QMainWindow):
             total_videos=total_videos,
             successful_downloads=successful_downloads,
             expected_downloads=expected_downloads,
+            skipped_videos=skipped_videos,
             parent=self
         )
         dialog.exec_()
@@ -8614,8 +8615,14 @@ class VideoDownloaderApp(QMainWindow):
         
         if success:
             self.play_completion_notification_sound()
-            dialog_title = "媒体捕捉下载完成" if is_media_capture_download else "下载完成"
-            self._show_browser_safe_message(QMessageBox.Information, dialog_title, message)
+            # 【修复】播放列表任务：下载报告弹窗（FailedVideosDialog）已展示完整统计，
+            # 跳过重复的"下载完成"小弹窗；单视频/媒体捕捉下载保留原提示
+            is_playlist_job = bool(
+                hasattr(self, 'download_thread') and getattr(self.download_thread, 'playlist_enabled', False)
+            )
+            if not is_playlist_job:
+                dialog_title = "媒体捕捉下载完成" if is_media_capture_download else "下载完成"
+                self._show_browser_safe_message(QMessageBox.Information, dialog_title, message)
         else:
             # 将错误消息转换为小写用于匹配
             message_lower = message.lower()
