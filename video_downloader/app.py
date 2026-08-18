@@ -6827,6 +6827,9 @@ class VideoDownloaderApp(QMainWindow):
         if hasattr(self, 'playlist_range_button'):
             # 只有启用播放列表且已获取到播放列表信息时才允许智能选择
             self.playlist_range_button.setEnabled(enabled and bool(getattr(self, 'current_playlist_info', None)))
+        if hasattr(self, 'get_playlist_button'):
+            # 未勾选"下载播放列表"时禁用"获取播放列表信息"按钮
+            self.get_playlist_button.setEnabled(enabled)
     
     def get_playlist_info(self):
         """专门获取播放列表信息"""
@@ -8418,7 +8421,8 @@ class VideoDownloaderApp(QMainWindow):
         # 下载完成处理
         self.progress_text.append(message)
         self.download_button.setEnabled(True)
-        self.get_playlist_button.setEnabled(True)
+        # 【修复】按"下载播放列表"勾选状态恢复，未勾选时保持禁用（避免绕过 _on_playlist_toggled 联动）
+        self.get_playlist_button.setEnabled(self.playlist_check.isChecked())
         self.cancel_button.setEnabled(False)
         is_media_capture_download = bool(
             hasattr(self, 'download_thread') and getattr(self.download_thread, 'media_capture_download', False)
