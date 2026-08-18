@@ -2492,10 +2492,13 @@ class DownloadThread(QThread):
             _seen.add(_b)
             filter_conditions.append(_b)
         if not filter_conditions:
-            # 无筛选条件：注入默认 1080P 上限的单流，避免时间片段模式选中分离流
-            # （分离流多 URL 直读裁剪在新版 ffmpeg 下会失败）。
-            conditions_str = "[height<=1080]"
+            # 无筛选条件：不注入任何限制。HLS 直读分支裸写匹配（见下）；
+            # 单流兜底受平台限制本身最高 1080P（YouTube avc 单流上限），无需额外限制，
+            # 避免与用户"最高分辨率"偏好冲突。
+            has_filter = False
+            conditions_str = ""
         else:
+            has_filter = True
             conditions_str = "".join(filter_conditions)
 
         single_stream_pref = (
@@ -2506,15 +2509,17 @@ class DownloadThread(QThread):
         )
         if original.startswith(single_stream_pref):
             return original
-        # HLS muxed（单 URL 含音视频）优先：配合 --downloader ffmpeg 直读 m3u8，
-        # 只拉取片段区间分片（实测 22x vs 分离流 1.9x），1080P 高清且最快；
-        # 用户格式链（1080P 分离流）次之；单流直读作最终兜底。
-        hls_muxed_pref = (
-            f"best{conditions_str}[vcodec^=avc][acodec^=mp4a][protocol=m3u8_native]/"
-            f"best{conditions_str}[vcodec*=h264][acodec*=mp4a][protocol=m3u8_native]/"
-            f"best{conditions_str}[acodec^=mp4a][protocol=m3u8_native]"
-        )
-        return f"{hls_muxed_pref}/{original}/{single_stream_pref}"
+        # HLS muxed（单 URL 含音视频）加速分支（2026-08-18 B 方案）：
+        # Untested 格式在选择器中只有 protocol 字段可匹配（height/ext/vcodec/acodec
+        # 均匹配不到，实测带任一条件即 ERROR），必须裸写 best[protocol=m3u8_native]；
+        # 且仅在无用户筛选条件时前置（有筛选时无法继承筛选，可能超出 height<=N 等限制）。
+        # HLS 直读依赖 YouTube 端 hlsManifestUrl 可用性（不稳定，真实下载时经常缺失），
+        # 不可用时选择器链自动回退下一分支（用户格式链 1080P 分离流直读裁剪，约 1.9x）。
+        # 用户格式链（1080P 分离流）次之；单流直读（排除 HLS）作最终兜底。
+        hls_muxed_pref = "best[protocol=m3u8_native]" if not has_filter else ""
+        if hls_muxed_pref:
+            return f"{hls_muxed_pref}/{original}/{single_stream_pref}"
+        return f"{original}/{single_stream_pref}"
     
     def _get_current_video_index(self):
         """获取当前正在处理的视频索引"""

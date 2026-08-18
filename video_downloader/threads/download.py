@@ -814,21 +814,22 @@ class DownloadThread(QThread):
 
     def _build_time_section_friendly_format(self, original_format):
         """
-        时间片段下载优先使用“单流（内含音视频）”格式，减少中段裁剪时的额外回源开销。
-        若单流不可用，自动回退到用户原格式选择，不破坏原有功能。
+        时间片段下载格式链（2026-08-18 B 方案，与单体 video_downloader.py 同源）：
+        HLS muxed 直读优先（仅无筛选时，裸写 protocol 匹配）→ 用户格式链
+        （1080P 分离流直读裁剪）→ 单流直读（排除 HLS）兜底。
         """
         original = str(original_format or "").strip()
         if not original:
             return original
 
-        # 仅在明显为分离音视频策略时才注入单流优先，避免干扰普通单格式选择
+        # 仅在明显为分离音视频策略时才注入，避免干扰普通单格式选择
         looks_split_stream = ("+" in original) or ("bestvideo" in original and "bestaudio" in original)
         if not looks_split_stream:
             return original
 
         # 提取用户的筛选条件（分辨率上限/音频语言/音轨排除），注入单流选择器，
-        # 保证时间片段模式下用户的筛选依然生效；无筛选时使用默认 1080P 上限。
-        # 仅提取"过滤型"条件（改变可选集合），忽略格式偏好型（ext=、vcodec^= 等）。
+        # 保证时间片段模式下用户的筛选依然生效。仅提取"过滤型"条件
+        # （改变可选集合），忽略格式偏好型（ext=、vcodec^= 等）。
         # 注意：语言条件可能内嵌字符类（如 [language~='(?i)^ja(?:[-_].*)?$']），
         # 必须用引号包裹整体匹配，避免在内部 ] 处截断。
         filter_conditions = []
@@ -845,20 +846,25 @@ class DownloadThread(QThread):
                 continue
             _seen.add(_b)
             filter_conditions.append(_b)
-        if not filter_conditions:
-            # 无筛选条件：保持用户原格式链（最佳质量 + 默认音频语言），
-            # 不注入单流限制——避免把最佳质量误限制为 1080P。
-            return original
-
+        has_filter = bool(filter_conditions)
         conditions_str = "".join(filter_conditions)
+
         single_stream_pref = (
-            f"best{conditions_str}[ext=mp4][vcodec^=avc][acodec^=mp4a]/"
-            f"best{conditions_str}[ext=mp4][vcodec*=h264][acodec*=mp4a]/"
-            f"best{conditions_str}[ext=mp4]/"
-            f"best{conditions_str}"
+            f"best{conditions_str}[ext=mp4][vcodec^=avc][acodec^=mp4a][protocol!=m3u8_native]/"
+            f"best{conditions_str}[ext=mp4][vcodec*=h264][acodec*=mp4a][protocol!=m3u8_native]/"
+            f"best{conditions_str}[ext=mp4][protocol!=m3u8_native]/"
+            f"best{conditions_str}[protocol!=m3u8_native]"
         )
         if original.startswith(single_stream_pref):
             return original
+        # HLS muxed（单 URL 含音视频）加速分支：Untested 格式在选择器中只有
+        # protocol 字段可匹配（height/ext/vcodec/acodec 均匹配不到），必须裸写
+        # best[protocol=m3u8_native]；且仅在无用户筛选条件时前置（有筛选时无法
+        # 继承筛选，可能超出 height<=N 等限制）。HLS 直读依赖 YouTube 端
+        # hlsManifestUrl 可用性（不稳定），不可用时自动回退用户格式链（分离流 1.9x）。
+        hls_muxed_pref = "best[protocol=m3u8_native]" if not has_filter else ""
+        if hls_muxed_pref:
+            return f"{hls_muxed_pref}/{original}/{single_stream_pref}"
         # 单流仅作兜底（放在用户格式链之后）：保证用户的筛选与最佳质量优先，
         # 避免单流（HLS 最高 1080P）抢占导致画质被限制。
         return f"{original}/{single_stream_pref}"
@@ -1474,7 +1480,7 @@ class DownloadThread(QThread):
                 cmd.extend(["--merge-output-format", "mp4"])
                 self.progress_signal.emit(t("✓ 使用默认最佳质量格式（mp4+m4a优先，最大兼容性）"))
 
-            # 时间片段 + YouTube 场景：优先单流格式，加速中段裁剪；失败时回退到原格式链
+            # 时间片段 + YouTube 场景：HLS muxed 直读优先（快），失败时回退用户格式链/单流
             if time_section_mode and is_youtube_url:
                 explicit_format_id = False
                 try:
@@ -1491,7 +1497,11 @@ class DownloadThread(QThread):
                             new_format = self._build_time_section_friendly_format(old_format)
                             if new_format and new_format != old_format:
                                 cmd[f_index + 1] = new_format
-                                self.progress_signal.emit(t("✓ 时间片段模式：单流格式兜底（用户格式优先，画质不受限）"))
+                                # HLS 走 FFmpegFD 直读 m3u8（只拉取片段区间分片），
+                                # 避免 hlsnative 下载全片导致时间片段极慢
+                                if "--downloader" not in cmd:
+                                    cmd.extend(["--downloader", "ffmpeg"])
+                                self.progress_signal.emit(t("✓ 时间片段模式：HLS直读优先（失败自动回退用户格式）"))
                     except Exception:
                         pass
             
