@@ -41,6 +41,7 @@ from . import utils_update
 from .utils import (
     cleanup_download_title, choose_better_download_title, is_generated_download_title,
     sanitize_output_title_component, build_subtitle_lang_pattern, decode_subprocess_bytes,
+    UNSUPPORTED_SUB_EXTS,
     _is_x_platform_url, _load_app_icon, is_supported_realesrgan_media,
     can_run_with_current_or_external_runtime,
 )
@@ -7798,9 +7799,12 @@ class VideoDownloaderApp(QMainWindow):
         )
         
         # 构造排序后的字幕行数据（手动字幕在前，组内按语言/格式排序）
+        # 过滤 json3/srv1/srv2/srv3：yt-dlp 转换器不支持的 YouTube 内部格式，双击必失败
         rows_data = []
         for lang_code, formats in subtitles.items():
             for fmt in formats:
+                if str(fmt.get('ext') or '').strip().lower() in UNSUPPORTED_SUB_EXTS:
+                    continue
                 rows_data.append({
                     'lang': lang_code,
                     'name': fmt.get('name') or lang_code,
@@ -7809,6 +7813,8 @@ class VideoDownloaderApp(QMainWindow):
                 })
         for lang_code, formats in automatic_captions.items():
             for fmt in formats:
+                if str(fmt.get('ext') or '').strip().lower() in UNSUPPORTED_SUB_EXTS:
+                    continue
                 rows_data.append({
                     'lang': lang_code,
                     'name': fmt.get('name') or lang_code,

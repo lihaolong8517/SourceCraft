@@ -183,6 +183,12 @@ def sanitize_output_title_component(title):
     return text[:120].strip() if text else ""
 
 
+# YouTube 内部字幕格式（json3/srv1/srv2/srv3）：yt-dlp 源码 FFmpegSubtitlesConvertorPP
+# 只豁免 ext == 'json'（ffmpeg.py 965-969），这些格式走 ffmpeg 转换必然失败（实测 ERROR:
+# Preprocessing: Error opening input files）。预览弹窗过滤 + 自动转换防御共用。
+UNSUPPORTED_SUB_EXTS = frozenset({'json3', 'srv1', 'srv2', 'srv3'})
+
+
 def build_subtitle_lang_pattern(selected_lang, available_langs=None):
     """
     构建更稳健的 --sub-langs 匹配串，避免语言代码变体导致字幕下载失败。

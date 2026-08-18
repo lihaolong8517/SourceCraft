@@ -413,6 +413,12 @@ def sanitize_output_title_component(title):
     return text[:120].strip() if text else ""
 
 
+# YouTube 内部字幕格式（json3/srv1/srv2/srv3）：yt-dlp 源码 FFmpegSubtitlesConvertorPP
+# 只豁免 ext == 'json'（ffmpeg.py 965-969），这些格式走 ffmpeg 转换必然失败（实测 ERROR:
+# Preprocessing: Error opening input files）。预览弹窗过滤 + 自动转换防御共用。
+UNSUPPORTED_SUB_EXTS = frozenset({'json3', 'srv1', 'srv2', 'srv3'})
+
+
 def build_subtitle_lang_pattern(selected_lang, available_langs=None):
     """
     构建更稳健的 --sub-langs 匹配串，避免语言代码变体导致字幕下载失败。
@@ -3650,8 +3656,12 @@ class DownloadThread(QThread):
                     # ASS 和 TTML 有自己的样式系统，不需要转换
                     # VTT、best 和以 srt/ 开头的格式优先级可能返回带内联标签的内容，需要转换
                     is_ass_or_ttml = user_format in ("ass", "ttml") or (user_format and user_format.startswith("ass/"))
+                    # json3/srv1/srv2/srv3 等 YouTube 内部格式无法被 ffmpeg 转换
+                    # （yt-dlp FFmpegSubtitlesConvertorPP 仅豁免 json，实测转换报
+                    # "Error opening input files" 导致整个下载失败），自动转换跳过
+                    is_unsupported_convert = bool(user_format) and str(user_format).lower().startswith(("json", "srv"))
                     
-                    should_auto_convert = not convert_subs_enabled and not is_ass_or_ttml
+                    should_auto_convert = not convert_subs_enabled and not is_ass_or_ttml and not is_unsupported_convert
                     
                     if should_auto_convert:
                         # 自动添加转换参数清理字幕（将 VTT/best 等格式的内联标签转换掉）
@@ -19723,9 +19733,12 @@ class VideoDownloaderApp(QMainWindow):
         )
         
         # 构造排序后的字幕行数据（手动字幕在前，组内按语言/格式排序）
+        # 过滤 json3/srv1/srv2/srv3：yt-dlp 转换器不支持的 YouTube 内部格式，双击必失败
         rows_data = []
         for lang_code, formats in subtitles.items():
             for fmt in formats:
+                if str(fmt.get('ext') or '').strip().lower() in UNSUPPORTED_SUB_EXTS:
+                    continue
                 rows_data.append({
                     'lang': lang_code,
                     'name': fmt.get('name') or lang_code,
@@ -19734,6 +19747,8 @@ class VideoDownloaderApp(QMainWindow):
                 })
         for lang_code, formats in automatic_captions.items():
             for fmt in formats:
+                if str(fmt.get('ext') or '').strip().lower() in UNSUPPORTED_SUB_EXTS:
+                    continue
                 rows_data.append({
                     'lang': lang_code,
                     'name': fmt.get('name') or lang_code,
