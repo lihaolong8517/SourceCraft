@@ -7162,7 +7162,7 @@ class VideoDownloaderApp(QMainWindow):
             options.extend(["--downloader", "dash,m3u8:native"])
             print("DEBUG: 使用原生下载器处理 HLS/DASH")
         else:
-            # 启用时间片段：不设置下载器，让 yt-dlp 自动选择 ffmpeg
+            # 启用时间片段：下载线程中强制 --downloader ffmpeg（官方 sections 硬性要求）
             print("DEBUG: 时间片段模式，使用 ffmpeg 处理下载")
         
         # === 时间片段下载选项 ===

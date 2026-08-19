@@ -3176,14 +3176,22 @@ class DownloadThread(QThread):
                             new_format = self._build_time_section_friendly_format(old_format)
                             if new_format and new_format != old_format:
                                 cmd[f_index + 1] = new_format
-                                # HLS 走 FFmpegFD 直读 m3u8（只拉取片段区间分片），
-                                # 避免 hlsnative 下载全片导致时间片段极慢
-                                if "--downloader" not in cmd:
-                                    cmd.extend(["--downloader", "ffmpeg"])
                                 self.progress_signal.emit(t("✓ 时间片段模式：HLS直读优先（失败自动回退用户格式）"))
                     except Exception:
                         pass
-            
+
+            # 时间片段模式必须走 FFmpegFD（官方 --download-sections 硬性要求 "Needs ffmpeg"）：
+            # yt-dlp 源码 YoutubeDL.py:3485 对非 FFmpegFD + section 直接报错 Aborting。
+            # 此前仅在 YouTube 且格式被改写时才注入 --downloader ffmpeg，导致
+            # 【非 YouTube 平台 + DASH/直链格式】和【指定格式ID】两个场景触发官方硬错误。
+            # 顺带给 ffmpeg 输入协议加 30s 读超时（-rw_timeout 仅作用于 ffmpeg 自身连接，
+            # yt-dlp 的 --socket-timeout 管不到外部下载器）：CDN 连接挂起时 30s 内失败退出，
+            # 由 yt-dlp 重试（时间片段模式 retries=3），不再无限静默挂起。
+            if time_section_mode:
+                if "--downloader" not in cmd:
+                    cmd.extend(["--downloader", "ffmpeg"])
+                cmd.extend(["--downloader-args", "ffmpeg_i:-rw_timeout 30000000"])
+
             # 添加基础下载选项和后处理选项确保兼容性
             # 针对“指定音频语言”场景使用更稳妥的时间戳生成策略，避免部分站点多音轨合并后卡顿。
             postprocessor_args = "ffmpeg:-avoid_negative_ts make_zero"
@@ -19145,7 +19153,7 @@ class VideoDownloaderApp(QMainWindow):
             options.extend(["--downloader", "dash,m3u8:native"])
             print("DEBUG: 使用原生下载器处理 HLS/DASH")
         else:
-            # 启用时间片段：不设置下载器，让 yt-dlp 自动选择 ffmpeg
+            # 启用时间片段：下载线程中强制 --downloader ffmpeg（官方 sections 硬性要求）
             print("DEBUG: 时间片段模式，使用 ffmpeg 处理下载")
         
         # === 时间片段下载选项 ===
