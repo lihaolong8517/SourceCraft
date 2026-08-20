@@ -3,6 +3,36 @@ from i18n import t_format
 import subprocess
 import auth_utils
 from PyQt5.QtCore import QUrl
+
+
+_POT_WORKAROUND_FIXED_VERSION = (2026, 8, 19)  # yt-dlp 2026.08.19 起官方修复 PO Token 客户端问题（#17404）
+_pot_workaround_needed = None  # None=未探测
+
+
+def _youtube_needs_pot_workaround():
+    """yt-dlp < 2026.08.19 时需强制 web_embedded 客户端绕过 PO Token 实验（上游 #17404 已修复）。
+
+    新版（≥2026.08.19）默认客户端链已含 web_embedded 优先（登录态）且 web 回归默认（未登录），
+    注入反而限制客户端选择空间（如未登录时 visionos/web 可提供更全格式/更高画质），故不再注入。
+    旧版保留注入以规避登录态 403/字幕被丢弃。版本探测失败时保守返回 True（维持旧行为）。
+    """
+    global _pot_workaround_needed
+    if _pot_workaround_needed is not None:
+        return _pot_workaround_needed
+    try:
+        vp = subprocess.Popen(["yt-dlp.exe", "--version"], stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, universal_newlines=True,
+                              creationflags=subprocess.CREATE_NO_WINDOW)
+        v = (vp.communicate()[0] or "").strip()
+        parts = [int(x) for x in v.split(".")[:3] if x.isdigit()]
+        if len(parts) == 3:
+            _pot_workaround_needed = tuple(parts) < _POT_WORKAROUND_FIXED_VERSION
+        else:
+            _pot_workaround_needed = True  # 版本解析失败，保守注入
+    except Exception:
+        _pot_workaround_needed = True
+    return _pot_workaround_needed
+
 """字幕预览线程"""
 import os
 import sys
@@ -168,10 +198,12 @@ class SubtitlePreviewThread(QThread):
     def run(self):
         try:
             cmd = ["yt-dlp.exe", "--dump-json", "--list-subs", "--no-playlist", self.url]
-            # 【2026-08 修复】YouTube PO Token 实验：强制 web_embedded,default 客户端，
-            # 否则登录态下 web_safari 字幕被丢弃、无名称（见 yt-dlp #17404）
+            # 【2026-08 修复】YouTube PO Token 实验：旧版（<2026.08.19）强制 web_embedded,default 客户端，
+            # 否则登录态下 web_safari 字幕被丢弃、无名称（见 yt-dlp #17404）；
+            # 新版（≥2026.08.19）上游已修复，默认链已含 web_embedded，无需注入
             if 'youtube' in (self.url or '').lower() or 'youtu.be' in (self.url or '').lower():
-                cmd.extend(["--extractor-args", "youtube:player_client=web_embedded,default"])
+                if _youtube_needs_pot_workaround():
+                    cmd.extend(["--extractor-args", "youtube:player_client=web_embedded,default"])
             self._attach_internal_cookie(
                 cmd,
                 url=self.url,
