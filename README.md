@@ -1,52 +1,81 @@
-# 🚀 SourceCraft - 全网万能视频下载与多媒体工具 (Universal Video Downloader & Multimedia Tool)
+# 🚀 SourceCraft — Universal Video Downloader & Multimedia Tool
 
-🔥 **基于顶尖内核的超强全网一站式视频下载、无损提取与多媒体格式转换软件**
+**全网万能视频下载与多媒体工具 | 1000+ 平台支持 | 基于 yt-dlp 深度定制**
 
-欢迎来到 **SourceCraft** 官方介绍页！
+> A professional all-in-one video downloader, lossless media extractor and multimedia converter for Windows — powered by a deeply customized yt-dlp engine.
 
-### 🎥 实机演示预览 (Demo Preview)
+[![Download](https://img.shields.io/badge/Download-Official%20Website-blue)](https://hundunxiazaiqi.cn/)
+![Platform](https://img.shields.io/badge/Platform-Windows-0078d6)
+![License](https://img.shields.io/badge/License-Proprietary-red)
 
-![演示动画](assets/demo.webp)
+---
 
-> *注：上述为精简版功能预览动画。如果您希望观看完整的高清实机演示版本：*
-> 👉 **[【点击此处观看/下载完整版 1080P 高清演示视频 (约 35MB)】](https://github.com/lihaolong8517/SourceCraft-/raw/main/assets/demo.mp4)**
+## 🎥 Live Demo Preview (实机演示)
 
-## 📦 官方软件下载地址 / Official Download
+![Demo](assets/demo.webp)
 
-👉 **[点击这里前往官方下载页面](https://hundunxiazaiqi.cn/)** 👈
+> *This is a compact preview. Watch the full 1080p demo video (≈35 MB):*
+> 👉 **[Full HD demo video](https://github.com/lihaolong8517/SourceCraft/raw/main/assets/demo.mp4)**
+
+---
+
+## 📦 Download (官方下载)
 
 👉 **[https://hundunxiazaiqi.cn/](https://hundunxiazaiqi.cn/)** 👈
 
----
+The installer bundles the complete runtime (custom browser driver, ffmpeg core, etc.) and is too large for GitHub hosting — download it from the official website above for the latest version and release notes.
 
-## ✨ 核心功能亮点 (Feature Highlights)
-
-SourceCraft 不仅仅是一个下载器，更是您无缝获取网络素材、进行图片批处理与格式转换的专业级多媒体工作站。
-
-### 🚀 1. 全平台极速与超清提取 (Universal Video Downloader)
-- **1000+ 平台支持**：底层基于深度定制与增强的提取引擎，轻松突破限制，支持国内外几乎所有主流视频、音频、社交平台。
-- **极致无损原画解析**：智能探测该网络资源的最高画质，完美提取 4K/8K 视频原文件及无损音轨，支持分段流媒体自动解析拼接。
-- **高速多线程引擎**：优化底层网络并发逻辑，自动拉满带宽，给您前所未有的畅快下载速度。
-
-### 🖼️ 2. 专业级图片批处理 (Image Batch Processing)
-- **批量格式转换**：支持多种主流图片格式互转，完美解决日常素材格式兼容性问题。
-- **智能压缩与尺寸调整**：支持一键批量修改图片尺寸、控制压缩质量，在保障视觉画质的前提下最大化节省存储空间。
-- **ICO 图标制作**：内置 ICO 生成引擎，快速高效地将任意图片转换为专业 Windows 图标文件。
-
-### 🌐 3. 独立化内置无痕沙盒浏览器 (Built-in Playwright Environment)
-- **独家防隔离驱动**：自带独立的基于 Playwright 框架的浏览驱动，一键绕过普通脚本难以处理的复杂网页与反爬验证。
-- **可视化安全扫码提取**：所见即所得的内挂浏览器界面，支持用户自主随时介入进行手工扫码、账密登录与保存授权 Cookies。完美提取那些需登录或处于“VIP/私密模式”的高墙视频库。
-
-### 🎨 4. 高级图像工作流与格式直出 (Advanced Visual Effects)
-- **特殊视觉特效生成**：不仅专注于视频业务，内附专为图像设计的高阶渲染处理流，支持对静态图片进行一键玻璃拟物化、立体光影调整等高级创意后期。
-- **专业格式转换**：打通多媒体业务的最后一个环节，内置 ffmpeg 工业级标准无缝重新混流，将视频与图像直接导出为你所需要的各类终端兼容格式。
+安装包体积较大（含独立浏览器驱动库、音视频处理内核等完整组件），无法托管于 GitHub，请前往官网下载最新版本。
 
 ---
 
-## 📌 声明与说明
-- 本 GitHub 仓库仅用于引流介绍与最新功能说明 (Release Notes) 的发布。
-- 软件安装套包因囊括独立浏览器驱动库、音视频处理内核等完整本地加速组件，单包体积达到GB级别，无法托管于 GitHub，**请务必前往上方官方链接进行高速下载**。
-- 有关授权码激活、商用购买或定制化技术支持，请直接在客户端内联络客服或查阅官方渠道。
+## ✨ Features (核心功能)
+
+### 🚀 1. Universal Downloading (全平台极速下载)
+- **1000+ platforms supported**: based on a deeply customized yt-dlp engine, covering YouTube, Bilibili, TikTok, Instagram, Twitter/X, Facebook and virtually every mainstream video/audio platform.
+- **Lossless source quality**: automatically detects and downloads the highest available quality — up to 4K/8K original files and lossless audio tracks; segmented streams are parsed and merged automatically.
+- **High-speed engine**: optimized network concurrency to saturate your bandwidth.
+
+### 🖼️ 2. Image Batch Processing (专业图片批处理)
+- Batch format conversion between major image formats.
+- One-click batch resize and smart compression.
+- Built-in **ICO icon generator** — turn any image into a professional Windows icon.
+
+### 🌐 3. Built-in Sandbox Browser (内置无痕沙盒浏览器)
+- Built on Playwright — bypasses complex anti-bot pages that plain scripts can't handle.
+- Visual login & cookie extraction: sign in manually inside the built-in browser, save authorized cookies, and download login-only / private / region-locked videos with ease.
+
+### 🎨 4. Advanced Media Workflows (高级多媒体工作流)
+- Glassmorphism & lighting effects for images.
+- Professional format conversion via the industrial-grade **ffmpeg** engine.
 
 ---
-*© 2026 SourceCraft 保留所有权利。*
+
+## 🔒 Open-Source Policy (开源策略声明)
+
+This repository is the **official showcase page** for SourceCraft. To keep the product sustainable:
+
+- The **core application is proprietary** (closed-source). Activation is verified through the official license server, so any copy must be activated via an official license key.
+- This repo hosts the demo media and release announcements only — no source code is published here.
+- 本仓库仅为官方介绍与发布说明页，核心代码不开源；激活码验证走官方授权服务器，任何副本均需通过官方渠道购买激活。
+
+We believe in transparency: the demo videos above show exactly what you get — no fake marketing screenshots.
+
+---
+
+## 💬 Support & Contact (支持与联系)
+
+- 🌐 Official website: **https://hundunxiazaiqi.cn/**
+- 📧 Email: **haolongli84@gmail.com**
+- 💬 In-app customer service (授权码激活 / 商用购买 / 定制技术支持)
+
+For bug reports and feature requests, please [open an issue](https://github.com/lihaolong8517/SourceCraft/issues).
+
+---
+
+## 📌 Disclaimer (声明)
+
+- The project uses the **yt-dlp** engine (Unlicense). SourceCraft itself is a commercial product — **All Rights Reserved**.
+- 本项目基于 yt-dlp 引擎开发；SourceCraft 为商业软件，保留所有权利。
+
+*© 2026 SourceCraft. All rights reserved.*
