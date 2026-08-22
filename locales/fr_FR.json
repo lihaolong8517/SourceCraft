@@ -2354,5 +2354,6 @@
  "✓ 时间片段模式：HLS直读优先（失败自动回退用户格式）": "✓ Mode segment temporel : lecture directe HLS prioritaire (repli automatique sur les formats utilisateur en cas d'échec)",
  "• <b>代理模式</b>: 并发片段3、HTTP块5MB、重试10次，优先稳定性<br>": "• <b>Mode proxy</b> : 3 fragments simultanés, blocs HTTP de 5 Mo, 10 nouvelles tentatives, stabilité prioritaire<br>",
  "• <b>正常模式</b>: 并发片段6、HTTP块10MB、native下载器，优先速度<br>": "• <b>Mode normal</b> : 6 fragments simultanés, blocs HTTP de 10 Mo, téléchargeur natif, vitesse prioritaire<br>",
- "   ❌ 下载失败: {} (最终)": "❌ Échec du téléchargement : {} (final)"
+ "   ❌ 下载失败: {} (最终)": "❌ Échec du téléchargement : {} (final)",
+ "✓ 已启用年龄限制视频完整格式 (formats=missing_pot)": "✓ Formats complets pour vidéos à restriction d'âge activés (formats=missing_pot)"
 }

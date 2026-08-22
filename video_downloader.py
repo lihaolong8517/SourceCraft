@@ -1645,6 +1645,8 @@ class SubtitlePreviewThread(QThread):
             if 'youtube' in (self.url or '').lower() or 'youtu.be' in (self.url or '').lower():
                 if _youtube_needs_pot_workaround():
                     cmd.extend(["--extractor-args", "youtube:player_client=web_embedded,default"])
+                # 【2026-08-22 修复】恢复年龄限制视频被 GVS POT 跳过逻辑丢弃的格式（见下载线程注释）
+                cmd.extend(["--extractor-args", "youtube:formats=missing_pot"])
             self._attach_internal_cookie(
                 cmd,
                 url=self.url,
@@ -3322,6 +3324,12 @@ class DownloadThread(QThread):
                 if _youtube_needs_pot_workaround():
                     cmd.extend(["--extractor-args", "youtube:player_client=web_embedded,default"])
                     self.progress_signal.emit(t("✓ 已固定 YouTube 客户端 (web_embedded,default) 绕过 PO Token 实验"))
+                # 【2026-08-22 修复】yt-dlp ≥2026.08.19 新增 GVS PO Token 格式跳过逻辑：
+                # 年龄限制视频（账号未完成年龄验证）的 HLS/DASH 清单被判定需 GVS PO Token，
+                # 无 provider 时整条清单被跳过（只剩 360p 渐进式格式 18）。注入 formats=missing_pot
+                # 恢复完整格式（实测 1080p60 299+140 下载成功无 403）；旧版该参数为无害 no-op。
+                cmd.extend(["--extractor-args", "youtube:formats=missing_pot"])
+                self.progress_signal.emit(t("✓ 已启用年龄限制视频完整格式 (formats=missing_pot)"))
                 
                 # 根据用户的下载需求智能选择客户端策略：
                 # 1. 如果用户指定了特定分辨率或音频语言，不限制客户端，让yt-dlp自动选择最佳客户端
@@ -4374,8 +4382,12 @@ class DownloadThread(QThread):
                         self.progress_signal.emit(t("📝 请在内置浏览器中登录X平台并提取Cookie"))
                 
                 # 实时检测2024年更新的年龄限制和地理限制错误模式
+                # 【2026-08-22】移除 "age-restricted"：yt-dlp 的 age-restricted 警告行非致命
+                # （"some formats may be missing" 之后 yt-dlp 会继续走 web_creator/tv_downgraded
+                # + JS challenge 链并成功），匹配它触发重试反而杀掉本可成功的进程；
+                # 真正的致命错误由 "Sign in to confirm your age" 等模式捕获
                 age_restriction_patterns = [
-                    "sign in to confirm your age", "age-restricted", "content warning",
+                    "sign in to confirm your age", "content warning",
                     "mature content", "inappropriate content", "restricted mode",
                     "age verification", "confirm your age", "age gate",
                     "this video is only available for registered users",
@@ -5990,8 +6002,11 @@ class DownloadThread(QThread):
             enhanced_options = [opt for opt in enhanced_options if not opt.startswith('--extractor-args')]
             
             # 添加增强的年龄限制绕过选项（遵循yt-dlp README）
+            # 【2026-08-22 修复】不再强制 player_client=default（锁死 tv 客户端会砍掉
+            # web_creator/tv_downgraded 绕过链）；改注入 formats=missing_pot 恢复
+            # yt-dlp ≥2026.08.19 GVS POT 跳过逻辑丢弃的 HLS/DASH 格式
             enhanced_options.extend([
-                "--extractor-args", "youtube:player_client=default;playback_wait=6",
+                "--extractor-args", "youtube:playback_wait=6;formats=missing_pot",
                 "--retries", "8",
                 "--fragment-retries", "8",
                 "--ignore-errors",
@@ -6124,8 +6139,9 @@ class DownloadThread(QThread):
                         self.progress_signal.emit("=" * 60)
                 
                 # 检测2024年更新的年龄限制和地理限制错误模式
+                # 【2026-08-22】同主循环：age-restricted 警告行非致命，不再匹配
                 age_restriction_patterns = [
-                    "sign in to confirm your age", "age-restricted", "content warning",
+                    "sign in to confirm your age", "content warning",
                     "mature content", "inappropriate content", "restricted mode",
                     "age verification", "confirm your age", "age gate",
                     "this video is only available for registered users",
@@ -6772,6 +6788,8 @@ class DownloadThread(QThread):
             if 'youtube' in (self.url or '').lower() or 'youtu.be' in (self.url or '').lower():
                 if _youtube_needs_pot_workaround():
                     cmd.extend(["--extractor-args", "youtube:player_client=web_embedded,default"])
+                # 【2026-08-22 修复】恢复年龄限制视频被 GVS POT 跳过逻辑丢弃的格式（见主下载注释）
+                cmd.extend(["--extractor-args", "youtube:formats=missing_pot"])
             try:
                 self._attach_internal_cookie(
                     cmd,
@@ -7713,7 +7731,6 @@ class DownloadThread(QThread):
                 
                 # 实时检测年龄限制错误
                 if ("Sign in to confirm your age" in stripped_line or
-                    "age-restricted" in stripped_line.lower() or
                     "content warning" in stripped_line.lower() or
                     "mature content" in stripped_line.lower() or
                     "inappropriate content" in stripped_line.lower() or
@@ -7896,7 +7913,6 @@ class DownloadThread(QThread):
                 
                 # 实时检测年龄限制错误
                 if ("Sign in to confirm your age" in stripped_line or
-                    "age-restricted" in stripped_line.lower() or
                     "content warning" in stripped_line.lower() or
                     "mature content" in stripped_line.lower() or
                     "inappropriate content" in stripped_line.lower() or
@@ -10697,7 +10713,6 @@ class TranscodeThread(QThread):
                 
                 # 实时检测年龄限制错误
                 if ("Sign in to confirm your age" in stripped_line or
-                    "age-restricted" in stripped_line.lower() or
                     "content warning" in stripped_line.lower() or
                     "mature content" in stripped_line.lower() or
                     "inappropriate content" in stripped_line.lower() or
@@ -10880,7 +10895,6 @@ class TranscodeThread(QThread):
                 
                 # 实时检测年龄限制错误
                 if ("Sign in to confirm your age" in stripped_line or
-                    "age-restricted" in stripped_line.lower() or
                     "content warning" in stripped_line.lower() or
                     "mature content" in stripped_line.lower() or
                     "inappropriate content" in stripped_line.lower() or

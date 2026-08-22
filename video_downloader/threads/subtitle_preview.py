@@ -204,6 +204,8 @@ class SubtitlePreviewThread(QThread):
             if 'youtube' in (self.url or '').lower() or 'youtu.be' in (self.url or '').lower():
                 if _youtube_needs_pot_workaround():
                     cmd.extend(["--extractor-args", "youtube:player_client=web_embedded,default"])
+                # 【2026-08-22 修复】恢复年龄限制视频被 GVS POT 跳过逻辑丢弃的格式（见下载线程注释）
+                cmd.extend(["--extractor-args", "youtube:formats=missing_pot"])
             self._attach_internal_cookie(
                 cmd,
                 url=self.url,
