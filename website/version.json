@@ -1,12 +1,13 @@
 {
-  "version": "1.1.155",
-  "download_url": "https://1858527336.share.123pan.cn/123pan/Miobvd-ukFZd",
-  "file_size": "约 565 MB",
-  "file_size_bytes": 592622918,
-  "published_at": "2026-08-22",
+  "version": "1.1.156",
+  "download_url": "https://1858527336.share.123pan.cn/123pan/Miobvd-Qrded",
+  "file_size": "约 566 MB",
+  "file_size_bytes": 593216149,
+  "published_at": "2026-09-05",
   "notes": [
-    "发布 SourceCraft v1.1.155",
-    "修复：YouTube 年龄限制视频在 yt-dlp 2026.08.19 下只剩 360p（GVS PO Token 格式跳过），注入 formats=missing_pot 恢复完整格式（实测 1080p60 无 403）",
+    "发布 SourceCraft v1.1.156",
+    "修复：字幕语言/格式下拉微调后\"已选择字幕\"标签不同步，字幕区偶发残留帧重叠",
+    "直播下载 --live-from-start 平台白名单（YouTube/Twitch/TVer/mellow-fan），其他平台自动丢弃该参数，避免下载报错",
     "官网首页将自动读取最新版本号与下载链接",
     "安装包大小已按最新安装包文件自动更新"
   ],
