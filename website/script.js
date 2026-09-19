@@ -4,6 +4,12 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  const isEnglishUI = () => {
+    const fromApi = window.I18N && typeof window.I18N.getLang === 'function' ? window.I18N.getLang() : '';
+    const lang = fromApi || document.documentElement.getAttribute('lang') || 'en';
+    return String(lang).toLowerCase().indexOf('en') === 0;
+  };
+
   const applyReleaseInfo = (release) => {
     if (!release || typeof release !== 'object') {
       return;
@@ -13,25 +19,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadUrl = String(release.download_url || '').trim();
     const fileSize = String(release.file_size || '').trim();
 
+    // i18n 表里是「按版本号写死」的 key（如 'v1.1.156 · 最新版本'），换版本就会漏译文、
+    // 英文官网露出中文。故未命中且当前是英文界面时用英文兜底 —— 版本号变化从此无需改 i18n 表。
+    const renderLine = (zhText, enText) => {
+      const translated = window.I18N ? window.I18N.t(zhText) : zhText;
+      return (translated === zhText && isEnglishUI()) ? enText : translated;
+    };
+
     const renderVersion = () => {
       if (!version) return;
       const heroVersion = document.getElementById('hero-version-text');
       if (heroVersion) {
-        heroVersion.textContent = window.I18N
-          ? window.I18N.t(`v${version} · 最新版本`)
-          : `v${version} · 最新版本`;
+        heroVersion.textContent = renderLine(`v${version} · 最新版本`, `v${version} · Latest version`);
       }
       const downloadVersion = document.getElementById('download-version-text');
       if (downloadVersion) {
-        downloadVersion.textContent = window.I18N
-          ? window.I18N.t(`当前版本 v${version} · 适用于 Windows 系统`)
-          : `当前版本 v${version} · 适用于 Windows 系统`;
+        downloadVersion.textContent = renderLine(
+          `当前版本 v${version} · 适用于 Windows 系统`,
+          `Version v${version} · For Windows`,
+        );
       }
     };
 
     if (version) {
       renderVersion();
-      document.addEventListener('i18n:changed', renderVersion);
     }
 
     if (downloadUrl) {
@@ -49,17 +60,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  fetch('./version.json', { cache: 'no-store' })
+  // ---------- 发行版分离：英文界面 → 海外版 / 中文界面 → 国内版 ----------
+  // 海外版（SourceCraft 国际版）默认英文、走 Creem 收款，安装包与国内版是两份独立产物。
+  // 规则：英文界面优先用 version-intl.json；该文件缺失（未发布海外版时）一律回退国内版，
+  // 因此本改动在国内版单发行期间不会改变任何线上行为，也绝不产生死链。
+  const releases = { cn: null, intl: null };
+  let activeRelease = null;
+
+  const pickRelease = () => {
+    const next = (isEnglishUI() && releases.intl) ? releases.intl : (releases.cn || releases.intl);
+    if (!next) {
+      return;
+    }
+    // 每次都重新套用：切换语言时版本号文案（"v… · 最新版本"）也需要跟着重渲染
+    activeRelease = next;
+    applyReleaseInfo(next);
+  };
+
+  const loadRelease = (path, key) => fetch(path, { cache: 'no-store' })
     .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
       return response.json();
     })
-    .then(applyReleaseInfo)
+    .then(data => {
+      if (!data || typeof data !== 'object' || !String(data.download_url || '').trim()) {
+        // 注意：本服务器对未知路径会回退 index.html（200 + text/html），
+        // 所以"取到了但不是发行信息"不是异常，必须显式忽略，绝不能把 HTML 当成发行信息用。
+        console.warn(`${path} 内容不是有效的发行信息，已忽略`);
+        return;
+      }
+      releases[key] = data;
+    })
     .catch(error => {
-      console.warn('版本信息加载失败:', error);
+      console.warn(`${path} 加载失败:`, error);
     });
+
+  Promise.all([
+    loadRelease('./version.json', 'cn'),
+    loadRelease('./version-intl.json', 'intl'),
+  ]).then(() => {
+    pickRelease();
+    document.addEventListener('i18n:changed', pickRelease);
+  });
 
   // ---------- Premium cursor system ----------
   const finePointer = window.matchMedia('(pointer: fine)').matches;
