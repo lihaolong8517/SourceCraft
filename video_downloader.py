@@ -11348,11 +11348,12 @@ class AppUpdateCheckThread(QThread):
             html = response.read().decode("utf-8", errors="replace")
 
         version_match = re.search(r'v(\d+\.\d+\.\d+)\s*[·.]?\s*最新版本', html, re.IGNORECASE)
-        download_match = re.search(r'href="(https://hundunxiazaiqi\.cn/downloads/[^"]+SourceCraft[^"]*\.exe)"', html, re.IGNORECASE)
 
         payload = {
             "version": version_match.group(1) if version_match else "",
-            "download_url": download_match.group(1) if download_match else DEFAULT_APP_WEBSITE_URL,
+            # 兜底只读版本号：**绝不再抓自建服务器直链**（数百 MB 会走自己的带宽/流量）。
+            # 下载地址一律由官网给出当前分发渠道（网盘 / GitHub Release）。
+            "download_url": DEFAULT_APP_WEBSITE_URL,
             "metadata_url": self.metadata_url,
             "website_url": DEFAULT_APP_WEBSITE_URL,
         }

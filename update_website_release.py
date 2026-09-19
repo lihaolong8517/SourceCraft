@@ -9,8 +9,11 @@ INSTALLER_DIR = ROOT / "installer"
 WEBSITE_VERSION_JSON = ROOT / "website" / "version.json"
 RELEASE_SETTINGS_JSON = ROOT / "release_settings.json"
 
-# 默认下载基准 URL (ECS直链)
-DEFAULT_DOWNLOAD_BASE_URL = "https://hundunxiazaiqi.cn/downloads"
+# 安装包**不再由自建服务器/OSS 托管**：每次下载数百 MB 都会走自己的带宽/流量
+# （按量计费 + 挤占官网带宽），海外版已改 GitHub Release、国内版走网盘。
+# 因此下载地址必须由发布者显式提供，且禁止指向自建域名/OSS。
+_FORBIDDEN_DOWNLOAD_HOSTS = ("hundunxiazaiqi.cn/downloads", "aliyuncs.com")
+
 
 def get_release_settings() -> dict:
     if RELEASE_SETTINGS_JSON.exists():
@@ -21,11 +24,22 @@ def get_release_settings() -> dict:
     return {}
 
 
-def get_download_base_url() -> str:
-    settings = get_release_settings()
-    if "download_base_url" in settings:
-        return settings["download_base_url"].rstrip("/")
-    return DEFAULT_DOWNLOAD_BASE_URL
+def get_download_url(settings: dict) -> str:
+    """取出（并校验）本次发布的下载地址 —— 缺省不再回退到自建服务器。"""
+    url = str(settings.get("download_url_override") or "").strip()
+    if not url:
+        raise SystemExit(
+            "release_settings.json 缺少 download_url_override。\n"
+            "安装包不再由自建服务器托管：请填写网盘分享链接（国内版）或 GitHub Release "
+            "资源地址（海外版，见海外版仓库 tools/make_version_intl.py --url）。"
+        )
+    for bad in _FORBIDDEN_DOWNLOAD_HOSTS:
+        if bad in url:
+            raise SystemExit(
+                f"download_url_override 指向自建服务器/OSS（命中 {bad}）——\n"
+                "会消耗你自己的带宽/流量，已拒绝写入 version.json。"
+            )
+    return url
 
 
 def format_size(num_bytes: int) -> str:
@@ -74,13 +88,8 @@ def main():
     size_bytes = installer.stat().st_size
     
     settings = get_release_settings()
-    download_base_url = settings.get("download_base_url", DEFAULT_DOWNLOAD_BASE_URL).rstrip("/")
+    download_url = get_download_url(settings)
     
-    # Check if we should override the download URL (e.g. using the 123网盘 backup URL as main)
-    download_url = settings.get("download_url_override")
-    if not download_url:
-        download_url = f"{download_base_url}/{installer.name}"
-        
     payload = {
         "version": version,
         "download_url": download_url,
@@ -93,10 +102,6 @@ def main():
             "安装包大小已按最新安装包文件自动更新",
         ],
     }
-
-    # 如果启用了下载链接覆盖，自动将最新的主直链作为 backup 存入 json 以便备份/隐藏
-    if settings.get("download_url_override"):
-        payload["download_url_oss_backup"] = f"{download_base_url}/{installer.name}"
 
     WEBSITE_VERSION_JSON.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",

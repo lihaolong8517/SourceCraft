@@ -10,6 +10,5 @@
     "直播下载 --live-from-start 平台白名单（YouTube/Twitch/TVer/mellow-fan），其他平台自动丢弃该参数，避免下载报错",
     "官网首页将自动读取最新版本号与下载链接",
     "安装包大小已按最新安装包文件自动更新"
-  ],
-  "download_url_oss_backup": "https://hundunxiazai.oss-cn-hangzhou.aliyuncs.com/SourceCraft_Installer_v1.1.140.exe"
+  ]
 }
