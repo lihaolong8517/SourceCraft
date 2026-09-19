@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /downloads/
 
 Sitemap: https://hundunxiazaiqi.cn/sitemap.xml
 
