@@ -21,11 +21,16 @@
 
 ## 📦 Download (官方下载)
 
-👉 **[https://hundunxiazaiqi.cn/](https://hundunxiazaiqi.cn/)** 👈
+| 渠道 | 地址 | 说明 |
+|---|---|---|
+| 官网（推荐） | **[https://hundunxiazaiqi.cn/](https://hundunxiazaiqi.cn/)** | 最新版本与发布说明 |
+| GitHub Releases | **[Latest Release](https://github.com/lihaolong8517/SourceCraft/releases/latest)** | 安装包镜像，与官网同版本 |
 
-The installer bundles the complete runtime (custom browser driver, ffmpeg core, etc.) and is too large for GitHub hosting — download it from the official website above for the latest version and release notes.
+安装包已内置完整运行时（浏览器驱动、ffmpeg 音视频内核等），无需额外安装依赖，当前版本约 384 MB。
 
-安装包体积较大（含独立浏览器驱动库、音视频处理内核等完整组件），无法托管于 GitHub，请前往官网下载最新版本。
+> 如 GitHub 下载速度较慢，请优先使用官网，或尝试开启 VPN 后重试。
+
+The installer bundles the complete runtime (browser driver, ffmpeg core, etc.) — no extra dependencies required, approx. 384 MB. Download from the official website (recommended) or GitHub Releases (mirror). If GitHub is slow in your region, use the official website or a VPN.
 
 ---
 
@@ -35,6 +40,8 @@ The installer bundles the complete runtime (custom browser driver, ffmpeg core, 
 - **1000+ platforms supported**: based on a deeply customized yt-dlp engine, covering YouTube, Bilibili, TikTok, Instagram, Twitter/X, Facebook and virtually every mainstream video/audio platform.
 - **Lossless source quality**: automatically detects and downloads the highest available quality — up to 4K/8K original files and lossless audio tracks; segmented streams are parsed and merged automatically.
 - **High-speed engine**: optimized network concurrency to saturate your bandwidth.
+- **Batch download**: paste multiple links at once — they are auto-split, de-duplicated and queued; each task shows live status, with pause / resume / skip / retry and one automatic retry on failure.
+  多链接批量下载：一次粘贴多条链接，自动拆分去重并按序排队；逐任务实时状态，支持暂停 / 继续 / 跳过 / 重试，失败自动重试一次。
 
 ### 🖼️ 2. Image Batch Processing (专业图片批处理)
 - Batch format conversion between major image formats.
