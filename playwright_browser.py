@@ -62,6 +62,19 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread, QPropertyAnimation, QE
 from PyQt5.QtGui import QCursor, QColor, QFont, QPainter, QPainterPath, QConicalGradient, QPixmap, QIcon, QLinearGradient, QRadialGradient, QPolygon
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
+# QtMultimedia 用于卡片内联预览播放（VDH 的 com-media-preview 等价物）。
+# 打包环境缺少多媒体组件时降级：只在卡片里显示封面，不提供内联播放。
+try:
+    from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+    from PyQt5.QtMultimediaWidgets import QVideoWidget
+
+    _HAS_QT_MULTIMEDIA = True
+except Exception:  # pragma: no cover - 取决于运行环境
+    QMediaContent = None
+    QMediaPlayer = None
+    QVideoWidget = None
+    _HAS_QT_MULTIMEDIA = False
+
 DEFAULT_QUICK_SITES = [
     {"name": "YouTube", "url": "youtube.com", "bg_color": "#ff7f7f", "hover_color": "#ff6b6b", "press_color": "#e85555"},
     {"name": "Bilibili", "url": "bilibili.com", "bg_color": "#ff9eb5", "hover_color": "#fb7299", "press_color": "#e5658a"},
@@ -117,6 +130,34 @@ def _bootstrap_local_import_paths():
 _bootstrap_local_import_paths()
 
 import auth_utils
+
+# VDH 风格内联预览：抓"中间一小段"分片并 remux 成小 mp4（见 docs/VDH-UI-预览规格.md）
+try:
+    from vdh_capture.preview import PreviewCache, PreviewSpec, extract_preview, resolve_ffmpeg, default_cache_dir
+
+    _HAS_VDH_PREVIEW = True
+except Exception:  # pragma: no cover - 打包环境兜底
+    PreviewCache = None
+    PreviewSpec = None
+    extract_preview = None
+    resolve_ffmpeg = None
+    default_cache_dir = None
+    _HAS_VDH_PREVIEW = False
+
+_PREVIEW_CACHE = None
+
+
+def _preview_cache():
+    """惰性创建全局预览缓存（临时目录，按 URL+起点复用）。"""
+    global _PREVIEW_CACHE
+    if not _HAS_VDH_PREVIEW:
+        return None
+    if _PREVIEW_CACHE is None:
+        try:
+            _PREVIEW_CACHE = PreviewCache(default_cache_dir())
+        except Exception:
+            _PREVIEW_CACHE = None
+    return _PREVIEW_CACHE
 
 def _get_browser_data_dir():
     """获取浏览器数据目录（确保可写）"""
@@ -2226,6 +2267,251 @@ class AnimatedComboBox(QPushButton):
 
 # ============ 媒体卡片组件 ============
 
+class MediaPreviewThread(QThread):
+    """后台生成 VDH 风格内联预览：抓"中间一小段"分片并 remux 成小 mp4。"""
+
+    preview_ready = pyqtSignal(str)
+    preview_failed = pyqtSignal(str)
+
+    def __init__(self, spec, cache=None, parent=None):
+        super().__init__(parent)
+        self.spec = spec
+        self.cache = cache
+
+    def run(self):
+        try:
+            if not _HAS_VDH_PREVIEW:
+                self.preview_failed.emit("预览组件不可用")
+                return
+            if self.cache is not None:
+                cached = self.cache.get(self.spec)
+                if cached is not None and os.path.isfile(str(cached)):
+                    self.preview_ready.emit(str(cached))
+                    return
+            ffmpeg = resolve_ffmpeg()
+            if not ffmpeg:
+                self.preview_failed.emit("未找到 ffmpeg")
+                return
+            if self.cache is not None:
+                target = self.cache.path_for(self.spec)
+            else:
+                target = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "browser_data", "preview_cache",
+                    "preview_%s.mp4" % abs(hash(self.spec.url)),
+                )
+            result = extract_preview(ffmpeg, self.spec, target)
+            if result is None:
+                self.preview_failed.emit("片段提取失败")
+                return
+            if self.cache is not None:
+                self.cache.put(self.spec, result)
+            self.preview_ready.emit(str(result))
+        except Exception as exc:  # noqa: BLE001 - 预览失败不应影响卡片
+            self.preview_failed.emit(str(exc))
+
+
+class PreviewArea(QFrame):
+    """VDH 的 ``com-media-preview`` 等价物：封面 + 点击内联播放（静音、循环）。"""
+
+    def __init__(self, card=None, parent=None, width=176, height=99):
+        super().__init__(parent)
+        self.card = card
+        self._width = width
+        self._height = height
+        self._spec = None
+        self._thread = None
+        self._player = None
+        self._video = None
+        self._built_path = ""
+        self._failed = False
+        self._busy = False
+
+        self.setFixedSize(width, height)
+        self.setStyleSheet("background: #1c2030; border-radius: 6px;")
+        self.setCursor(Qt.PointingHandCursor)
+        self.setToolTip(t("点击加载内联预览"))
+
+        self.thumb_label = QLabel(self)
+        self.thumb_label.setAlignment(Qt.AlignCenter)
+        self.thumb_label.setGeometry(0, 0, width, height)
+        self.thumb_label.setStyleSheet("background: transparent;")
+
+        self.play_overlay = QPushButton("▶", self)
+        self.play_overlay.setFixedSize(32, 32)
+        self.play_overlay.setCursor(Qt.PointingHandCursor)
+        self.play_overlay.setStyleSheet("""
+            QPushButton {
+                background: rgba(0, 0, 0, 110); color: white; border: none;
+                border-radius: 16px; font-size: 13px; padding-left: 2px;
+            }
+            QPushButton:hover { background: rgba(0, 0, 0, 160); }
+        """)
+        self.play_overlay.move((width - 32) // 2, (height - 32) // 2)
+        self.play_overlay.clicked.connect(self.toggle)
+
+        self.status_label = QLabel("", self)
+        self.status_label.setGeometry(4, height - 18, width - 8, 14)
+        self.status_label.setStyleSheet("""
+            background: rgba(0, 0, 0, 140); color: #ddd; font-size: 10px;
+            border-radius: 3px; padding-left: 4px;
+        """)
+        self.status_label.hide()
+
+    # ---------- 对外接口 ----------
+    def set_spec(self, spec):
+        self._spec = spec
+        self._failed = False
+        if spec is None:
+            self.play_overlay.hide()
+            self.setToolTip(t("此条目没有可预览的直链"))
+        else:
+            self.play_overlay.show()
+            self.setToolTip(t("点击加载内联预览"))
+
+    def set_thumbnail_pixmap(self, pixmap):
+        if pixmap is not None and not pixmap.isNull():
+            self.thumb_label.setPixmap(
+                pixmap.scaled(self._width, self._height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+
+    def has_preview(self):
+        return bool(self._built_path) and os.path.isfile(self._built_path)
+
+    def is_playing(self):
+        return self._player is not None and self._video is not None and self._video.isVisible()
+
+    def toggle(self):
+        if self.is_playing():
+            self.stop()
+            return
+        if self.has_preview():
+            self._play_built()
+            return
+        if self._spec is None:
+            self._flash_status(t("无直链，无法预览"))
+            return
+        if not _HAS_QT_MULTIMEDIA:
+            self._flash_status(t("当前环境缺少播放组件"))
+            return
+        self._start_build()
+
+    def stop(self):
+        if self._video is not None:
+            self._video.hide()
+        if self._player is not None:
+            try:
+                self._player.pause()
+            except Exception:
+                pass
+        self.play_overlay.show()
+
+    def cleanup(self):
+        self._stop_thread()
+        if self._player is not None:
+            try:
+                self._player.stop()
+                self._player.setMedia(QMediaContent())
+            except Exception:
+                pass
+            self._player.deleteLater()
+            self._player = None
+        if self._video is not None:
+            self._video.deleteLater()
+            self._video = None
+
+    # ---------- 内部实现 ----------
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.toggle()
+        super().mousePressEvent(event)
+
+    def _start_build(self):
+        if self._busy:
+            return
+        self._busy = True
+        self._flash_status(t("预览加载中…"))
+        self.play_overlay.hide()
+        self._thread = MediaPreviewThread(self._spec, _preview_cache(), self)
+        self._thread.preview_ready.connect(self._on_ready)
+        self._thread.preview_failed.connect(self._on_failed)
+        self._thread.finished.connect(self._on_thread_finished)
+        self._thread.start()
+
+    def _on_thread_finished(self):
+        self._busy = False
+        self._thread = None
+
+    def _on_ready(self, path):
+        self._built_path = path
+        self._failed = False
+        self.status_label.hide()
+        self._play_built()
+
+    def _on_failed(self, message):
+        self._failed = True
+        self.play_overlay.show()
+        self._flash_status(t_format("预览不可用：{}", message))
+        try:
+            print(f"[PREVIEW] 生成失败: {message}")
+        except Exception:
+            pass
+
+    def _play_built(self):
+        if not self.has_preview() or not _HAS_QT_MULTIMEDIA:
+            return
+        if self._player is None:
+            self._video = QVideoWidget(self)
+            self._video.setGeometry(0, 0, self._width, self._height)
+            self._video.setStyleSheet("background: black; border-radius: 6px;")
+            self._player = QMediaPlayer(self)
+            self._player.setVideoOutput(self._video)
+            self._player.setVolume(0)
+            try:
+                self._player.mediaStatusChanged.connect(self._on_media_status)
+            except Exception:
+                pass
+            try:
+                self._player.error.connect(self._on_player_error)
+            except Exception:
+                pass
+        self._video.show()
+        self._video.raise_()
+        self.play_overlay.hide()
+        try:
+            self._player.setMedia(QMediaContent(QUrl.fromLocalFile(self._built_path)))
+            self._player.play()
+        except Exception as exc:  # noqa: BLE001
+            self._flash_status(t_format("播放失败：{}", exc))
+            self.stop()
+
+    def _on_media_status(self, status):
+        try:
+            if status == QMediaPlayer.EndOfMedia:
+                self._player.setPosition(0)
+                self._player.play()
+        except Exception:
+            pass
+
+    def _on_player_error(self, *_args):
+        self._flash_status(t("播放失败（可能是编码不受支持）"))
+        self.stop()
+
+    def _flash_status(self, text, timeout_ms=4000):
+        self.status_label.setText(text)
+        self.status_label.show()
+        QTimer.singleShot(timeout_ms, self.status_label.hide)
+
+    def _stop_thread(self):
+        thread = self._thread
+        if thread is None:
+            return
+        try:
+            if thread.isRunning():
+                thread.wait(50)
+        except Exception:
+            pass
+
+
 class MediaCard(QFrame):
     """单个媒体项的卡片展示"""
     send_to_downloader = pyqtSignal(str, str)
@@ -2256,6 +2542,12 @@ class MediaCard(QFrame):
         if self._stabilize_timer:
             self._stabilize_timer.stop()
             self._stabilize_timer = None
+        preview_area = getattr(self, "preview_area", None)
+        if preview_area is not None:
+            try:
+                preview_area.cleanup()
+            except Exception:
+                pass
         if self.metadata_thread and self.metadata_thread.isRunning():
             thread = self.metadata_thread
             thread.stop()
@@ -2273,6 +2565,7 @@ class MediaCard(QFrame):
                 self.title_label.setText(new_title)
         if hasattr(self, 'size_label') and new_info.get('size'):
             self.size_label.setText(new_info.get('size'))
+        self._refresh_preview_spec()
         self._update_tooltips()
 
     def _update_tooltips(self):
@@ -2297,27 +2590,67 @@ class MediaCard(QFrame):
         if hasattr(self, 'copy_btn'):
             self.copy_btn.setToolTip(t_format("复制完整音视频详情页链接 ({})", short_url))
 
+    def _refresh_preview_spec(self, duration=None):
+        """按当前 media_info 构造预览参数（对齐 VDH：直链/清单都可抓"中间一小段"）。"""
+        area = getattr(self, "preview_area", None)
+        if area is None or not _HAS_VDH_PREVIEW:
+            return
+        info = self.media_info or {}
+        url = str(info.get("url") or "").strip()
+        if not url:
+            area.set_spec(None)
+            return
+        mtype = str(info.get("type") or "")
+        if info.get("has_drm") or mtype == "YouTubePage":
+            area.set_spec(None)
+            return
+        secs = duration
+        if secs is None:
+            secs = info.get("duration") or info.get("duration_s")
+        quality = info.get("quality") if isinstance(info.get("quality"), dict) else {}
+        if not secs:
+            manifest = quality.get("manifest") if isinstance(quality, dict) else None
+            if isinstance(manifest, dict):
+                secs = manifest.get("duration_s")
+        try:
+            secs = float(secs) if secs else None
+        except (TypeError, ValueError):
+            secs = None
+        lower = url.lower()
+        is_manifest = bool(
+            info.get("is_manifest")
+            or mtype in ("HLS", "DASH")
+            or ".m3u8" in lower
+            or ".mpd" in lower
+        )
+        headers = info.get("headers") if isinstance(info.get("headers"), dict) else {}
+        try:
+            area.set_spec(PreviewSpec(
+                url=url,
+                headers=headers,
+                page_url=str(info.get("page_url") or ""),
+                duration_s=secs,
+                is_manifest=is_manifest,
+                media_type=mtype,
+                is_live=bool(info.get("is_live")),
+                quality=str(quality.get("resolution") or ""),
+            ))
+        except Exception as exc:  # noqa: BLE001 - 预览是增强功能，失败不阻塞卡片
+            print(f"[PREVIEW] 构造预览参数失败: {exc}")
+            area.set_spec(None)
+
     def _setup_ui(self):
         # 主布局
         self.main_layout = QHBoxLayout(self)
         self.main_layout.setContentsMargins(10, 10, 10, 10)
         self.main_layout.setSpacing(12)
 
-        # 左侧：缩略图容器 - 使用更大的尺寸以显示完整封面
-        self.thumb_container = QFrame()
-        self.thumb_container.setFixedSize(160, 90)  # 16:9 比例，更大更清晰
-        self.thumb_container.setStyleSheet("background: #333; border-radius: 6px;")
-        thumb_layout = QVBoxLayout(self.thumb_container)
-        thumb_layout.setContentsMargins(0, 0, 0, 0)
-        
-        self.thumb_label = QLabel()
-        self.thumb_label.setAlignment(Qt.AlignCenter)
-        # 不使用 setScaledContents，而是在加载时手动缩放以保持宽高比
-        self.thumb_label.setFixedSize(160, 90)
-        thumb_layout.addWidget(self.thumb_label)
-        
-        # 初始显示占位图
+        # 左侧：VDH 风格预览区（封面 → 点击后内联播放"中间一小段"）
+        self.preview_area = PreviewArea(self)
+        self.thumb_container = self.preview_area
+        self.thumb_label = self.preview_area.thumb_label
         self._set_default_thumbnail()
+        self._refresh_preview_spec()
         
         # 时长标签
         self.duration_label = QLabel("00:00", self.thumb_container)
@@ -2519,6 +2852,11 @@ class MediaCard(QFrame):
                 self.thumb_container.width() - self.duration_label.sizeHint().width() - 4,
                 self.thumb_container.height() - self.duration_label.sizeHint().height() - 4
             )
+        # 有了时长后重新构造预览参数（VDH 按"中间位置"抓片段）
+        try:
+            self._refresh_preview_spec(duration=data.get('duration'))
+        except Exception:
+            pass
 
         # 设置平台图标
         webpage_url = data.get('webpage_url', '').lower()
@@ -2615,31 +2953,34 @@ class MediaCard(QFrame):
     
     def _set_default_thumbnail(self):
         """设置默认的视频占位图 - 现代美化版"""
+        width = self.thumb_container.width() if hasattr(self, "thumb_container") else 160
+        height = self.thumb_container.height() if hasattr(self, "thumb_container") else 90
         # 创建一个渐变背景的占位图
-        pixmap = QPixmap(160, 90)
+        pixmap = QPixmap(width, height)
         pixmap.fill(Qt.transparent)
         
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
         
         # 现代渐变背景 (深蓝紫色调)
-        gradient = QLinearGradient(0, 0, 160, 90)
+        gradient = QLinearGradient(0, 0, width, height)
         gradient.setColorAt(0, QColor(45, 52, 71))    # 深蓝灰
         gradient.setColorAt(1, QColor(28, 32, 48))    # 更深的蓝黑
         painter.setBrush(gradient)
         painter.setPen(Qt.NoPen)
-        painter.drawRoundedRect(0, 0, 160, 90, 8, 8)
+        painter.drawRoundedRect(0, 0, width, height, 8, 8)
         
         # 绘制磨砂质感的播放按钮背景
+        cx, cy = width // 2, height // 2 - 4
         painter.setBrush(QColor(255, 255, 255, 30))
-        painter.drawEllipse(QPoint(80, 40), 18, 18)
+        painter.drawEllipse(QPoint(cx, cy), 18, 18)
         
         # 绘制精致的播放按钮三角形
         painter.setBrush(QColor(255, 255, 255, 200))
         triangle = QPolygon([
-            QPoint(76, 32),
-            QPoint(76, 48),
-            QPoint(88, 40)
+            QPoint(cx - 4, cy - 8),
+            QPoint(cx - 4, cy + 8),
+            QPoint(cx + 8, cy)
         ])
         painter.drawPolygon(triangle)
         
@@ -2650,7 +2991,7 @@ class MediaCard(QFrame):
         font.setPixelSize(11)
         font.setWeight(QFont.Medium)
         painter.setFont(font)
-        painter.drawText(0, 62, 160, 24, Qt.AlignCenter, "Media Preview")
+        painter.drawText(0, height - 26, width, 20, Qt.AlignCenter, "Media Preview")
         
         painter.end()
         self.thumb_label.setPixmap(pixmap)

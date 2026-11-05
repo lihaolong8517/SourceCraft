@@ -29,6 +29,12 @@ _LAZY_ATTRS = {
     "human_size": ("bridge", "human_size"),
     "analyze_manifest_text": ("manifest", "analyze_manifest_text"),
     "manifest_patch": ("manifest", "manifest_patch"),
+    "PreviewSpec": ("preview", "PreviewSpec"),
+    "PreviewCache": ("preview", "PreviewCache"),
+    "build_preview_command": ("preview", "build_preview_command"),
+    "extract_preview": ("preview", "extract_preview"),
+    "resolve_ffmpeg": ("preview", "resolve_ffmpeg"),
+    "default_cache_dir": ("preview", "default_cache_dir"),
 }
 
 

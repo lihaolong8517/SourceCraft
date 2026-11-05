@@ -123,3 +123,6 @@ ytdlp_*_tmp.md
 .pytest_cache/
 scripts/.smoke_tmp/
 
+
+# REA 临时工作目录（调查 VDH 用）
+scripts/.reatmp/
