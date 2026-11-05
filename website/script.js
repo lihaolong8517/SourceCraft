@@ -60,24 +60,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // ---------- 发行版分离：英文界面 → 海外版 / 中文界面 → 国内版 ----------
-  // 海外版（SourceCraft 国际版）默认英文、走 Creem 收款，安装包与国内版是两份独立产物。
-  // 规则：英文界面优先用 version-intl.json；该文件缺失（未发布海外版时）一律回退国内版，
-  // 因此本改动在国内版单发行期间不会改变任何线上行为，也绝不产生死链。
-  const releases = { cn: null, intl: null };
+  // ---------- 发行信息：中英文统一使用国内版 version.json ----------
+  // 海外版已下架，中英文界面共用同一份发行信息与下载链接。
   let activeRelease = null;
 
   const pickRelease = () => {
-    const next = (isEnglishUI() && releases.intl) ? releases.intl : (releases.cn || releases.intl);
+    const next = activeRelease;
     if (!next) {
       return;
     }
-    // 每次都重新套用：切换语言时版本号文案（"v… · 最新版本"）也需要跟着重渲染
-    activeRelease = next;
+    // 每次重新套用：切换语言时版本号文案（"v… · 最新版本"）也需要跟着重渲染
     applyReleaseInfo(next);
   };
 
-  const loadRelease = (path, key) => fetch(path, { cache: 'no-store' })
+  const loadRelease = (path) => fetch(path, { cache: 'no-store' })
     .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -91,16 +87,13 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn(`${path} 内容不是有效的发行信息，已忽略`);
         return;
       }
-      releases[key] = data;
+      activeRelease = data;
     })
     .catch(error => {
       console.warn(`${path} 加载失败:`, error);
     });
 
-  Promise.all([
-    loadRelease('./version.json', 'cn'),
-    loadRelease('./version-intl.json', 'intl'),
-  ]).then(() => {
+  loadRelease('./version.json').then(() => {
     pickRelease();
     document.addEventListener('i18n:changed', pickRelease);
   });

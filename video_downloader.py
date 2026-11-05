@@ -13211,6 +13211,24 @@ class VideoDownloaderApp(QMainWindow):
         info_button.clicked.connect(self.get_video_info)
         url_layout.addWidget(info_button)
         
+        batch_button = QPushButton(t("批量"))
+        batch_button.setToolTip(t("一次粘贴多个链接，批量下载"))
+        batch_button.setStyleSheet(
+            "QPushButton {"
+            " background-color: #3b7dd8;"
+            " color: #ffffff;"
+            " border: none;"
+            " border-radius: 6px;"
+            " padding: 5px 14px;"
+            " font-weight: bold;"
+            "}"
+            "QPushButton:hover { background-color: #4a8ce6; }"
+            "QPushButton:pressed { background-color: #2f68b8; }"
+            "QPushButton:disabled { background-color: #a9c4e8; color: #eef3fa; }"
+        )
+        batch_button.clicked.connect(self.open_batch_download_dialog)
+        url_layout.addWidget(batch_button)
+        
         download_layout.addWidget(url_group)
         
         # 下载选项区域
@@ -13359,6 +13377,9 @@ class VideoDownloaderApp(QMainWindow):
         subtitle_tab_layout = QVBoxLayout(subtitle_tab)
         subtitle_tab_layout.addWidget(subtitle_scroll)
         subtitle_scroll.setWidget(subtitle_content)
+        # 保存引用，供字幕状态变化后强制内容/视口重绘（消除偶发残留帧重叠）
+        self.subtitle_scroll = subtitle_scroll
+        self.subtitle_content = subtitle_content
         
         # 添加字幕功能使用说明
         subtitle_usage_label = QLabel(
@@ -13501,6 +13522,7 @@ class VideoDownloaderApp(QMainWindow):
         self.subtitle_lang.addItem(t("阿姆哈拉语 (am)"), "am")
         self.subtitle_lang.setEnabled(False)
         self.subtitle_lang.setToolTip(t("选择要下载的字幕语言，'全部语言'将下载所有可用语言的字幕"))
+        self.subtitle_lang.currentIndexChanged.connect(self._on_subtitle_tuning_changed)
         subtitle_lang_layout.addWidget(self.subtitle_lang)
         subtitle_lang_layout.addStretch()
         subtitle_download_config_layout.addLayout(subtitle_lang_layout)
@@ -13521,6 +13543,7 @@ class VideoDownloaderApp(QMainWindow):
         self.subtitle_format.addItem(t("格式优先级 (ass/srt/best)"), "ass/srt/best")
         self.subtitle_format.setEnabled(False)
         self.subtitle_format.setToolTip(t("选择字幕文件格式。支持格式优先级，如'srt/ass/vtt/best'会按优先级选择可用格式"))
+        self.subtitle_format.currentIndexChanged.connect(self._on_subtitle_tuning_changed)
         subtitle_format_layout.addWidget(self.subtitle_format)
         subtitle_format_layout.addStretch()
         subtitle_download_config_layout.addLayout(subtitle_format_layout)
@@ -18780,11 +18803,40 @@ class VideoDownloaderApp(QMainWindow):
             return
         lang = st.get('lang', '')
         name = st.get('name') or self._get_language_name(lang)
+        # 显示层联动：语言/格式下拉被微调(与双击行不同)时，标签跟随下拉当前值
+        # （下载参数本就按微调后的下拉值生成，标签保持所见即所得）
+        if hasattr(self, 'subtitle_lang'):
+            cur_lang = self.subtitle_lang.currentData()
+            if cur_lang and cur_lang != lang:
+                lang = cur_lang
+                name = t("全部语言") if cur_lang == "all" else self._get_language_name(cur_lang)
         type_text = t("手动字幕") if st.get('type') == 'manual' else t("自动字幕")
         ext = st.get('ext') or 'best'
+        if hasattr(self, 'subtitle_format'):
+            cur_ext = self.subtitle_format.currentData()
+            if cur_ext and cur_ext != ext:
+                ext = cur_ext
         self.selected_subtitle_label.setText(t_format("✅ 已选择字幕：{} [{}] · {} · {}", name, lang, type_text, ext))
         self.selected_subtitle_label.setStyleSheet("QLabel { color: #198754; font-size: 12px; }")
         self.clear_subtitle_button.setEnabled(True)
+    
+    def _on_subtitle_tuning_changed(self, index):
+        """字幕语言/格式下拉变化：仅刷新'已选择字幕'标签。
+        数据模型保持双击行原值，下载参数由 _build_subtitle_lang_arg/_build_subtitle_format_arg 按微调值生成。"""
+        if getattr(self, '_selected_subtitle', None) is not None:
+            self._update_selected_subtitle_label()
+            self._refresh_subtitle_area()
+    
+    def _refresh_subtitle_area(self):
+        """字幕内容动态变化后强制重排/重绘，避免 QScrollArea 偶发残留旧帧导致控件视觉重叠。"""
+        c = getattr(self, 'subtitle_content', None)
+        if c is not None:
+            c.updateGeometry()
+            c.update()
+        s = getattr(self, 'subtitle_scroll', None)
+        if s is not None:
+            s.updateGeometry()
+            s.viewport().update()
     
     def _set_selected_subtitle(self, data):
         """设置选中的字幕（来自预览弹窗双击）。data: {lang, name, ext, type}"""
@@ -18813,9 +18865,11 @@ class VideoDownloaderApp(QMainWindow):
             data.get('name') or self._get_language_name(lang), lang,
             t("手动字幕") if data.get('type') == 'manual' else t("自动字幕"),
             ext or 'best'))
+        self._refresh_subtitle_area()
     
     def clear_selected_subtitle(self):
         """清除已选择的字幕"""
+        had_selection = bool(getattr(self, '_selected_subtitle', None))
         self._selected_subtitle = None
         if hasattr(self, 'subtitle_lang'):
             self.subtitle_lang.setCurrentIndex(0)  # 恢复'全部语言'
@@ -18823,8 +18877,10 @@ class VideoDownloaderApp(QMainWindow):
             self.subtitle_format.setCurrentIndex(0)  # 恢复默认格式
         self._update_selected_subtitle_label()
         self._update_subtitle_ui_state()
-        if hasattr(self, 'progress_text'):
+        # 仅实际有选中字幕时记录日志（避免启动时初始化流程空打日志）
+        if had_selection and hasattr(self, 'progress_text'):
             self.progress_text.append(t("已清除字幕选择"))
+        self._refresh_subtitle_area()
     
     def _build_subtitle_lang_arg(self, selected_subtitle):
         """构建 --sub-langs 参数：未微调时用双击选中的精确语言代码；微调后按下拉值做变体匹配。"""
@@ -19586,6 +19642,29 @@ class VideoDownloaderApp(QMainWindow):
         except Exception as e:
             print(t_format("[调试] X平台多视频探测失败: {}", e))
             return []
+
+    def open_batch_download_dialog(self):
+        """打开批量下载对话框（纯新增入口，不改变单 URL 下载流程）。
+
+        批量模块采用延迟导入：即使该模块缺失也不会影响主程序启动与其他功能。
+        """
+        try:
+            current = getattr(self, "download_thread", None)
+            if current is not None and current.isRunning():
+                QMessageBox.information(
+                    self,
+                    t("提示"),
+                    t("当前有下载任务正在进行，请先取消后再使用批量下载。"),
+                )
+                return
+            from batch_download_dialog import BatchDownloadDialog
+
+            dialog = BatchDownloadDialog(self, self)
+            dialog.exec_()
+        except Exception as e:
+            QMessageBox.critical(
+                self, t("错误"), t_format("打开批量下载失败: {}", str(e))
+            )
 
     def start_download(self):
         # 开始下载

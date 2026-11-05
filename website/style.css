@@ -1351,6 +1351,26 @@ body.cursor-clicking .cursor-ring::after {
   color: var(--text-secondary);
 }
 
+.download-hint {
+  margin-top: 18px;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.download-hint::before {
+  content: "💡";
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
 /* ---------- Footer ---------- */
 .footer {
   padding: 48px 0;

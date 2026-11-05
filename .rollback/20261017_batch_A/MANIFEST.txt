@@ -1,0 +1,50 @@
+批量下载功能（方案 A）回滚点
+建立时间: 2026-10-17 15:28 (GMT+8)
+对应改动: 新增 batch_download_dialog.py + video_downloader.py 纯新增 2 处 + locales/en_US.json 新增 key
+
+== 备份文件与校验值 ==
+video_downloader.py        md5 = 010b9bd2c9be2ea9d9a31a9fcf780a92  size = 1321064
+locales/en_US.json         md5 = 18b9761dc274ced75a555c09c85995c9  size = 207153
+
+== 本次改动涉及的文件 ==
+[新增] batch_download_dialog.py
+[修改] video_downloader.py      —— 仅新增「批量」按钮 + open_batch_download_dialog()，不改任何现有行
+[修改] locales/en_US.json       —— 仅新增翻译 key，不改现有条目
+
+== 回滚方法 ==
+方式一（推荐）: 在项目根目录执行
+    bash .rollback/20261017_batch_A/rollback.sh
+
+方式二（手动）:
+    cp .rollback/20261017_batch_A/video_downloader.py video_downloader.py
+    cp .rollback/20261017_batch_A/locales/en_US.json locales/en_US.json
+    rm -f batch_download_dialog.py
+
+== 回滚后校验 ==
+    md5sum video_downloader.py
+    应等于 010b9bd2c9be2ea9d9a31a9fcf780a92
+
+== 注意 ==
+当前工作区 video_downloader.py 本身存在未提交改动，禁止使用 git checkout 回滚，
+否则会丢失改动前的已有内容。只能用上述文件级还原。
+
+== 最终改动统计（2026-10-17 15:36 复核）==
+video_downloader.py   新增 28 行，修改/删除 0 行（diff 与备份逐行对比）
+  - URL 输入行新增「批量」按钮
+  - 新增 open_batch_download_dialog() 方法
+batch_download_dialog.py   新增文件（约 640 行，独立模块）
+locales/en_US.json    新增 44 个 key；原最后一条仅补 JSON 必需逗号，内容未改
+
+== 验证结果 ==
+[通过] py_compile：video_downloader.py / batch_download_dialog.py
+[通过] 导入冒烟
+[通过] 多行解析：识别 3 / 去重 1 / 跳过 1
+[通过] 端到端（模块版 DownloadThread）：3/3 成功，含失败自动重试
+[通过] 端到端（生产路径，根目录 video_downloader.py 的 DownloadThread）：2/2 成功
+[通过] 翻译完整性：48 个 key，47 命中（'#' 为表头符号，无需翻译）
+[已清理] 全部测试产物与临时目录
+
+== 已知问题（非本次引入，未修改）==
+下载失败重试后，输出目录可能残留 .m4s 中间文件（现有 DownloadThread 搬运逻辑），
+建议后续单独修复。
+
