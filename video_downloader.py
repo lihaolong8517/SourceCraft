@@ -20119,6 +20119,54 @@ class VideoDownloaderApp(QMainWindow):
         self.progress_text.append(text)
         # 滚动到底部
         self.progress_text.verticalScrollBar().setValue(self.progress_text.verticalScrollBar().maximum())
+        self._forward_media_capture_progress(text)
+
+    def _forward_media_capture_result(self, success, message=""):
+        """下载结束后把结果回写到内置浏览器媒体卡片（已发送/失败状态）。"""
+        try:
+            thread = getattr(self, "download_thread", None)
+            is_capture = bool(getattr(self, "_pending_media_capture_download", False)) or bool(
+                getattr(thread, "media_capture_download", False) if thread else False
+            )
+            if not is_capture:
+                return
+            browser_window = getattr(self, "browser_window", None)
+            media_window = getattr(browser_window, "_media_window", None) if browser_window else None
+            if media_window is None or not media_window.isVisible():
+                return
+            url = self.url_input.text().strip() if hasattr(self, "url_input") else ""
+            if url:
+                media_window.mark_media_downloaded(url, bool(success), str(message or "")[:120])
+        except Exception:
+            pass
+        finally:
+            self._pending_media_capture_download = False
+
+    def _forward_media_capture_progress(self, text):
+        """把下载进度转发给内置浏览器的媒体捕获卡片（对齐 VDH 的进度条/速率/停止）。"""
+        if not getattr(self, "_pending_media_capture_download", False):
+            return
+        try:
+            browser_window = getattr(self, "browser_window", None)
+            media_window = getattr(browser_window, "_media_window", None) if browser_window else None
+            if media_window is None or not media_window.isVisible():
+                return
+            url = self.url_input.text().strip() if hasattr(self, "url_input") else ""
+            if not url and getattr(self, "_requested_formats_url", ""):
+                url = self._requested_formats_url
+            if not url:
+                return
+            percent = None
+            speed_text = ""
+            match = re.search(r"(\d{1,3}(?:\.\d+)?)%", text or "")
+            if match:
+                percent = float(match.group(1))
+            speed_match = re.search(r"at\s+([^\s]+/s)", text or "")
+            if speed_match:
+                speed_text = speed_match.group(1)
+            media_window.update_media_progress(url, percent, speed_text)
+        except Exception:
+            pass
         
     def update_progress_bar(self, percent):
         # 更新进度条
@@ -20538,6 +20586,7 @@ class VideoDownloaderApp(QMainWindow):
     def download_finished(self, success, message):
         # 下载完成处理
         self.progress_text.append(message)
+        self._forward_media_capture_result(success, message)
         self.download_button.setEnabled(True)
         # 【修复】按"下载播放列表"勾选状态恢复，未勾选时保持禁用（避免绕过 _on_playlist_toggled 联动）
         self.get_playlist_button.setEnabled(self.playlist_check.isChecked())

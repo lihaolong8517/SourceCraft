@@ -56,7 +56,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QPushButton, QLineEdit, QLabel, QFrame, QMessageBox,
     QApplication, QToolButton, QComboBox, QGraphicsDropShadowEffect, QCheckBox, QColorDialog, QMenu,
-    QButtonGroup, QDialog, QSplitter, QScrollArea
+    QButtonGroup, QDialog, QSplitter, QScrollArea, QProgressBar
 )
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QSize, QUrl, QRect, QPoint
 from PyQt5.QtGui import QCursor, QColor, QFont, QPainter, QPainterPath, QConicalGradient, QPixmap, QIcon, QLinearGradient, QRadialGradient, QPolygon
@@ -2516,6 +2516,7 @@ class MediaCard(QFrame):
     """单个媒体项的卡片展示"""
     send_to_downloader = pyqtSignal(str, str)
     remove_requested = pyqtSignal(QWidget)
+    stop_requested = pyqtSignal(str)
     _stopping_threads = []  # 保存正在停止的线程，防止被垃圾回收
 
     def __init__(self, media_info: dict, parent=None):
@@ -2526,6 +2527,7 @@ class MediaCard(QFrame):
         self.metadata_thread = None
         self._stabilize_timer = None
         self._stabilize_remaining = 0
+        self._download_state = "discovered"
         
         self._setup_ui()
         self._start_metadata_fetch()
@@ -2565,6 +2567,8 @@ class MediaCard(QFrame):
                 self.title_label.setText(new_title)
         if hasattr(self, 'size_label') and new_info.get('size'):
             self.size_label.setText(new_info.get('size'))
+        if new_info.get('variants'):
+            self._populate_variants(new_info.get('variants'))
         self._refresh_preview_spec()
         self._update_tooltips()
 
@@ -2589,6 +2593,35 @@ class MediaCard(QFrame):
             self.title_label.setToolTip(t_format("视频标题: {}\n实际下载/复制的音视频页面链接: {}\n媒体类型: {}", title, target_url, media_type))
         if hasattr(self, 'copy_btn'):
             self.copy_btn.setToolTip(t_format("复制完整音视频详情页链接 ({})", short_url))
+
+    def _populate_variants(self, variants):
+        """把同一视频的多个格式填进格式选择器（VDH 的 "MP4 1080p" 面）。"""
+        if not isinstance(variants, list) or len(variants) < 2:
+            return False
+        self._custom_variants = []
+        try:
+            self.res_combo.clear()
+            self.res_combo.setEnabled(True)
+            for index, variant in enumerate(variants):
+                quality = str(variant.get("quality") or "").strip()
+                ext = str(variant.get("ext") or "").strip().upper()
+                url = str(variant.get("url") or "")
+                if not ext:
+                    lower = url.lower().split("?")[0]
+                    for candidate in ("m3u8", "mp4", "webm", "mkv", "mpd", "m4a", "mp3"):
+                        if lower.endswith("." + candidate) or ("." + candidate + "?") in lower:
+                            ext = candidate.upper()
+                            break
+                label = " ".join(part for part in (ext, quality) if part) or t("媒体")
+                size = str(variant.get("size") or "").strip()
+                text = label if not size else "%s - %s" % (label, size)
+                self.res_combo.addItem(text, index)
+                self._custom_variants.append(variant)
+            return True
+        except Exception as exc:  # noqa: BLE001
+            print(f"[MEDIA] 填充分辨率变体失败: {exc}")
+            self._custom_variants = []
+            return False
 
     def _refresh_preview_spec(self, duration=None):
         """按当前 media_info 构造预览参数（对齐 VDH：直链/清单都可抓"中间一小段"）。"""
@@ -2707,6 +2740,15 @@ class MediaCard(QFrame):
             border-radius: 3px; font-size: 10px; border: 1px solid #ddd;
         """)
         tags_layout.addWidget(self.type_tag)
+
+        # 时长徽标（对齐 VDH 的 p_duration）
+        self.duration_badge = QLabel("")
+        self.duration_badge.setStyleSheet(
+            "background: #f5f5f5; color: #555; padding: 1px 6px; border-radius: 3px;"
+            " font-size: 10px; border: 1px solid #e5e5e5;"
+        )
+        self.duration_badge.hide()
+        tags_layout.addWidget(self.duration_badge)
         
         # 质量标签 (如果有)
         quality_info = self.media_info.get('quality', {})
@@ -2764,6 +2806,8 @@ class MediaCard(QFrame):
         self.res_combo.addItem(t("正在加载格式..."))
         self.res_combo.setEnabled(False)
         actions_layout.addWidget(self.res_combo)
+        # 同一视频的多个格式（VDH com-media-selector 等价物）
+        self._custom_variants = []
 
         self.download_btn = QPushButton(t("⬇️ 稳定中(3s)"))
         self.download_btn.setCursor(Qt.PointingHandCursor)
@@ -2802,7 +2846,45 @@ class MediaCard(QFrame):
         actions_layout.addStretch()
         info_layout.addLayout(actions_layout)
 
+        # 第四行：下载进度（对齐 VDH 的 media-downloading：进度条 + 百分比 + 速率 + 停止）
+        self.progress_row = QWidget()
+        self.progress_row.setFixedHeight(18)
+        progress_layout = QHBoxLayout(self.progress_row)
+        progress_layout.setContentsMargins(0, 0, 0, 0)
+        progress_layout.setSpacing(6)
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(False)
+        self.progress_bar.setFixedHeight(6)
+        self.progress_bar.setStyleSheet(
+            "QProgressBar { background: #eeeeee; border: none; border-radius: 3px; }"
+            "QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+            " stop:0 #667eea, stop:1 #764ba2); border-radius: 3px; }"
+        )
+        progress_layout.addWidget(self.progress_bar, 1)
+        self.progress_percent = QLabel("0%")
+        self.progress_percent.setStyleSheet("color: #667eea; font-size: 10px; font-weight: bold;")
+        progress_layout.addWidget(self.progress_percent)
+        self.progress_speed = QLabel("")
+        self.progress_speed.setStyleSheet("color: #888; font-size: 10px;")
+        progress_layout.addWidget(self.progress_speed)
+        self.stop_btn = QPushButton(t("停止"))
+        self.stop_btn.setCursor(Qt.PointingHandCursor)
+        self.stop_btn.setFixedSize(44, 18)
+        self.stop_btn.setStyleSheet(
+            "QPushButton { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2;"
+            " border-radius: 4px; font-size: 10px; }"
+            "QPushButton:hover { background: #ffcdd2; }"
+        )
+        self.stop_btn.clicked.connect(self._on_stop_clicked)
+        progress_layout.addWidget(self.stop_btn)
+        self.progress_row.hide()
+        info_layout.addWidget(self.progress_row)
+        self._download_state = "discovered"
+
         self.main_layout.addLayout(info_layout)
+        self._populate_variants(self.media_info.get("variants"))
         self._update_tooltips()
 
     def _start_stabilize_countdown(self):
@@ -2852,6 +2934,8 @@ class MediaCard(QFrame):
                 self.thumb_container.width() - self.duration_label.sizeHint().width() - 4,
                 self.thumb_container.height() - self.duration_label.sizeHint().height() - 4
             )
+            self.duration_badge.setText(duration)
+            self.duration_badge.show()
         # 有了时长后重新构造预览参数（VDH 按"中间位置"抓片段）
         try:
             self._refresh_preview_spec(duration=data.get('duration'))
@@ -2869,7 +2953,9 @@ class MediaCard(QFrame):
             self.platform_icon.setStyleSheet("background: transparent; padding: 0px;")
             self.platform_icon.show()
         
-        # 填充分辨率
+        # 填充分辨率：已有"同一视频多格式"时优先用变体（VDH 一张卡多格式）
+        if self._custom_variants:
+            return
         self.res_combo.clear()
         self.res_combo.setEnabled(True)
         resolutions = data.get('resolutions', [])
@@ -3022,7 +3108,69 @@ class MediaCard(QFrame):
             self._set_default_thumbnail()
         self.reply.deleteLater()
 
+    def _on_stop_clicked(self):
+        """停止按钮：请求主窗口取消当前下载（按 URL 定位）。"""
+        url = str(self.media_info.get("url") or "")
+        self.stop_requested.emit(url)
+
+    def set_download_state(self, state: str, message: str = ""):
+        """切换下载状态：discovered / downloading / downloaded / failed（对齐 VDH 三态）。"""
+        self._download_state = state
+        row = getattr(self, "progress_row", None)
+        if row is None:
+            return
+        if state == "downloading":
+            row.show()
+            self.progress_bar.setRange(0, 0)
+            self.progress_bar.setValue(0)
+            self.progress_percent.setText(t("中"))
+            self.progress_speed.setText(message or "")
+            self.stop_btn.show()
+            self.download_btn.setEnabled(False)
+        elif state == "downloaded":
+            row.hide()
+            self.download_btn.setEnabled(True)
+            self.download_btn.setText(t("✅ 已发送"))
+            self.download_btn.setToolTip(message or t("已发送到下载器") )
+        elif state == "failed":
+            row.hide()
+            self.download_btn.setEnabled(True)
+            self.download_btn.setText(t("⬇️ 重试"))
+            self.download_btn.setToolTip(message or t("上一次下载失败"))
+        else:
+            row.hide()
+            self.download_btn.setText(t("⬇️ 下载"))
+
+    def update_download_progress(self, percent=None, speed_text: str = ""):
+        """接收主窗口的下载进度（VDH div_progressbar + span_percent + span_bitrate）。"""
+        row = getattr(self, "progress_row", None)
+        if row is None:
+            return
+        if self._download_state != "downloading":
+            self.set_download_state("downloading", speed_text)
+        else:
+            row.show()
+        if isinstance(percent, (int, float)) and percent >= 0:
+            self.progress_bar.setRange(0, 100)
+            value = max(0, min(100, int(percent)))
+            self.progress_bar.setValue(value)
+            self.progress_percent.setText(f"{value}%")
+        else:
+            self.progress_bar.setRange(0, 0)
+            self.progress_percent.setText(t("中"))
+        if speed_text:
+            self.progress_speed.setText(speed_text)
+
     def _on_download_clicked(self):
+        # VDH 的 com-media-selector：用户选中的变体（同一视频多格式）直接按该直链下载
+        data = self.res_combo.currentData()
+        variants = getattr(self, "_custom_variants", [])
+        if isinstance(data, int) and 0 <= data < len(variants):
+            variant_url = str(variants[data].get("url") or "")
+            if variant_url:
+                self.send_to_downloader.emit(variant_url, self.title_label.text())
+                self.set_download_state("downloading", t("已发送到下载器"))
+                return
         format_id = self.res_combo.currentData() or "best"
         title = self.title_label.text()
         direct_url = self.media_info.get('url', '')
@@ -3066,6 +3214,7 @@ class MediaCard(QFrame):
                 self.send_to_downloader.emit(url, f"{title} [Format:{format_id}]")
             else:
                 self.send_to_downloader.emit(url, title)
+        self.set_download_state("downloading", t("已发送到下载器"))
 
 
     def _on_copy_clicked(self):
@@ -3092,6 +3241,7 @@ class MediaCaptureWindow(QMainWindow):
     """媒体捕获浮窗 - 现代极简风格"""
     
     send_to_downloader = pyqtSignal(str, str)  # 发送 URL 和标题到下载器
+    stop_requested = pyqtSignal(str)  # 请求停止下载（携带媒体 URL）
     closed = pyqtSignal()  # 窗口关闭信号
     
     def __init__(self, controller=None):
@@ -3272,6 +3422,37 @@ class MediaCaptureWindow(QMainWindow):
         merged["is_playing"] = old_playing or new_playing
         merged["is_preload"] = False if merged["is_playing"] else bool(new_info.get("is_preload", False))
         merged["force_update"] = bool(new_info.get("force_update", False))
+
+        # 同一视频的多个格式：合成一张卡片（对齐 VDH 的 com-media-selector）
+        variants = []
+        for source in (
+            old_info.get("variants") if isinstance(old_info, dict) else None,
+            new_info.get("variants"),
+        ):
+            if isinstance(source, list):
+                variants.extend(v for v in source if isinstance(v, dict) and v.get("url"))
+        for source_info in (old_info, new_info):
+            if not isinstance(source_info, dict):
+                continue
+            source_url = str(source_info.get("url") or "")
+            source_page = str(source_info.get("page_url") or "")
+            if not source_url or source_url == source_page:
+                continue
+            quality = source_info.get("quality") if isinstance(source_info.get("quality"), dict) else {}
+            variants.append({
+                "url": source_url,
+                "quality": str(quality.get("resolution") or ""),
+                "ext": str(quality.get("ext") or source_info.get("ext") or ""),
+                "size": str(source_info.get("size") or ""),
+                "headers": source_info.get("headers") or {},
+            })
+        deduped = {}
+        for variant in variants:
+            vkey = _normalize_capture_url_key(variant.get("url"))
+            if vkey:
+                deduped.setdefault(vkey, variant)
+        if len(deduped) >= 2:
+            merged["variants"] = list(deduped.values())
         return merged
 
     def _insert_card_by_priority(self, card: QWidget, media_info: dict):
@@ -3293,6 +3474,26 @@ class MediaCaptureWindow(QMainWindow):
             insert_pos = 0
         self.list_layout.insertWidget(insert_pos, card)
     
+    def _find_same_video_card(self, media_info: dict):
+        """找到"同名 + 同来源页"的直链卡片，用于把多格式合并到一张卡。"""
+        title = str(media_info.get("title") or "").strip()
+        page_url = str(media_info.get("page_url") or "").strip()
+        url = str(media_info.get("url") or "").strip()
+        if not title or not page_url or url == page_url:
+            return None
+        for card in self._media_cards.values():
+            info = getattr(card, "media_info", {}) or {}
+            if info.get("is_playing"):
+                continue
+            if str(info.get("title") or "").strip() != title:
+                continue
+            if str(info.get("page_url") or "").strip() != page_url:
+                continue
+            if str(info.get("url") or "").strip() == page_url:
+                continue
+            return card
+        return None
+
     def add_media(self, media_info: dict):
         """添加一个捕获到的媒体"""
         url = media_info.get("url", "")
@@ -3301,6 +3502,12 @@ class MediaCaptureWindow(QMainWindow):
             return
 
         existing_card = self._media_cards.get(key)
+        if existing_card is None:
+            # 同名同页的直链视为同一视频的不同格式：合并成一张卡片（VDH 的一张卡多格式）
+            same_video_card = self._find_same_video_card(media_info)
+            if same_video_card is not None:
+                existing_card = same_video_card
+                key = self._media_key(same_video_card.media_info.get("url"))
         if existing_card:
             old_info = existing_card.media_info
             merged_info = self._merge_media_info(old_info, media_info)
@@ -3340,6 +3547,7 @@ class MediaCaptureWindow(QMainWindow):
         card = MediaCard(media_info)
         card.send_to_downloader.connect(self.send_to_downloader.emit)
         card.remove_requested.connect(self._remove_media_card)
+        card.stop_requested.connect(self.stop_requested.emit)
         self._media_cards[key] = card
         
         # 智能排序插入：播放中优先
@@ -3397,7 +3605,38 @@ class MediaCaptureWindow(QMainWindow):
     def get_media_snapshot(self):
         """返回当前已捕获媒体的快照，供下载器复用，避免重复启动浏览器嗅探。"""
         return [dict(info) for info in self._media_list]
-        
+
+    def _card_for_url(self, url: str):
+        """按 URL 找卡片：先精确匹配 key，再在格式变体里找。"""
+        if not url:
+            return None
+        key = self._media_key(url)
+        card = self._media_cards.get(key)
+        if card is not None:
+            return card
+        normalized = _normalize_capture_url_key(url)
+        for candidate in self._media_cards.values():
+            info = getattr(candidate, "media_info", {}) or {}
+            if _normalize_capture_url_key(info.get("url")) == normalized:
+                return candidate
+            for variant in info.get("variants") or []:
+                if isinstance(variant, dict) and \
+                        _normalize_capture_url_key(variant.get("url")) == normalized:
+                    return candidate
+        return None
+
+    def update_media_progress(self, url: str, percent=None, speed_text: str = ""):
+        """把主窗口下载进度映射到卡片（VDH media-downloading 状态）。"""
+        card = self._card_for_url(url)
+        if card is not None:
+            card.update_download_progress(percent, speed_text)
+
+    def mark_media_downloaded(self, url: str, success: bool = True, message: str = ""):
+        """下载结束：切换卡片到已下载/失败状态。"""
+        card = self._card_for_url(url)
+        if card is not None:
+            card.set_download_state("downloaded" if success else "failed", message)
+
     def closeEvent(self, event):
         """窗口关闭事件"""
         self._clear_media()
@@ -6604,6 +6843,7 @@ class PlaywrightBrowserController(QMainWindow):
         # 媒体捕获窗口
         self._media_window = MediaCaptureWindow(controller=self)
         self._media_window.send_to_downloader.connect(self._on_media_selected)
+        self._media_window.stop_requested.connect(self._on_media_stop_requested)
         self._media_window.closed.connect(self._on_media_window_closed)
         
         # 信号连接
@@ -8137,7 +8377,21 @@ class PlaywrightBrowserController(QMainWindow):
         """处理用户选择下载媒体"""
         self.media_url_selected.emit(url, title)
         ModernToast.show_message(t_format("已发送到下载器 ✨\n{}...", title[:30]), self)
+
+    def _on_media_stop_requested(self, url: str = ""):
+        """卡片上的"停止"：转交主窗口取消当前下载。"""
+        controller = getattr(self, "controller", None)
+        cancel = getattr(controller, "cancel_download", None)
+        if callable(cancel):
+            try:
+                cancel()
+                ModernToast.show_message(t("已请求停止下载"), self)
+            except Exception as exc:  # noqa: BLE001
+                print(f"[MEDIA] 停止下载失败: {exc}")
+        else:
+            ModernToast.show_message(t("当前没有可停止的下载任务"), self, is_error=True)
         
+    
     def _toggle_media_capture(self, checked):
         """切换媒体捕获状态"""
         if checked:
