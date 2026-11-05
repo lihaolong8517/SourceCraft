@@ -19,6 +19,7 @@ _LAZY_ATTRS = {
     "MediaStore": ("store", "MediaStore"),
     "StoreEntry": ("store", "StoreEntry"),
     "CdpNetworkSniffer": ("sniffer", "CdpNetworkSniffer"),
+    "CaptureRunner": ("runner", "CaptureRunner"),
     "classify_record": ("bridge", "classify_record"),
     "normalize_report": ("bridge", "normalize_report"),
     "normalize_url_key": ("bridge", "normalize_url_key"),

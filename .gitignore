@@ -120,4 +120,6 @@ GitHub_Public_Release/
 .workbuddy/
 _build_log_*.txt
 ytdlp_*_tmp.md
+.pytest_cache/
+scripts/.smoke_tmp/
 
