@@ -40,6 +40,18 @@ import math
 from typing import Optional, Dict, Any, Tuple, List
 from urllib.parse import parse_qsl, urlsplit
 
+# VDH 式媒体捕获层（可选依赖：包不可用时自动退化为旧嗅探）
+try:
+    import vdh_capture as _VDH_CAPTURE
+except ImportError:
+    _vdh_root = os.path.dirname(os.path.abspath(__file__))
+    if _vdh_root and _vdh_root not in sys.path:
+        sys.path.insert(0, _vdh_root)
+    try:
+        import vdh_capture as _VDH_CAPTURE
+    except ImportError:
+        _VDH_CAPTURE = None
+
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QPushButton, QLineEdit, QLabel, QFrame, QMessageBox,
@@ -2908,7 +2920,7 @@ class MediaCaptureWindow(QMainWindow):
         merged = dict(old_info or {})
         for key in (
             "type", "url", "size", "content_type", "title", "page_url", "thumbnail", "source",
-            "quality", "has_drm"
+            "quality", "has_drm", "headers", "summary", "audio_only", "is_manifest", "url_key"
         ):
             val = new_info.get(key)
             if val not in (None, "", {}, []):
@@ -5264,8 +5276,117 @@ def run_launcher():
                 except Exception as exc:
                     _throttled_media_warn(f"[BROWSER] WARN: 网络媒体捕获异常: {exc}")
             
-            page.on('response', on_response)
-            context.on('page', lambda p: p.on('response', on_response))
+            # === VDH 式媒体捕获（CDP 嗅探 + 站点适配器 + 清单富化）===
+            _capture_runners = []
+
+            def _capture_media_payload(candidate, force_update):
+                quality = candidate.get('quality')
+                if not isinstance(quality, dict):
+                    quality = {}
+                headers = candidate.get('headers')
+                if not isinstance(headers, dict):
+                    headers = {}
+                try:
+                    current_page_url = page.url
+                except Exception:
+                    current_page_url = ""
+                return {
+                    'type': candidate.get('type') or 'Media',
+                    'url': candidate.get('url') or '',
+                    'size': candidate.get('size') or '',
+                    'content_type': candidate.get('content_type') or '',
+                    'title': candidate.get('title') or t("未知视频"),
+                    'page_url': candidate.get('page_url') or current_page_url,
+                    'source': candidate.get('source') or 'cdp',
+                    'quality': quality,
+                    'has_drm': bool(candidate.get('has_drm')),
+                    'audio_only': bool(candidate.get('audio_only')),
+                    'is_manifest': bool(candidate.get('is_manifest')),
+                    'headers': headers,
+                    'summary': candidate.get('summary') or '',
+                    'force_update': bool(force_update),
+                }
+
+            def _capture_emit(candidate, force_update=False):
+                if not capture_state["capture_enabled"]:
+                    return
+                try:
+                    payload = _capture_media_payload(candidate, force_update)
+                    url = payload['url']
+                    if not url or url.startswith('data:'):
+                        return
+                    url_key = _normalize_capture_url_key(url)
+                    if not url_key:
+                        return
+                    if not force_update and _media_seen(url_key):
+                        return
+                    _media_mark(url_key)
+                    _safe_print(f"[MEDIA] {json.dumps(payload, ensure_ascii=False)}")
+                    # 【YouTube 兜底】googlevideo 直链有时效，同时把页面 URL 交给 yt-dlp
+                    if payload['type'] == 'YouTube' and payload['page_url']:
+                        try:
+                            page_host = urlparse(payload['page_url']).netloc.lower()
+                            page_path = urlparse(payload['page_url']).path.lower()
+                            is_yt_page = ('youtube.com' in page_host or 'youtu.be' in page_host)
+                            is_yt_video_page = is_yt_page and (
+                                '/watch' in page_path or page_path in ('', '/') or
+                                '/shorts/' in page_path or '/live/' in page_path or
+                                page_host == 'youtu.be'
+                            )
+                            if is_yt_video_page:
+                                page_key = _normalize_capture_url_key(payload['page_url'])
+                                if page_key and not _media_seen(page_key):
+                                    _media_mark(page_key)
+                                    _safe_print(f"[MEDIA] {json.dumps({'type': 'YouTubePage', 'url': payload['page_url'], 'size': '', 'content_type': '', 'title': payload['title'], 'page_url': payload['page_url']}, ensure_ascii=False)}")
+                        except Exception:
+                            pass
+                except Exception as exc:
+                    _throttled_media_warn(f"[BROWSER] WARN: VDH 媒体上报失败: {exc}")
+
+            async def _start_capture(page_obj, target_url):
+                if _VDH_CAPTURE is None:
+                    return None
+                try:
+                    runner = _VDH_CAPTURE.CaptureRunner(emit=_capture_emit)
+                    attached = await runner.start(context, page_obj, target_url or "")
+                    runner.cdp_attached = bool(attached)
+                    _capture_runners.append(runner)
+                    adapter_name = getattr(getattr(runner, 'adapter', None), 'name', '-')
+                    _safe_print(f"[BROWSER] VDH 捕获层已挂载 (cdp={bool(attached)}, adapter={adapter_name})")
+                    return runner
+                except Exception as exc:
+                    _safe_print(f"[BROWSER] WARN: VDH 捕获层挂载失败: {exc}")
+                    return None
+
+            async def _capture_after_navigation(page_obj):
+                for runner in list(_capture_runners):
+                    try:
+                        runner.set_target(page_obj.url)
+                        await runner.after_navigation(page_obj)
+                    except Exception as exc:
+                        _safe_print(f"[BROWSER] WARN: VDH 站点探测失败: {exc}")
+
+            def _on_framenavigated(frame):
+                try:
+                    if frame is not frame.page.main_frame:
+                        return
+                    page_obj = frame.page
+                except Exception:
+                    return
+                try:
+                    asyncio.ensure_future(_capture_after_navigation(page_obj))
+                except Exception:
+                    pass
+
+            def _on_new_page(new_page):
+                try:
+                    asyncio.ensure_future(_start_capture(new_page, ""))
+                except Exception:
+                    pass
+                try:
+                    new_page.on('framenavigated', _on_framenavigated)
+                except Exception:
+                    pass
             
             # === 初始页面导航 ===
             if initial_url:
@@ -5273,11 +5394,22 @@ def run_launcher():
             else:
                 default_url = _get_default_homepage(runtime_browser, runtime_engine)
             
+            # === 媒体捕获层挂载（VDH 式 CDP 嗅探；失败则回退旧嗅探）===
+            _vdh_runner = await _start_capture(page, default_url) if _VDH_CAPTURE is not None else None
+            if _vdh_runner is None or not getattr(_vdh_runner, 'cdp_attached', False):
+                page.on('response', on_response)
+                context.on('page', lambda p: p.on('response', on_response))
+                _safe_print("[BROWSER] 媒体捕获：旧嗅探作为回退/补充已启用")
+            else:
+                context.on('page', _on_new_page)
+            page.on('framenavigated', _on_framenavigated)
+
             try:
                 await page.goto(default_url, wait_until="domcontentloaded", timeout=30000)
                 _safe_print(f"[BROWSER] 已打开页面: {default_url}")
             except Exception as e:
                 _safe_print(f"[BROWSER] 打开页面失败: {e}")
+            await _capture_after_navigation(page)
             
             # === 发送 READY 信号（GUI 依赖此信号切换到"运行中"状态）===
             # 【关键修复】无论页面导航是否成功，都发送 READY 信号
