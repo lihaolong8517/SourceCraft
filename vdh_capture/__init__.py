@@ -25,6 +25,7 @@ _LAZY_ATTRS = {
     "normalize_url_key": ("bridge", "normalize_url_key"),
     "download_headers": ("bridge", "download_headers"),
     "build_header_args": ("bridge", "build_header_args"),
+    "captured_header_args": ("bridge", "captured_header_args"),
     "human_size": ("bridge", "human_size"),
     "analyze_manifest_text": ("manifest", "analyze_manifest_text"),
     "manifest_patch": ("manifest", "manifest_patch"),

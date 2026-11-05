@@ -6531,6 +6531,25 @@ class DownloadThread(QThread):
             self.progress_signal.emit(t_format("⚠️ 浏览器媒体嗅探失败: {}", e))
             return None
 
+    def _captured_header_args(self, media_info):
+        """把捕获到的请求头转成 yt-dlp 参数；任何异常都退回空列表（保持旧行为）。
+
+        默认开启；设置环境变量 ``VDH_REPLAY_HEADERS=0`` 可一键禁用。
+        Authorization 默认不回放（短时 token 容易把会话打成无效），
+        ``VDH_REPLAY_AUTH=1`` 才携带。
+        """
+        if str(os.environ.get("VDH_REPLAY_HEADERS", "1")).strip().lower() in ("0", "false", "off", "no"):
+            return []
+        try:
+            headers = (media_info or {}).get("headers") or {}
+            if not isinstance(headers, dict) or not headers:
+                return []
+            allow_auth = str(os.environ.get("VDH_REPLAY_AUTH", "")).strip().lower() in ("1", "true", "on", "yes")
+            from vdh_capture.bridge import captured_header_args
+            return list(captured_header_args(headers, allow_authorization=allow_auth) or [])
+        except Exception:
+            return []
+
     def _retry_with_captured_media(self, media_info):
         direct_url = str((media_info or {}).get("url", "") or "").strip()
         if not direct_url:
@@ -6575,17 +6594,28 @@ class DownloadThread(QThread):
             elif self.format_option:
                 self.progress_signal.emit(t("ℹ 媒体直链回退已忽略原复杂格式筛选，避免与直链冲突"))
 
-            try:
-                self._attach_internal_cookie(
-                    cmd,
-                    url=referer_url,
-                    direct_msg="🍪 媒体直链重试加载内置浏览器Cookie: ",
-                    fallback_msg="🍪 媒体直链重试使用内置浏览器Cookie: ",
-                )
-            except Exception:
-                pass
+            header_args = self._captured_header_args(media_info)
+            has_cookie_header = any(
+                str(arg).lower().startswith("cookie:") for arg in header_args
+            )
 
-            if referer_url:
+            if has_cookie_header:
+                self.progress_signal.emit(t("🍪 已回放捕获时携带的 Cookie 头，跳过 Cookie 文件附件"))
+            else:
+                try:
+                    self._attach_internal_cookie(
+                        cmd,
+                        url=referer_url,
+                        direct_msg="🍪 媒体直链重试加载内置浏览器Cookie: ",
+                        fallback_msg="🍪 媒体直链重试使用内置浏览器Cookie: ",
+                    )
+                except Exception:
+                    pass
+
+            if header_args:
+                cmd.extend(header_args)
+                self.progress_signal.emit(t_format("🧾 回放捕获请求头 {} 项", len(header_args) // 2))
+            elif referer_url:
                 # README 推荐写法：--referer 已废弃（Deprecated options），等价于 --add-header "Referer:URL"
                 cmd.extend(["--add-header", f"Referer:{referer_url}"])
                 parsed_referer = QUrl(referer_url)

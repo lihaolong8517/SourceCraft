@@ -142,6 +142,28 @@ def build_header_args(headers) -> list:
     return args
 
 
+def captured_header_args(headers, allow_authorization: bool = False) -> list:
+    """下载回放专用：在 :func:`build_header_args` 之上按需过滤 Authorization。
+
+    Authorization 常常是短时 token，直接回放容易把请求打成无效会话，
+    因此默认不携带，需要显式打开（``VDH_REPLAY_AUTH=1``）。
+    """
+    if not isinstance(headers, dict) or not headers:
+        return []
+    filtered = {}
+    for name, value in headers.items():
+        text = "" if value is None else str(value).strip()
+        if not text:
+            continue
+        low = str(name or "").strip().lower()
+        if not low:
+            continue
+        if low == "authorization" and not allow_authorization:
+            continue
+        filtered[name] = text
+    return build_header_args(filtered)
+
+
 def describe_candidate(candidate: dict) -> str:
     """一句话描述，如 ``HLS · 1080p · 5000Kbps``。"""
     kind = str(candidate.get("type") or "Media")
