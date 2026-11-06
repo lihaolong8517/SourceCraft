@@ -58,7 +58,7 @@ from PyQt5.QtWidgets import (
     QApplication, QToolButton, QComboBox, QGraphicsDropShadowEffect, QCheckBox, QColorDialog, QMenu,
     QButtonGroup, QDialog, QSplitter, QScrollArea, QProgressBar
 )
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QSize, QUrl, QRect, QPoint
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QSize, QUrl, QRect, QPoint, QSettings
 from PyQt5.QtGui import QCursor, QColor, QFont, QPainter, QPainterPath, QConicalGradient, QPixmap, QIcon, QLinearGradient, QRadialGradient, QPolygon, QImage
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
@@ -3911,15 +3911,84 @@ class MediaCaptureWindow(QMainWindow):
         self.setWindowTitle(t("媒体捕获"))
         self.setMinimumSize(400, 500)
         self.resize(450, 600)
-        self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
+        # 「始终置顶」开关：默认开启（保持原有行为），可在标题栏切换，选择会被记住
+        self._always_on_top = self._load_always_on_top()
+        self.setWindowFlags(Qt.Window | (Qt.WindowStaysOnTopHint if self._always_on_top else Qt.Widget))
         
         self._media_list = []  # 存储捕获的媒体信息
         self._media_cards = {}  # key -> MediaCard
         self._setup_ui()
         self._apply_styles()
 
+    def _load_always_on_top(self):
+        """读取「始终置顶」设置，默认开启。"""
+        try:
+            value = QSettings("VideoDownloader", "Settings").value("media_capture/always_on_top", True)
+            if isinstance(value, str):
+                return value.strip().lower() not in ("0", "false", "off", "no", "")
+            return bool(value)
+        except Exception:
+            return True
+
+    def _apply_always_on_top(self, enabled):
+        """应用窗口置顶标志（同时处理 Qt 标志与 Win32 原生 TOPMOST）。"""
+        try:
+            if enabled:
+                self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+            else:
+                self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
+            self.show()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[BROWSER] 切换置顶失败: {exc}")
+        if sys.platform == "win32":
+            try:
+                import ctypes
+
+                hwnd = int(self.winId())
+                HWND_TOPMOST = -1
+                HWND_NOTOPMOST = -2
+                SWP_NOMOVE = 0x0002
+                SWP_NOSIZE = 0x0001
+                SWP_NOACTIVATE = 0x0010
+                SWP_SHOWWINDOW = 0x0040
+                ctypes.windll.user32.SetWindowPos(
+                    hwnd,
+                    HWND_TOPMOST if enabled else HWND_NOTOPMOST,
+                    0, 0, 0, 0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+                )
+            except Exception:
+                pass
+
+    def _set_always_on_top(self, enabled):
+        enabled = bool(enabled)
+        self._always_on_top = enabled
+        try:
+            QSettings("VideoDownloader", "Settings").setValue("media_capture/always_on_top", enabled)
+        except Exception:
+            pass
+        self._apply_always_on_top(enabled)
+        self._update_pin_button()
+        print(f"[BROWSER] 媒体捕获窗口置顶: {'开' if enabled else '关'}")
+
+    def _update_pin_button(self):
+        button = getattr(self, "pin_btn", None)
+        if button is None:
+            return
+        try:
+            button.setChecked(self._always_on_top)
+            button.setText(t("📌 置顶") if self._always_on_top else t("📌 置顶"))
+            button.setToolTip(t("始终置顶于最上层") if self._always_on_top else t("不置顶（可被其他窗口覆盖）"))
+        except Exception:
+            pass
+
+    def _on_pin_toggled(self, checked):
+        self._set_always_on_top(checked)
+
     def _enforce_topmost(self):
-        """确保媒体捕获窗口持续置顶。"""
+        """确保媒体捕获窗口持续置顶（关闭置顶时不做任何强制）。"""
+        if not getattr(self, "_always_on_top", True):
+            return
         self.raise_()
         if sys.platform == "win32":
             try:
@@ -3973,6 +4042,14 @@ class MediaCaptureWindow(QMainWindow):
         self.count_label.setStyleSheet("font-size: 12px; color: #888;")
         header_layout.addWidget(self.count_label)
         
+        # 置顶开关
+        self.pin_btn = QPushButton(t("📌 置顶"))
+        self.pin_btn.setObjectName("pinBtn")
+        self.pin_btn.setCheckable(True)
+        self.pin_btn.setCursor(Qt.PointingHandCursor)
+        self.pin_btn.toggled.connect(self._on_pin_toggled)
+        header_layout.addWidget(self.pin_btn)
+
         # 清空按钮
         clear_btn = QPushButton(t("清空"))
         clear_btn.setObjectName("clearBtn")
@@ -4020,6 +4097,12 @@ class MediaCaptureWindow(QMainWindow):
         self.empty_label.setAlignment(Qt.AlignCenter)
         self.empty_label.setWordWrap(True)
         self.list_layout.insertWidget(0, self.empty_label)
+        # 初始化置顶按钮状态（不触发写盘：直接设 checked）
+        try:
+            self.pin_btn.setChecked(self._always_on_top)
+            self._update_pin_button()
+        except Exception:
+            pass
     
     def _apply_styles(self):
         self.setStyleSheet("""
@@ -4029,6 +4112,24 @@ class MediaCaptureWindow(QMainWindow):
             #mediaPanelHeader {
                 background: white;
                 border-bottom: 1px solid #e8e8e8;
+            }
+            #pinBtn {
+                background: transparent;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 4px 10px;
+                font-size: 12px;
+                color: #666;
+            }
+            #pinBtn:hover {
+                background: #f5f5f5;
+                border-color: #ccc;
+            }
+            #pinBtn:checked {
+                background: #e8f0fe;
+                border-color: #1976d2;
+                color: #1565c0;
+                font-weight: 600;
             }
             #clearBtn {
                 background: transparent;
