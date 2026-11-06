@@ -2417,15 +2417,11 @@ class PreviewArea(QFrame):
             pass
 
     def enterEvent(self, event):
-        """鼠标悬停时自动触发预览（对齐VDH hover行为）。"""
-        if self._spec is not None and not self.is_playing() and not self._busy:
-            self._start_build()
+        """鼠标悬停事件（预留，暂不自动触发预览避免稳定性问题）。"""
         super().enterEvent(event)
 
     def leaveEvent(self, event):
-        """鼠标移开时停止播放，回到静态缩略图。"""
-        if self.is_playing():
-            self.stop()
+        """鼠标移开事件（预留，暂不自动停止避免稳定性问题）。"""
         super().leaveEvent(event)
 
     def has_preview(self):
