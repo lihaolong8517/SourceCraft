@@ -1,15 +1,15 @@
 {
-  "version": "1.1.157",
-  "download_url": "https://github.com/lihaolong8517/SourceCraft/releases/download/v1.1.157/SourceCraft_Installer_v1.1.157.exe",
-  "file_size": "≈ 384 MB",
-  "file_size_bytes": 402672577,
-  "published_at": "2026-10-17",
+  "version": "1.1.158",
+  "download_url": "https://github.com/lihaolong8517/SourceCraft/releases/download/v1.1.158/SourceCraft_Installer_v1.1.158.exe",
+  "file_size": "≈ 389 MB",
+  "file_size_bytes": 407752497,
+  "published_at": "2026-11-06",
   "notes": [
-    "发布 SourceCraft v1.1.157",
-    "新增：批量下载，支持一次粘贴多个链接，自动识别去重、串行排队，逐任务显示状态",
-    "新增：批量任务支持暂停、继续、跳过、重试，失败自动重试一次",
-    "优化：「批量」按钮高对比蓝色样式，批量对话框统一视觉与状态色点",
-    "修复：批量下载历史记录文件路径为空，点击定位报错的问题",
-    "修复：粘贴多个链接未自动换行、连续粘贴单链接接在上一条之后的问题"
+    "发布 SourceCraft v1.1.158",
+    "新增：内置浏览器媒体捕捉全面升级（复刻 Video Download Helper）——CDP 真实请求头捕获、HLS/DASH/MP4/WebM 全能识别",
+    "新增：站点适配器（B 站 / VK / ok.ru / Facebook / Kick / Chaturbate / Twitcasting / Vimeo），清单解析清晰度、音轨、字幕与 DRM 信息",
+    "新增：请求头回放（修复 403/防盗链站点下载）、媒体卡片重做（封面抽帧、清晰度徽标、格式选择、下载为/仅音频/复制）",
+    "新增：卡片悬停内联静音预览、清空后免刷新重新捕获、媒体捕获窗口「📌 置顶」开关",
+    "修复：媒体捕捉相关线程销毁崩溃（0xc0000409）、悬停预览黑屏/失败提示/tooltip 黑框、封面被占位图覆盖"
   ]
 }
