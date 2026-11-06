@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-VERSION = "0.1.0"
+VERSION = "1.0.0"
 __version__ = VERSION
 
 # 惰性导入，避免子模块互相依赖时出现循环导入
