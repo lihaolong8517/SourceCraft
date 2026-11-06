@@ -2397,7 +2397,7 @@ class PreviewArea(QFrame):
     def set_thumbnail_pixmap(self, pixmap):
         if pixmap is not None and not pixmap.isNull():
             self.thumb_label.setPixmap(
-                pixmap.scaled(self._width, self._height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pixmap.scaled(self._width, self._height, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
             )
             self._thumb_loaded = True
 
@@ -2450,13 +2450,17 @@ class PreviewArea(QFrame):
         self._start_build()
 
     def stop(self):
-        if self._video is not None:
-            self._video.hide()
         if self._player is not None:
             try:
                 self._player.pause()
+                self._player.setPosition(0)
             except Exception:
                 pass
+        if self._video is not None:
+            self._video.hide()
+        # 回到静态缩略图（对齐VDH：移开鼠标回到封面）
+        if self._thumb_loaded:
+            self.thumb_label.show()
         self.play_overlay.show()
 
     def cleanup(self):
