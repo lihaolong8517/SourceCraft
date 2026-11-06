@@ -2484,7 +2484,8 @@ class PreviewArea(QFrame):
         self.setFixedSize(self._width, self._height)
         self.setStyleSheet("background: #1c2030; border-radius: 6px;")
         self.setCursor(Qt.PointingHandCursor)
-        self.setToolTip(t("悬停播放内联预览"))
+        # 不设 tooltip：这个区域是用来"悬停即播放"的，弹黑色提示框会挡住预览画面
+        self.setToolTip("")
         self.setMouseTracking(True)
 
         # 封面覆盖层（相当于 <video poster>）
@@ -2542,11 +2543,9 @@ class PreviewArea(QFrame):
             self._media_path = ""
             self._frame_pixmaps = []
             self._frames_pending = False
+        self.setToolTip("")
         if spec is None:
-            self.setToolTip(t("此条目没有可预览的直链"))
             self._hover_timer.stop()
-        else:
-            self.setToolTip(t("悬停播放内联预览"))
 
     def set_thumbnail_pixmap(self, pixmap):
         if pixmap is None or pixmap.isNull():

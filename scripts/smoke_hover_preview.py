@@ -163,6 +163,7 @@ def main():
     spec = pb.PreviewSpec(url=url, duration_s=6.0, media_type="MP4")
     area.set_spec(spec)
     check("spec 已设置", area._spec is not None)
+    check("预览区不弹 tooltip", not area.toolTip(), area.toolTip())
 
     builds = []
     original_start = area._start_build
