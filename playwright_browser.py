@@ -3952,13 +3952,23 @@ class MediaCaptureWindow(QMainWindow):
             return True
 
     def _apply_always_on_top(self, enabled):
-        """应用窗口置顶标志（同时处理 Qt 标志与 Win32 原生 TOPMOST）。"""
+        """应用窗口置顶标志（同时处理 Qt 标志与 Win32 原生 TOPMOST）。
+
+        注意：仅在窗口本来就可见时才重新 show()，否则初始化/换标志会把
+        媒体捕获窗口意外弹出来。
+        """
+        was_visible = False
+        try:
+            was_visible = self.isVisible()
+        except Exception:
+            was_visible = False
         try:
             if enabled:
                 self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
             else:
                 self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
-            self.show()
+            if was_visible:
+                self.show()
         except Exception as exc:  # noqa: BLE001
             print(f"[BROWSER] 切换置顶失败: {exc}")
         if sys.platform == "win32":
@@ -3972,11 +3982,16 @@ class MediaCaptureWindow(QMainWindow):
                 SWP_NOSIZE = 0x0001
                 SWP_NOACTIVATE = 0x0010
                 SWP_SHOWWINDOW = 0x0040
+                # 只有窗口本来可见时才带 SWP_SHOWWINDOW，否则 SetWindowPos 会把
+                # 隐藏的媒体捕获窗口直接显示出来（打开内置浏览器时误弹出）。
+                flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
+                if was_visible:
+                    flags |= SWP_SHOWWINDOW
                 ctypes.windll.user32.SetWindowPos(
                     hwnd,
                     HWND_TOPMOST if enabled else HWND_NOTOPMOST,
                     0, 0, 0, 0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+                    flags,
                 )
             except Exception:
                 pass
@@ -4118,9 +4133,19 @@ class MediaCaptureWindow(QMainWindow):
         self.empty_label.setAlignment(Qt.AlignCenter)
         self.empty_label.setWordWrap(True)
         self.list_layout.insertWidget(0, self.empty_label)
-        # 初始化置顶按钮状态（不触发写盘：直接设 checked）
+        # 初始化置顶按钮状态：必须屏蔽 toggled 信号，否则会触发 _set_always_on_top
+        # → _apply_always_on_top → self.show()，导致"打开内置浏览器时媒体捕获窗口自动弹出"。
         try:
+            self.pin_btn.blockSignals(True)
             self.pin_btn.setChecked(self._always_on_top)
+        except Exception:
+            pass
+        finally:
+            try:
+                self.pin_btn.blockSignals(False)
+            except Exception:
+                pass
+        try:
             self._update_pin_button()
         except Exception:
             pass
