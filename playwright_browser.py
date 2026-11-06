@@ -2339,6 +2339,50 @@ class AnimatedComboBox(QPushButton):
 
 # ============ 媒体卡片组件 ============
 
+# QThread 仍在 running 时被析构，Qt5 会 qFatal 直接让进程退出（0xc0000409）。
+# 所以所有线程都用"全局登记表"保活，只有确认 finished 之后才 deleteLater。
+_LIVE_THREADS = set()
+
+
+def _dispose_thread(thread):
+    try:
+        _LIVE_THREADS.discard(thread)
+    except Exception:
+        pass
+    try:
+        if not thread.isRunning():
+            thread.deleteLater()
+    except RuntimeError:
+        pass
+    except Exception:
+        pass
+
+
+def _track_thread(thread):
+    """登记线程，保证它在运行期间不会被 Python/Qt 提前析构。"""
+    if thread is None:
+        return thread
+    try:
+        _LIVE_THREADS.add(thread)
+        thread.finished.connect(lambda: _dispose_thread(thread))
+    except Exception:
+        pass
+    return thread
+
+
+def _detach_thread(thread):
+    """把线程从调用方摘下来（不 deleteLater）：运行中的线程只保活、不能删。"""
+    if thread is None:
+        return
+    try:
+        if thread in _LIVE_THREADS:
+            return
+        _LIVE_THREADS.add(thread)
+        thread.finished.connect(lambda: _dispose_thread(thread))
+    except Exception:
+        pass
+
+
 class MediaPreviewThread(QThread):
     """后台生成 VDH 风格内联预览：抓"中间一小段"分片并 remux 成小 mp4。"""
 
@@ -2873,7 +2917,7 @@ class PreviewArea(QFrame):
         QTimer.singleShot(600, self._maybe_show_loading)
         self.play_overlay.hide()
         try:
-            self._thread = MediaPreviewThread(self._spec, _preview_cache(), self)
+            self._thread = _track_thread(MediaPreviewThread(self._spec, _preview_cache()))
             self._thread.preview_ready.connect(self._on_ready)
             self._thread.preview_failed.connect(self._on_failed)
             self._thread.thumbnail_ready.connect(self._on_thumbnail_ready)
@@ -2904,8 +2948,14 @@ class PreviewArea(QFrame):
         self._thread = None
         if thread is not None:
             try:
+                if thread.isRunning():
+                    _detach_thread(thread)
+                    return
+            except RuntimeError:
+                return
+            try:
                 thread.deleteLater()
-            except Exception:
+            except RuntimeError:
                 pass
 
     def _on_ready(self, path):
@@ -2967,14 +3017,23 @@ class PreviewArea(QFrame):
         self._busy = False
         if thread is None:
             return
+        # 先把与这个控件相关的信号断开，避免线程结束后回调已销毁的控件
+        for signal_name in ("preview_ready", "preview_failed", "thumbnail_ready", "frames_ready"):
+            try:
+                getattr(thread, signal_name).disconnect()
+            except Exception:
+                pass
         try:
-            if thread.isRunning():
-                thread.wait(200)
-        except Exception:
-            pass
+            running = thread.isRunning()
+        except RuntimeError:
+            return
+        if running:
+            # 关键：仍在跑的 QThread 交给登记表保活，等它自己 finished 再删
+            _detach_thread(thread)
+            return
         try:
             thread.deleteLater()
-        except Exception:
+        except RuntimeError:
             pass
 
 
@@ -3013,6 +3072,14 @@ class MediaCard(QFrame):
         except Exception:
             pass
         try:
+            running = thread.isRunning()
+        except RuntimeError:
+            return
+        if running:
+            # 仍在跑：不能 deleteLater（Qt 析构运行中的 QThread 会 qFatal 崩进程）
+            _detach_thread(thread)
+            return
+        try:
             thread.deleteLater()
         except RuntimeError:
             pass
@@ -3034,8 +3101,14 @@ class MediaCard(QFrame):
             thread = self._thumb_thread
             self._thumb_thread = None
             try:
+                thread.thumbnail_ready.disconnect()
+            except Exception:
+                pass
+            try:
                 if thread.isRunning():
-                    thread.wait(3000)
+                    # 抽帧最长 20 秒，不能阻塞 GUI，也不能强删：交给登记表保活
+                    _detach_thread(thread)
+                    thread = None
             except RuntimeError:
                 thread = None
             if thread is not None:
@@ -3632,6 +3705,7 @@ class MediaCard(QFrame):
         self._thumb_extract_started = True
         headers = self.media_info.get("headers")
         thread = ThumbnailExtractThread(url, headers=headers, page_url=str(self.media_info.get("page_url") or ""))
+        _track_thread(thread)
         self._thumb_thread = thread
         thread.thumbnail_ready.connect(self._on_thumb_bytes)
         thread.finished.connect(lambda: MediaCard._safe_remove_thread(thread))
