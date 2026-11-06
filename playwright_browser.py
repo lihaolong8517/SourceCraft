@@ -2334,7 +2334,7 @@ class MediaPreviewThread(QThread):
 
 
 class PreviewArea(QFrame):
-    """VDH 的 ``com-media-preview`` 等价物：封面 + 点击内联播放（静音、循环）。"""
+    """VDH 的 ``com-media-preview`` 等价物：封面 + 悬停内联播放（静音、循环）。"""
 
     def __init__(self, card=None, parent=None, width=176, height=99):
         super().__init__(parent)
@@ -2348,11 +2348,14 @@ class PreviewArea(QFrame):
         self._built_path = ""
         self._failed = False
         self._busy = False
+        self._thumb_url = None
+        self._thumb_loaded = False
 
         self.setFixedSize(width, height)
         self.setStyleSheet("background: #1c2030; border-radius: 6px;")
         self.setCursor(Qt.PointingHandCursor)
-        self.setToolTip(t("点击加载内联预览"))
+        self.setToolTip(t("悬停加载内联预览"))
+        self.setMouseTracking(True)
 
         self.thumb_label = QLabel(self)
         self.thumb_label.setAlignment(Qt.AlignCenter)
@@ -2396,6 +2399,34 @@ class PreviewArea(QFrame):
             self.thumb_label.setPixmap(
                 pixmap.scaled(self._width, self._height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             )
+            self._thumb_loaded = True
+
+    def set_thumbnail_url(self, url):
+        """从URL加载网站现成的缩略图（对齐VDH：直接用网站封面，不自己抽帧）。"""
+        self._thumb_url = url
+        if not url:
+            return
+        try:
+            import urllib.request
+            data = urllib.request.urlopen(url, timeout=5).read()
+            pixmap = QPixmap()
+            pixmap.loadFromData(data)
+            if not pixmap.isNull():
+                self.set_thumbnail_pixmap(pixmap)
+        except Exception:
+            pass
+
+    def enterEvent(self, event):
+        """鼠标悬停时自动触发预览（对齐VDH hover行为）。"""
+        if self._spec is not None and not self.is_playing() and not self._busy:
+            self._start_build()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        """鼠标移开时停止播放，回到静态缩略图。"""
+        if self.is_playing():
+            self.stop()
+        super().leaveEvent(event)
 
     def has_preview(self):
         return bool(self._built_path) and os.path.isfile(self._built_path)
@@ -2693,6 +2724,10 @@ class MediaCard(QFrame):
             or ".mpd" in lower
         )
         headers = info.get("headers") if isinstance(info.get("headers"), dict) else {}
+        # 先加载网站现成的缩略图（对齐VDH：直接用网站封面，秒加载）
+        thumb_url = info.get("thumbnail") or info.get("thumbnail_url") or ""
+        if thumb_url:
+            area.set_thumbnail_url(str(thumb_url))
         try:
             area.set_spec(PreviewSpec(
                 url=url,
