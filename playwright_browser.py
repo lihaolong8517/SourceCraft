@@ -2417,11 +2417,15 @@ class PreviewArea(QFrame):
             pass
 
     def enterEvent(self, event):
-        """鼠标悬停事件（预留，暂不自动触发预览避免稳定性问题）。"""
+        """鼠标悬停时自动触发预览（对齐VDH mouseenter → activate()）。"""
+        if self._spec is not None and not self.is_playing() and not self._busy:
+            self._start_build()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
-        """鼠标移开事件（预留，暂不自动停止避免稳定性问题）。"""
+        """鼠标移开时停止播放，回到静态缩略图（对齐VDH mouseleave → deactivate()）。"""
+        if self.is_playing():
+            self.stop()
         super().leaveEvent(event)
 
     def has_preview(self):
@@ -2446,10 +2450,10 @@ class PreviewArea(QFrame):
         self._start_build()
 
     def stop(self):
+        # 对齐VDH deactivate()：只pause()，不stop()
         if self._player is not None:
             try:
-                self._player.stop()
-                self._player.setMedia(QMediaContent())
+                self._player.pause()
             except Exception:
                 pass
         if self._video is not None:
