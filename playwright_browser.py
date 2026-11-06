@@ -5969,6 +5969,9 @@ def run_launcher():
                 _safe_print(f"[BROWSER] WARN: 读取命令失败: {e}")
                 break
     
+    # VDH 捕获器注册表：清空捕获记录时要把它们的内存候选表一起清掉
+    _active_capture_runners = []
+
     async def handle_command(cmd, page, context):
         """处理从 GUI 发来的控制命令"""
         parts = cmd.split(" ", 1)
@@ -6097,8 +6100,27 @@ def run_launcher():
         elif action == "CLEAR_CAPTURED":
             capture_state["captured_media"].clear()
             capture_state["last_media_warn_at"] = 0.0
+            reset_runners = 0
+            for runner in list(_active_capture_runners):
+                try:
+                    runner.reset()
+                    reset_runners += 1
+                except Exception:
+                    pass
             cleared_pages = await _clear_capture_runtime()
-            _safe_print(f"[BROWSER] 已清空捕获记录 (页面缓存: {cleared_pages}页)")
+            # 旧嗅探在页面里留了"已上报"缓存，清空后必须重新扫一遍，
+            # 否则已加载好的媒体不会重新上报，用户只能刷新页面才恢复。
+            refreshed_pages = await _refresh_capture_runtime()
+            # 站点适配器也重新探测一次（B 站/YouTube 这类靠页面配置拿直链的站点）
+            for runner in list(_active_capture_runners):
+                try:
+                    asyncio.ensure_future(runner.after_navigation(page))
+                except Exception:
+                    pass
+            _safe_print(
+                f"[BROWSER] 已清空捕获记录 (页面缓存: {cleared_pages}页, "
+                f"重新扫描: {refreshed_pages}页, 捕获器: {reset_runners}个)"
+            )
         elif action == "PING":
             _safe_print("[BROWSER] PONG")
         elif action == "QUIT" or action == "EXIT":
@@ -6519,6 +6541,7 @@ def run_launcher():
                     attached = await runner.start(context, page_obj, target_url or "")
                     runner.cdp_attached = bool(attached)
                     _capture_runners.append(runner)
+                    _active_capture_runners.append(runner)
                     adapter_name = getattr(getattr(runner, 'adapter', None), 'name', '-')
                     _safe_print(f"[BROWSER] VDH 捕获层已挂载 (cdp={bool(attached)}, adapter={adapter_name})")
                     return runner
@@ -6961,7 +6984,8 @@ async def handle_command(cmd, page, context, cookies_dir):
         state["captured_media"].clear()
         state["current_playing_key"] = ""
         cleared_pages = await _clear_capture_runtime()
-        print(f"[BROWSER] 已清空捕获记录 (页面缓存: {cleared_pages}页)", flush=True)
+        refreshed_pages = await _refresh_capture_runtime()
+        print(f"[BROWSER] 已清空捕获记录 (页面缓存: {cleared_pages}页, 重新扫描: {refreshed_pages}页)", flush=True)
     elif action == "PING":
         print("[BROWSER] PONG", flush=True)
     elif action == "QUIT":

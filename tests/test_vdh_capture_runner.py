@@ -131,6 +131,28 @@ class TestIngest:
         runner._ingest(_candidate(), initiator="cdp")
         assert len(emitted) == 1
 
+    def test_reset_allows_recapture_without_page_reload(self):
+        """清空捕获记录后，同一个媒体再次出现要能重新上报。"""
+        runner, emitted = self._runner()
+        runner._ingest(_candidate(), initiator="cdp")
+        assert len(emitted) == 1
+        assert len(runner.snapshot()) == 1
+
+        runner.reset()
+
+        assert runner.snapshot() == []
+        entry = runner._ingest(_candidate(), initiator="cdp")
+        assert entry is not None
+        assert len(emitted) == 2
+
+    def test_reset_cancels_pending_enrichment(self):
+        runner, _ = self._runner()
+        runner._ingest(_candidate(), initiator="cdp")
+        assert len(runner.snapshot()) == 1
+        runner.reset()
+        assert runner.snapshot() == []
+        assert not runner._tasks
+
 
 class TestManifestEnrichment:
     def test_enrich_manifest_updates_quality(self):

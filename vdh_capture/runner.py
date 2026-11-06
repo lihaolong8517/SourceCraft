@@ -132,6 +132,23 @@ class CaptureRunner:
     def snapshot(self):
         return self.store.snapshot()
 
+    def reset(self):
+        """清空候选表（对应 VDH 的"清空捕获记录"）。
+
+        只清候选与在途富化任务，CDP 嗅探与站点适配器保持挂载——
+        清空后页面再产生请求（或重新探测）就能重新捕获，不需要刷新页面。
+        """
+        for task in list(self._tasks):
+            try:
+                task.cancel()
+            except Exception:
+                pass
+        self._tasks.clear()
+        try:
+            self.store.clear()
+        except Exception:
+            pass
+
     # ---------------- 内部 ----------------
     def _select_adapter(self):
         if self._adapters is not None:
