@@ -2469,6 +2469,7 @@ class PreviewArea(QFrame):
         self._thumb_loaded = False
         self._overlays = []
         self._render_error = False
+        self._frames_pending = False
         self._error_retries = 0
 
         # 帧动画播放（VDH 的 <video> 在 Qt 里用 DirectShow 渲染不稳定，改用帧序列轮播）
@@ -2539,6 +2540,8 @@ class PreviewArea(QFrame):
             self.deactivate()
             self._built_path = ""
             self._media_path = ""
+            self._frame_pixmaps = []
+            self._frames_pending = False
         if spec is None:
             self.setToolTip(t("此条目没有可预览的直链"))
             self._hover_timer.stop()
@@ -2728,6 +2731,10 @@ class PreviewArea(QFrame):
         if self._frame_pixmaps:
             self._play_frames()
             return
+        if self._frames_pending:
+            # 帧还没到，保持封面，等 _on_frames / _frames_timeout
+            self._show_cover()
+            return
         if not self._ensure_player():
             return
         try:
@@ -2774,6 +2781,7 @@ class PreviewArea(QFrame):
             if not pixmaps:
                 return
             self._frame_pixmaps = pixmaps
+            self._frames_pending = False
             self._frame_index = 0
             interval = max(30, int(1000 / max(1, int(fps))))
             self._frame_timer.setInterval(interval)
@@ -2833,6 +2841,9 @@ class PreviewArea(QFrame):
             pass
 
     def _on_player_error(self, *_args):
+        if self._frames_pending:
+            # 等帧动画接力，播放器的报错不予显示
+            return
         # DirectShow 在窗口尚未真正暴露时首次 play 可能报 0x80040266，
         # 稍后重试一次即可正常工作（VDH 里 <video> 元素也会自动恢复）。
         if self._hover and self._error_retries < 2:
@@ -2859,7 +2870,8 @@ class PreviewArea(QFrame):
         if self._spec is None:
             return
         self._busy = True
-        self._flash_status(t("预览加载中…"))
+        # 只在真的慢（>0.6s）时才提示"加载中"，避免每次 hover 都闪一下文字
+        QTimer.singleShot(600, self._maybe_show_loading)
         self.play_overlay.hide()
         try:
             self._thread = MediaPreviewThread(self._spec, _preview_cache(), self)
@@ -2900,12 +2912,36 @@ class PreviewArea(QFrame):
     def _on_ready(self, path):
         self._built_path = path
         self._failed = False
+        # 预览片段已就绪，但帧动画是后台线程紧跟着解码出来的。
+        # 在帧到达前先别退化到 QMediaPlayer：DirectShow 在嵌入窗口上会抖出
+        # 0x80040266，导致界面闪一下"播放失败"再被帧动画顶掉。
+        if not self._frame_pixmaps:
+            self._frames_pending = True
+            QTimer.singleShot(1500, self._frames_timeout)
+            if self._hover:
+                # 帧正在后台解码，保持封面即可，不额外弹文字
+                self._show_cover()
+                return
         self._hide_status()
-        # hover 中拿到预览 → 立即播放（VDH 的 on_preview_available → activate）
         if self._hover:
             self._play_media()
         else:
             self._show_cover()
+
+    def _frames_timeout(self):
+        """帧动画迟迟没到（例如 ffmpeg 解帧失败）时才退回播放器。"""
+        if not self._frames_pending:
+            return
+        self._frames_pending = False
+        if self._hover and self.has_preview() and not self._frame_pixmaps:
+            self._play_media()
+
+    def _maybe_show_loading(self):
+        if not self._busy or self._frame_pixmaps:
+            return
+        if not self._hover:
+            return
+        self._flash_status(t("预览加载中…"), timeout_ms=8000)
 
     def _on_failed(self, message):
         self._failed = True

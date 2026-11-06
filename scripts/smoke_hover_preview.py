@@ -176,6 +176,8 @@ def main():
     # 3) 纯 hover：enter → 自动生成并播放
     area.enterEvent(QEvent(QEvent.Enter))
     ok = pump_until(lambda: area.has_preview(), 60)
+    check("帧待命期间不显示失败提示", "失败" not in area.status_label.text(),
+          area.status_label.text())
     check("hover 触发预览生成", ok, f"built={area._built_path}")
     pump(800)
     frames_ok = pump_until(lambda: bool(area._frame_pixmaps), 40)
@@ -187,7 +189,8 @@ def main():
     else:
         check("hover 后帧动画播放", area.is_playing() and area._frame_timer.isActive())
         check("播放时显示帧而不是封面", area.thumb_label.isVisible() and area.thumb_label.pixmap() is not None)
-        check("帧序列已就绪", len(area._frame_pixmaps) >= 5, f"frames={len(area._frame_pixmaps)}")
+        check("帧播放后状态条已隐藏", not area.status_label.isVisible())
+    check("帧序列已就绪", len(area._frame_pixmaps) >= 5, f"frames={len(area._frame_pixmaps)}")
 
     # 4) leave → 暂停 + 封面回来
     area.leaveEvent(QEvent(QEvent.Leave))
