@@ -2452,8 +2452,8 @@ class PreviewArea(QFrame):
     def stop(self):
         if self._player is not None:
             try:
-                self._player.pause()
-                self._player.setPosition(0)
+                self._player.stop()
+                self._player.setMedia(QMediaContent())
             except Exception:
                 pass
         if self._video is not None:
