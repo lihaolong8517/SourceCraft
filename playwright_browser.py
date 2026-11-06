@@ -2333,109 +2333,158 @@ class MediaPreviewThread(QThread):
             pass
 
 
+def _cover_pixmap(pixmap, width, height):
+    """把任意比例的封面裁成"铺满目标区域"的封面（等比放大后居中裁剪，无黑边不变形）。"""
+    try:
+        if pixmap is None or pixmap.isNull() or width <= 0 or height <= 0:
+            return QPixmap()
+        scaled = pixmap.scaled(width, height, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+        x = max(0, (scaled.width() - width) // 2)
+        y = max(0, (scaled.height() - height) // 2)
+        return scaled.copy(x, y, width, height)
+    except Exception:
+        return QPixmap()
+
+
 class PreviewArea(QFrame):
-    """VDH 的 ``com-media-preview`` 等价物：封面 + 悬停内联播放（静音、循环）。"""
+    """VDH ``com-media-preview`` 等价物：单一播放面 + 封面覆盖层。
+
+    语义严格对齐 VDH（源码 ``content/register_components.js`` 的 ``pt``）：
+
+    * 静态：``<video poster=封面>`` —— 这里用覆盖在播放面上的封面 QLabel 表现；
+    * hover：``activate()`` → 有预览就直接 ``play()``，没有就先请求生成；
+    * 移开：``deactivate()`` → 只 ``pause()``，封面盖回去（绝不 ``stop()``/重建）；
+    * 播放面（QVideoWidget + QMediaPlayer）只创建一次、全程复用，
+      多次 hover 不会黑屏；预览文件有缓存，重复 hover 不再提取。
+    """
+
+    #: hover 到真正开始播放之间的防抖（防止鼠标扫过列表时疯狂启停）。
+    HOVER_DELAY_MS = 140
 
     def __init__(self, card=None, parent=None, width=176, height=99):
         super().__init__(parent)
         self.card = card
-        self._width = width
-        self._height = height
+        self._width = int(width)
+        self._height = int(height)
         self._spec = None
         self._thread = None
         self._player = None
         self._video = None
+        self._media_path = ""
         self._built_path = ""
         self._failed = False
         self._busy = False
-        self._thumb_url = None
+        self._hover = False
+        self._thumb_url = ""
         self._thumb_loaded = False
+        self._overlays = []
+        self._render_error = False
 
-        self.setFixedSize(width, height)
+        self.setFixedSize(self._width, self._height)
         self.setStyleSheet("background: #1c2030; border-radius: 6px;")
         self.setCursor(Qt.PointingHandCursor)
-        self.setToolTip(t("悬停加载内联预览"))
+        self.setToolTip(t("悬停播放内联预览"))
         self.setMouseTracking(True)
 
+        # 封面覆盖层（相当于 <video poster>）
         self.thumb_label = QLabel(self)
         self.thumb_label.setAlignment(Qt.AlignCenter)
-        self.thumb_label.setGeometry(0, 0, width, height)
+        self.thumb_label.setGeometry(0, 0, self._width, self._height)
         self.thumb_label.setStyleSheet("background: transparent;")
+        self.thumb_label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
 
+        self.status_label = QLabel("", self)
+        self.status_label.setGeometry(4, self._height - 20, self._width - 8, 16)
+        self.status_label.setStyleSheet("""
+            background: rgba(0, 0, 0, 150); color: #eee; font-size: 10px;
+            border-radius: 3px; padding-left: 4px;
+        """)
+        self.status_label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        self.status_label.hide()
+
+        # 点击兜底（VDH 只用 hover；这里保留点击以便触控/键盘用户）
         self.play_overlay = QPushButton("▶", self)
-        self.play_overlay.setFixedSize(32, 32)
+        self.play_overlay.setFixedSize(30, 30)
         self.play_overlay.setCursor(Qt.PointingHandCursor)
         self.play_overlay.setStyleSheet("""
             QPushButton {
-                background: rgba(0, 0, 0, 110); color: white; border: none;
-                border-radius: 16px; font-size: 13px; padding-left: 2px;
+                background: rgba(0, 0, 0, 90); color: white; border: none;
+                border-radius: 15px; font-size: 12px; padding-left: 2px;
             }
-            QPushButton:hover { background: rgba(0, 0, 0, 160); }
+            QPushButton:hover { background: rgba(0, 0, 0, 150); }
         """)
-        self.play_overlay.move((width - 32) // 2, (height - 32) // 2)
+        self.play_overlay.move((self._width - 30) // 2, (self._height - 30) // 2)
+        self.play_overlay.hide()  # 默认不显示，hover 时短暂提示
         self.play_overlay.clicked.connect(self.toggle)
+        self.play_overlay.setAttribute(Qt.WA_TransparentForMouseEvents, False)
 
-        self.status_label = QLabel("", self)
-        self.status_label.setGeometry(4, height - 18, width - 8, 14)
-        self.status_label.setStyleSheet("""
-            background: rgba(0, 0, 0, 140); color: #ddd; font-size: 10px;
-            border-radius: 3px; padding-left: 4px;
-        """)
-        self.status_label.hide()
+        self._hover_timer = QTimer(self)
+        self._hover_timer.setSingleShot(True)
+        self._hover_timer.timeout.connect(self._activate_hover)
 
     # ---------- 对外接口 ----------
+    def register_overlay(self, widget):
+        """把卡片自己的角标（时长/平台图标）登记进覆盖层，播放时保持在上层。"""
+        if widget is None:
+            return
+        if widget not in self._overlays:
+            self._overlays.append(widget)
+
     def set_spec(self, spec):
+        url = getattr(spec, "url", "") if spec is not None else ""
+        old_url = getattr(self._spec, "url", "") if self._spec is not None else ""
         self._spec = spec
         self._failed = False
+        if url != old_url:
+            self.deactivate()
+            self._built_path = ""
+            self._media_path = ""
         if spec is None:
-            self.play_overlay.hide()
             self.setToolTip(t("此条目没有可预览的直链"))
+            self._hover_timer.stop()
         else:
-            self.play_overlay.show()
-            self.setToolTip(t("点击加载内联预览"))
+            self.setToolTip(t("悬停播放内联预览"))
 
     def set_thumbnail_pixmap(self, pixmap):
-        if pixmap is not None and not pixmap.isNull():
-            self.thumb_label.setPixmap(
-                pixmap.scaled(self._width, self._height, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-            )
-            self._thumb_loaded = True
+        if pixmap is None or pixmap.isNull():
+            return
+        # 对齐"缩略图铺满预览区、不变形、无黑边"
+        self.thumb_label.setPixmap(_cover_pixmap(pixmap, self._width, self._height))
+        self.thumb_label.setScaledContents(True)
+        self._thumb_loaded = True
+        if not self.is_playing():
+            self._show_cover()
 
     def set_thumbnail_url(self, url):
-        """从URL加载网站现成的缩略图（对齐VDH：直接用网站封面，不自己抽帧）。"""
-        self._thumb_url = url
-        if not url:
+        """记录网站现成封面（实际下载交给卡片的异步 QNetworkAccessManager，避免阻塞 UI）。"""
+        url = str(url or "").strip()
+        if not url or url == self._thumb_url:
             return
-        try:
-            import urllib.request
-            data = urllib.request.urlopen(url, timeout=5).read()
-            pixmap = QPixmap()
-            pixmap.loadFromData(data)
-            if not pixmap.isNull():
-                self.set_thumbnail_pixmap(pixmap)
-        except Exception:
-            pass
-
-    def enterEvent(self, event):
-        """鼠标悬停事件（暂时关闭自动触发，因为片段提取成功率低）。"""
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        """鼠标移开事件（暂时关闭自动停止）。"""
-        super().leaveEvent(event)
+        self._thumb_url = url
+        card = self.card
+        loader = getattr(card, "_load_thumbnail", None)
+        if callable(loader):
+            try:
+                loader(url)
+            except Exception:
+                pass
 
     def has_preview(self):
         return bool(self._built_path) and os.path.isfile(self._built_path)
 
     def is_playing(self):
-        return self._player is not None and self._video is not None and self._video.isVisible()
+        try:
+            return self._player is not None and self._player.state() == QMediaPlayer.PlayingState
+        except Exception:
+            return False
 
     def toggle(self):
+        """点击兜底：播放中→暂停；有预览→播放；否则触发生成。"""
         if self.is_playing():
-            self.stop()
+            self.deactivate()
             return
         if self.has_preview():
-            self._play_built()
+            self._play_media()
             return
         if self._spec is None:
             self._flash_status(t("无直链，无法预览"))
@@ -2446,89 +2495,102 @@ class PreviewArea(QFrame):
         self._start_build()
 
     def stop(self):
-        # 对齐VDH deactivate()：只pause()，不stop()
+        """兼容旧调用：等同 VDH 的 deactivate()。"""
+        self.deactivate()
+
+    def deactivate(self):
+        """对齐 VDH ``deactivate()``：只暂停，封面盖回，播放面保留。"""
+        self._hover = False
+        try:
+            self._hover_timer.stop()
+        except Exception:
+            pass
         if self._player is not None:
             try:
                 self._player.pause()
             except Exception:
                 pass
-        if self._video is not None:
-            self._video.hide()
-        # 回到静态缩略图（对齐VDH：移开鼠标回到封面）
-        if self._thumb_loaded:
-            self.thumb_label.show()
-        self.play_overlay.show()
+        self._show_cover()
 
     def cleanup(self):
         self._stop_thread()
         if self._player is not None:
             try:
-                self._player.stop()
                 self._player.setMedia(QMediaContent())
+                self._player.stop()
             except Exception:
                 pass
-            self._player.deleteLater()
+            try:
+                self._player.deleteLater()
+            except Exception:
+                pass
             self._player = None
         if self._video is not None:
-            self._video.deleteLater()
+            try:
+                self._video.deleteLater()
+            except Exception:
+                pass
             self._video = None
+        self._media_path = ""
 
-    # ---------- 内部实现 ----------
+    # ---------- hover 触发（VDH 的核心） ----------
+    def enterEvent(self, event):
+        """鼠标移入：延迟一点后自动播放预览（纯 hover，无需点击）。"""
+        super().enterEvent(event)
+        self._hover = True
+        if self._spec is None and not self.has_preview():
+            return
+        try:
+            self._hover_timer.start(self.HOVER_DELAY_MS)
+        except Exception:
+            self._activate_hover()
+
+    def leaveEvent(self, event):
+        """鼠标移开：暂停并回到封面。"""
+        super().leaveEvent(event)
+        self._hover = False
+        try:
+            self._hover_timer.stop()
+        except Exception:
+            pass
+        self.deactivate()
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.toggle()
         super().mousePressEvent(event)
 
-    def _start_build(self):
-        if self._busy:
+    # ---------- 内部实现 ----------
+    def _activate_hover(self):
+        if not self._hover:
             return
-        self._busy = True
-        self._flash_status(t("预览加载中…"))
-        self.play_overlay.hide()
-        self._thread = MediaPreviewThread(self._spec, _preview_cache(), self)
-        self._thread.preview_ready.connect(self._on_ready)
-        self._thread.preview_failed.connect(self._on_failed)
-        self._thread.thumbnail_ready.connect(self._on_thumbnail_ready)
-        self._thread.finished.connect(self._on_thread_finished)
-        self._thread.start()
-
-    def _on_thumbnail_ready(self, path):
-        """缩略图生成完成，显示在卡片左侧。"""
-        try:
-            if not path or not os.path.isfile(path):
-                return
-            pixmap = QPixmap(path)
-            if not pixmap.isNull():
-                self.set_thumbnail_pixmap(pixmap)
-        except Exception:
-            pass
-
-    def _on_thread_finished(self):
-        self._busy = False
-        self._thread = None
-
-    def _on_ready(self, path):
-        self._built_path = path
-        self._failed = False
-        self.status_label.hide()
-        self._play_built()
-
-    def _on_failed(self, message):
-        self._failed = True
-        self.play_overlay.show()
-        self._flash_status(t_format("预览不可用：{}", message))
-        try:
-            print(f"[PREVIEW] 生成失败: {message}")
-        except Exception:
-            pass
-
-    def _play_built(self):
-        if not self.has_preview() or not _HAS_QT_MULTIMEDIA:
+        if self.has_preview():
+            self._play_media()
             return
-        if self._player is None:
+        if self._spec is None:
+            return
+        if self._failed:
+            # 失败过的不在 hover 时反复重试（点击可手动重试）
+            return
+        if not _HAS_QT_MULTIMEDIA:
+            return
+        self._start_build()
+
+    def _ensure_player(self):
+        """播放面只创建一次，之后所有 hover 复用（避免多次创建 QVideoWidget 导致黑屏）。"""
+        if not _HAS_QT_MULTIMEDIA:
+            return False
+        if self._player is not None:
+            return True
+        try:
             self._video = QVideoWidget(self)
             self._video.setGeometry(0, 0, self._width, self._height)
             self._video.setStyleSheet("background: black; border-radius: 6px;")
+            # 不拦截鼠标事件，hover/click 仍然落在 PreviewArea 上
+            self._video.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+            self._video.show()
+            self._video.lower()
+
             self._player = QMediaPlayer(self)
             self._player.setVideoOutput(self._video)
             self._player.setVolume(0)
@@ -2540,41 +2602,150 @@ class PreviewArea(QFrame):
                 self._player.error.connect(self._on_player_error)
             except Exception:
                 pass
-        self._video.show()
-        self._video.raise_()
-        self.play_overlay.hide()
+            return True
+        except Exception as exc:  # noqa: BLE001
+            print(f"[PREVIEW] 初始化播放器失败: {exc}")
+            self._player = None
+            self._video = None
+            return False
+
+    def _play_media(self):
+        if not self.has_preview() or not self._ensure_player():
+            return
         try:
-            self._player.stop()
-            self._player.setMedia(QMediaContent(QUrl.fromLocalFile(self._built_path)))
-            self._player.play()
+            if self._media_path != self._built_path:
+                self._player.setMedia(QMediaContent(QUrl.fromLocalFile(self._built_path)))
+                self._media_path = self._built_path
+            self.thumb_label.hide()
+            self._raise_overlays()
+            self._render_error = False
+            if self._player.state() != QMediaPlayer.PlayingState:
+                self._player.play()
+            self._hide_status()
         except Exception as exc:  # noqa: BLE001
             self._flash_status(t_format("播放失败：{}", exc))
-            self.stop()
+            self._show_cover()
+
+    def _show_cover(self):
+        if self._thumb_loaded:
+            self.thumb_label.show()
+            self.thumb_label.raise_()
+        else:
+            self.thumb_label.show()
+        self._raise_overlays()
+
+    def _raise_overlays(self):
+        for widget in self._overlays:
+            try:
+                widget.raise_()
+            except Exception:
+                pass
+        try:
+            self.status_label.raise_()
+        except Exception:
+            pass
 
     def _on_media_status(self, status):
         try:
             if status == QMediaPlayer.EndOfMedia:
+                # VDH 用 <video loop>：这里手动回 0 秒继续循环（仅 hover/点击态）
                 self._player.setPosition(0)
-                self._player.play()
+                if self._hover or self._player.state() == QMediaPlayer.PausedState:
+                    if self._hover:
+                        self._player.play()
+            elif status == QMediaPlayer.InvalidMedia:
+                self._flash_status(t("预览解码失败"))
+                self._show_cover()
         except Exception:
             pass
 
     def _on_player_error(self, *_args):
-        self._flash_status(t("播放失败（可能是编码不受支持）"))
-        self.stop()
+        self._render_error = True
+        self._flash_status(t("播放失败（编码不受支持）"))
+        self._show_cover()
+
+    def _start_build(self):
+        if self._busy:
+            return
+        if self._spec is None:
+            return
+        self._busy = True
+        self._flash_status(t("预览加载中…"))
+        self.play_overlay.hide()
+        try:
+            self._thread = MediaPreviewThread(self._spec, _preview_cache(), self)
+            self._thread.preview_ready.connect(self._on_ready)
+            self._thread.preview_failed.connect(self._on_failed)
+            self._thread.thumbnail_ready.connect(self._on_thumbnail_ready)
+            self._thread.finished.connect(self._on_thread_finished)
+            self._thread.start()
+        except Exception as exc:  # noqa: BLE001
+            self._busy = False
+            self._thread = None
+            self._flash_status(t_format("预览线程启动失败：{}", exc))
+            print(f"[PREVIEW] 线程启动失败: {exc}")
+
+    def _on_thumbnail_ready(self, path):
+        try:
+            if path and os.path.isfile(path):
+                pixmap = QPixmap(path)
+                if not pixmap.isNull():
+                    self.set_thumbnail_pixmap(pixmap)
+        except Exception:
+            pass
+
+    def _on_thread_finished(self):
+        self._busy = False
+        thread = self._thread
+        self._thread = None
+        if thread is not None:
+            try:
+                thread.deleteLater()
+            except Exception:
+                pass
+
+    def _on_ready(self, path):
+        self._built_path = path
+        self._failed = False
+        self._hide_status()
+        # hover 中拿到预览 → 立即播放（VDH 的 on_preview_available → activate）
+        if self._hover:
+            self._play_media()
+        else:
+            self._show_cover()
+
+    def _on_failed(self, message):
+        self._failed = True
+        self._busy = False
+        self._show_cover()
+        self._flash_status(t_format("预览不可用：{}", message))
+        print(f"[PREVIEW] 生成失败: {message}")
 
     def _flash_status(self, text, timeout_ms=4000):
         self.status_label.setText(text)
         self.status_label.show()
-        QTimer.singleShot(timeout_ms, self.status_label.hide)
+        self._raise_overlays()
+        QTimer.singleShot(timeout_ms, self._hide_status)
+
+    def _hide_status(self):
+        try:
+            self.status_label.hide()
+        except Exception:
+            pass
 
     def _stop_thread(self):
         thread = self._thread
+        self._thread = None
+        self._busy = False
         if thread is None:
             return
         try:
             if thread.isRunning():
-                thread.wait(50)
+                thread.wait(200)
+        except Exception:
+            pass
+        try:
+            thread.deleteLater()
         except Exception:
             pass
 
@@ -2770,7 +2941,14 @@ class MediaCard(QFrame):
         self.platform_icon.setStyleSheet("background: transparent; border-radius: 4px; padding: 2px;")
         self.platform_icon.move(4, 66)
         self.platform_icon.hide()
-        
+
+        # 角标要始终盖在播放面之上（VDH 的徽标永久浮在预览上层）
+        try:
+            self.preview_area.register_overlay(self.duration_label)
+            self.preview_area.register_overlay(self.platform_icon)
+        except Exception:
+            pass
+
         self.main_layout.addWidget(self.thumb_container)
 
         # 右侧：信息容器
@@ -3190,7 +3368,16 @@ class MediaCard(QFrame):
         self.thumb_label.setPixmap(pixmap)
 
     def _load_thumbnail(self, url):
+        if not url:
+            return
+        if getattr(self, "_thumb_request_url", "") == url:
+            return  # 同一张封面不重复请求（metadata 线程与预览区可能都会触发）
+        self._thumb_request_url = url
         request = QNetworkRequest(QUrl(url))
+        try:
+            request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+        except Exception:
+            pass
         self.reply = self.network_manager.get(request)
         self.reply.finished.connect(self._on_thumbnail_loaded)
 
@@ -3200,13 +3387,8 @@ class MediaCard(QFrame):
             pixmap = QPixmap()
             pixmap.loadFromData(data)
             if not pixmap.isNull():
-                # 缩放图片以适应容器同时保持宽高比
-                scaled_pixmap = pixmap.scaled(
-                    160, 90, 
-                    Qt.KeepAspectRatio, 
-                    Qt.SmoothTransformation
-                )
-                self.thumb_label.setPixmap(scaled_pixmap)
+                # 交给预览区做"等比放大 + 居中裁剪"（铺满、不变形、无黑边）
+                self.preview_area.set_thumbnail_pixmap(pixmap)
             else:
                 # 图片数据无效，回退到默认占位图
                 self._set_default_thumbnail()

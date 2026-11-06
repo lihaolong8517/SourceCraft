@@ -113,25 +113,17 @@ def _clean_headers(headers: Optional[Mapping[str, str]]) -> dict[str, str]:
     return out
 
 
-def build_preview_command(
-    ffmpeg_path: str,
+def _append_input_options(
+    cmd: list[str],
     spec: PreviewSpec,
-    out_path: str,
     *,
-    clip_seconds: float = DEFAULT_CLIP_SECONDS,
-    start_seconds: Optional[float] = None,
-) -> list[str]:
-    """构造 ffmpeg 命令：取中间一小段并 ``-c copy`` 转封装成 mp4。"""
-    start = preview_start_seconds(spec.duration_s, spec.is_live) if start_seconds is None else max(0.0, float(start_seconds))
-    clip = max(1.0, float(clip_seconds))
+    is_manifest: bool = False,
+) -> None:
+    """把请求头 / UA / Referer 放到 ``-i`` 之前。
 
-    cmd: list[str] = [ffmpeg_path, "-hide_banner", "-loglevel", "error", "-nostdin", "-y"]
-    if start > 0:
-        cmd += ["-ss", f"{start:.3f}"]
-    cmd += ["-rw_timeout", "15000000", "-i", spec.url, "-t", f"{clip:.3f}"]
-    cmd += ["-map", "0:v:0?", "-map", "0:a:0?", "-c", "copy"]
-    cmd += ["-movflags", "+faststart", "-f", "mp4", out_path]
-
+    历史 bug：这些是输入选项，之前被追加到输出参数之后，ffmpeg 会直接报
+    "Trailing option(s) found in the command" 并失败，表现为"hover 即黑屏"。
+    """
     headers = _clean_headers(spec.headers)
     if headers:
         cmd += ["-headers", "".join(f"{k}: {v}\r\n" for k, v in headers.items())]
@@ -141,6 +133,51 @@ def build_preview_command(
     referer = headers.get("Referer") or spec.page_url
     if referer:
         cmd += ["-referer", referer]
+    if is_manifest:
+        # HLS 的分片可能是 crypto/tls，显式放开这些协议，避免 "Protocol not on whitelist"。
+        cmd += ["-protocol_whitelist", "file,http,https,tcp,tls,crypto", "-allowed_extensions", "ALL"]
+
+
+def build_preview_command(
+    ffmpeg_path: str,
+    spec: PreviewSpec,
+    out_path: str,
+    *,
+    clip_seconds: float = DEFAULT_CLIP_SECONDS,
+    start_seconds: Optional[float] = None,
+    include_audio: bool = True,
+    reencode: bool = False,
+    seek_after_input: bool = False,
+) -> list[str]:
+    """构造 ffmpeg 命令：取中间一小段并转封装成 mp4。
+
+    默认 ``-c copy``（不重编码，快且无损）；``reencode=True`` 时降级为
+    小尺寸 H.264 重编码，用于 copy 失败的编码（如 HEVC/AC3 组合）。
+    """
+    start = preview_start_seconds(spec.duration_s, spec.is_live) if start_seconds is None else max(0.0, float(start_seconds))
+    clip = max(1.0, float(clip_seconds))
+
+    cmd: list[str] = [ffmpeg_path, "-hide_banner", "-loglevel", "error", "-nostdin", "-y"]
+    cmd += ["-rw_timeout", "15000000"]
+    if start > 0 and not seek_after_input:
+        cmd += ["-ss", f"{start:.3f}"]
+    _append_input_options(cmd, spec, is_manifest=spec.is_manifest)
+    cmd += ["-i", spec.url]
+    if start > 0 and seek_after_input:
+        cmd += ["-ss", f"{start:.3f}"]
+    cmd += ["-t", f"{clip:.3f}"]
+    cmd += ["-map", "0:v:0?"]
+    if include_audio:
+        cmd += ["-map", "0:a:0?"]
+    if reencode:
+        cmd += [
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
+            "-pix_fmt", "yuv420p", "-vf", "scale=trunc(min(1280,iw)/2)*2:-2",
+        ]
+        cmd += ["-c:a", "aac", "-b:a", "96k"] if include_audio else ["-an"]
+    else:
+        cmd += ["-c", "copy"]
+    cmd += ["-movflags", "+faststart", "-f", "mp4", out_path]
     return cmd
 
 
@@ -154,6 +191,21 @@ def _default_runner(cmd: list[str], timeout: float) -> "subprocess.CompletedProc
     )
 
 
+def _preview_attempts(spec: PreviewSpec) -> list[dict]:
+    """预览提取的降级链（越靠后越"重"，但成功率越高）。"""
+    attempts: list[dict] = [
+        {"include_audio": True, "reencode": False, "seek_after_input": False},
+        {"include_audio": False, "reencode": False, "seek_after_input": False},
+        {"include_audio": False, "reencode": True, "seek_after_input": False},
+        {"include_audio": False, "reencode": True, "seek_after_input": True},
+    ]
+    if spec.is_live:
+        # 直播没有可靠时间轴，全部从头取。
+        for attempt in attempts:
+            attempt["start_seconds"] = 0.0
+    return attempts
+
+
 def extract_preview(
     ffmpeg_path: str,
     spec: PreviewSpec,
@@ -163,27 +215,45 @@ def extract_preview(
     timeout: float = DEFAULT_TIMEOUT_S,
     runner: Optional[Callable[[list[str], float], "subprocess.CompletedProcess[bytes]"]] = None,
 ) -> Optional[Path]:
-    """生成预览文件；成功返回路径，失败返回 None（不抛异常，可在 UI 线程调用）。"""
+    """生成预览文件；成功返回路径，失败返回 None（不抛异常，可在 UI 线程调用）。
+
+    按 ``_preview_attempts`` 逐级降级：copy+音频 → copy 仅视频 → 重编码 →
+    重编码+输入后 seek。任何一级产出 ≥ ``MIN_PREVIEW_BYTES`` 即成功。
+    """
     target = Path(out_path)
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
     except OSError:
         return None
-    cmd = build_preview_command(ffmpeg_path, spec, str(target), clip_seconds=clip_seconds)
     run = runner or _default_runner
-    try:
-        result = run(cmd, timeout)
-        if result.returncode != 0:
-            print(f"[PREVIEW] ffmpeg失败 rc={result.returncode}, stderr={result.stderr.decode('utf-8', errors='replace')[:500]}")
-    except Exception as exc:
-        print(f"[PREVIEW] ffmpeg异常: {exc}")
+    for index, attempt in enumerate(_preview_attempts(spec)):
         _safe_unlink(target)
-        return None
-    try:
-        if target.is_file() and target.stat().st_size >= MIN_PREVIEW_BYTES:
-            return target
-    except OSError:
-        pass
+        cmd = build_preview_command(
+            ffmpeg_path,
+            spec,
+            str(target),
+            clip_seconds=clip_seconds,
+            **attempt,
+        )
+        try:
+            result = run(cmd, timeout)
+            returncode = getattr(result, "returncode", 0)
+            if returncode != 0:
+                stderr = getattr(result, "stderr", b"") or b""
+                print(
+                    f"[PREVIEW] ffmpeg失败(尝试{index + 1}) rc={returncode}, "
+                    f"stderr={stderr.decode('utf-8', errors='replace')[:400]}"
+                )
+        except Exception as exc:  # noqa: BLE001
+            print(f"[PREVIEW] ffmpeg异常(尝试{index + 1}): {exc}")
+            continue
+        try:
+            if target.is_file() and target.stat().st_size >= MIN_PREVIEW_BYTES:
+                if index:
+                    print(f"[PREVIEW] 降级成功(尝试{index + 1}): {target.stat().st_size} B")
+                return target
+        except OSError:
+            pass
     _safe_unlink(target)
     return None
 
@@ -293,20 +363,12 @@ def extract_thumbnail(
         return None
 
     cmd: list[str] = [ffmpeg_path, "-hide_banner", "-loglevel", "error", "-nostdin", "-y"]
+    cmd += ["-rw_timeout", "15000000"]
     if at_seconds > 0:
         cmd += ["-ss", f"{at_seconds:.3f}"]
-    cmd += ["-rw_timeout", "15000000", "-i", spec.url, "-frames:v", "1"]
-    cmd += ["-vf", "scale=320:-2", "-q:v", "5", "-f", "image2", out_path]
-
-    headers = _clean_headers(spec.headers)
-    if headers:
-        cmd += ["-headers", "".join(f"{k}: {v}\r\n" for k, v in headers.items())]
-    agent = headers.get("User-Agent")
-    if agent:
-        cmd += ["-user_agent", agent]
-    referer = headers.get("Referer") or spec.page_url
-    if referer:
-        cmd += ["-referer", referer]
+    _append_input_options(cmd, spec, is_manifest=spec.is_manifest)
+    cmd += ["-i", spec.url]
+    cmd += ["-frames:v", "1", "-vf", "scale=320:-2", "-q:v", "5", "-f", "image2", out_path]
 
     run = runner or _default_runner
     try:
