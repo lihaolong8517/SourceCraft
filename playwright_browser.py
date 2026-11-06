@@ -2383,6 +2383,28 @@ def _detach_thread(thread):
         pass
 
 
+def _run_hidden(cmd, timeout=10):
+    """静默运行外部命令。
+
+    打包成 GUI 程序（无控制台）后，直接 subprocess 会为每个子进程弹出黑色
+    控制台窗口——鼠标悬停生成预览时会闪一下。这里统一加 CREATE_NO_WINDOW。
+    """
+    import subprocess
+
+    creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+    try:
+        return subprocess.run(
+            cmd,
+            timeout=timeout,
+            check=False,
+            capture_output=True,
+            creationflags=creationflags,
+            stdin=subprocess.DEVNULL,
+        )
+    except Exception:
+        return None
+
+
 class MediaPreviewThread(QThread):
     """后台生成 VDH 风格内联预览：抓"中间一小段"分片并 remux 成小 mp4。"""
 
@@ -2459,8 +2481,7 @@ class MediaPreviewThread(QThread):
                 "-frames:v", "1", "-vf", "scale=320:-2", "-q:v", "5",
                 "-f", "image2", thumb_path,
             ]
-            import subprocess
-            subprocess.run(cmd, timeout=10, check=False, capture_output=True)
+            _run_hidden(cmd, timeout=10)
             if os.path.isfile(thumb_path) and os.path.getsize(thumb_path) > 1024:
                 self.thumbnail_ready.emit(thumb_path)
         except Exception:
