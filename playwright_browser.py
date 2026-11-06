@@ -2059,56 +2059,122 @@ class MediaMetadataThread(QThread):
 
 
 class ThumbnailExtractThread(QThread):
-    """使用 ffmpeg 从视频 URL 提取缩略图"""
+    """使用 ffmpeg 从视频 URL（含 HLS/DASH 直链）提取一帧当封面。
+
+    与 VDH 一致：媒体没有现成 thumbnail_url 时，用画面本身当封面，
+    而不是留一块黑色/渐变占位图。可带捕获到的请求头，避免 403。
+    """
+
     thumbnail_ready = pyqtSignal(bytes)
-    
-    def __init__(self, video_url):
+
+    def __init__(self, video_url, headers=None, page_url=""):
         super().__init__()
-        self.video_url = video_url
-    
+        self.video_url = str(video_url or "")
+        self.headers = headers if isinstance(headers, dict) else {}
+        self.page_url = str(page_url or "")
+
     def run(self):
         try:
             import tempfile
-            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
                 tmp_path = tmp.name
-            
-            # 查找 ffmpeg
+
             ffmpeg_path = "ffmpeg"
-            if os.path.exists(os.path.join(APP_DIR, "ffmpeg.exe")):
-                ffmpeg_path = os.path.join(APP_DIR, "ffmpeg.exe")
-            
-            # 使用 ffmpeg 提取靠前的一帧（跳过可能的黑帧）
-            cmd = [
-                ffmpeg_path, '-y',
-                '-i', self.video_url,
-                '-ss', '00:00:02',  # 跳过前2秒
-                '-vframes', '1',
-                '-q:v', '2',
-                '-vf', 'scale=320:-1',  # 缩放到320宽度
-                tmp_path
+            try:
+                from vdh_capture.preview import resolve_ffmpeg
+
+                resolved = resolve_ffmpeg()
+                if resolved:
+                    ffmpeg_path = resolved
+            except Exception:
+                if os.path.exists(os.path.join(APP_DIR, "ffmpeg.exe")):
+                    ffmpeg_path = os.path.join(APP_DIR, "ffmpeg.exe")
+
+            url = self.video_url
+            lower = url.lower()
+            cmd = [ffmpeg_path, "-y", "-hide_banner", "-loglevel", "error", "-nostdin"]
+            if ".m3u8" in lower:
+                cmd += ["-protocol_whitelist", "file,http,https,tcp,tls,crypto", "-allowed_extensions", "ALL"]
+            # 请求头必须放在 -i 之前（否则 ffmpeg 报 Trailing option(s)）
+            header_lines = []
+            for name, value in (self.headers or {}).items():
+                if not value or "\r" in str(value) or "\n" in str(value):
+                    continue
+                lname = str(name).lower()
+                if lname == "user-agent":
+                    continue
+                if lname == "referer":
+                    continue
+                if lname in ("host", "range", "content-length", "accept-encoding", "connection"):
+                    continue
+                header_lines.append(f"{name}: {value}")
+            if header_lines:
+                cmd += ["-headers", "\r\n".join(header_lines) + "\r\n"]
+            user_agent = (self.headers or {}).get("user-agent") or (self.headers or {}).get("User-Agent")
+            if user_agent:
+                cmd += ["-user_agent", str(user_agent)]
+            referer = (self.headers or {}).get("referer") or (self.headers or {}).get("Referer") or self.page_url
+            if referer:
+                cmd += ["-referer", str(referer)]
+            cmd += [
+                "-ss", "00:00:01",
+                "-i", url,
+                "-frames:v", "1",
+                "-q:v", "3",
+                "-vf", "scale=320:-2",
+                "-f", "image2",
+                tmp_path,
             ]
-            
+
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
             )
-            process.wait(timeout=15)
-            
-            if os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 0:
-                with open(tmp_path, 'rb') as f:
+            process.wait(timeout=20)
+
+            if os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 1024:
+                with open(tmp_path, "rb") as f:
                     data = f.read()
                 try:
                     os.remove(tmp_path)
-                except:
+                except OSError:
                     pass
                 self.thumbnail_ready.emit(data)
             else:
-                self.thumbnail_ready.emit(b'')
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+                self.thumbnail_ready.emit(b"")
         except Exception as e:
             print(f"[DEBUG] 缩略图提取失败: {e}")
-            self.thumbnail_ready.emit(b'')
+            self.thumbnail_ready.emit(b"")
+
+
+def _normalize_thumbnail_url(url, page_url=""):
+    """把网站封面地址规范成 QNetworkRequest 可用的绝对 URL。"""
+    url = str(url or "").strip()
+    if not url:
+        return ""
+    if url.startswith(("data:", "blob:", "filesystem:")):
+        return ""
+    if url.startswith("//"):
+        return "https:" + url
+    if url.startswith("/"):
+        base = str(page_url or "").strip()
+        if base.startswith("http"):
+            from urllib.parse import urlsplit
+
+            parts = urlsplit(base)
+            if parts.scheme and parts.netloc:
+                return f"{parts.scheme}://{parts.netloc}{url}"
+        return ""
+    if "://" in url:
+        return url
+    return "https://" + url
 
 # ============ 极简丝滑下拉框 ============
 
@@ -2263,7 +2329,11 @@ class AnimatedComboBox(QPushButton):
         self.popup.hide()
 
     def hideEvent(self, event):
-        self.popup.hide()
+        # 弹出层是顶层窗口，界面销毁/重建时可能已经被 Qt 删掉
+        try:
+            self.popup.hide()
+        except RuntimeError:
+            pass
         self.setChecked(False)
         super().hideEvent(event)
 
@@ -2890,16 +2960,29 @@ class MediaCard(QFrame):
         self._stabilize_timer = None
         self._stabilize_remaining = 0
         self._download_state = "discovered"
+        self._thumb_thread = None
+        self._thumb_extract_started = False
+        self._thumb_loaded = False
         
         self._setup_ui()
         self._start_metadata_fetch()
         self._start_stabilize_countdown()
+        # 即使元数据线程还没回来（或该站点没有现成封面），也在 1 秒后用画面本身补一张封面
+        QTimer.singleShot(1000, self._ensure_thumbnail)
 
     @classmethod
     def _safe_remove_thread(cls, thread):
-        if thread in cls._stopping_threads:
-            cls._stopping_threads.remove(thread)
-        thread.deleteLater()
+        try:
+            if thread in cls._stopping_threads:
+                cls._stopping_threads.remove(thread)
+        except Exception:
+            pass
+        try:
+            thread.deleteLater()
+        except RuntimeError:
+            pass
+        except Exception:
+            pass
 
     def cleanup(self):
         """清理卡片关联的线程和定时器资源"""
@@ -2912,6 +2995,16 @@ class MediaCard(QFrame):
                 preview_area.cleanup()
             except Exception:
                 pass
+        if self._thumb_thread is not None:
+            thread = self._thumb_thread
+            self._thumb_thread = None
+            try:
+                if thread.isRunning():
+                    thread.wait(3000)
+            except RuntimeError:
+                thread = None
+            if thread is not None:
+                MediaCard._safe_remove_thread(thread)
         if self.metadata_thread and self.metadata_thread.isRunning():
             thread = self.metadata_thread
             thread.stop()
@@ -3490,8 +3583,38 @@ class MediaCard(QFrame):
         painter.end()
         self.thumb_label.setPixmap(pixmap)
 
+    def _ensure_thumbnail(self):
+        """没有网站封面时，用媒体画面本身抽一帧当封面（对齐 VDH 的 poster 体验）。"""
+        if self._thumb_loaded or self._thumb_extract_started:
+            return
+        url = str(self.media_info.get("url") or "").strip()
+        if not url.lower().startswith(("http://", "https://")):
+            return
+        if url.lower().split("?")[0].endswith((".mp4", ".m4v", ".webm", ".mkv")):
+            pass  # 直链视频也可以抽帧
+        self._thumb_extract_started = True
+        headers = self.media_info.get("headers")
+        thread = ThumbnailExtractThread(url, headers=headers, page_url=str(self.media_info.get("page_url") or ""))
+        self._thumb_thread = thread
+        thread.thumbnail_ready.connect(self._on_thumb_bytes)
+        thread.finished.connect(lambda: MediaCard._safe_remove_thread(thread))
+        thread.start()
+
+    def _on_thumb_bytes(self, data):
+        try:
+            if not data:
+                return
+            pixmap = QPixmap()
+            if pixmap.loadFromData(bytes(data)) and not pixmap.isNull():
+                self.preview_area.set_thumbnail_pixmap(pixmap)
+                self._thumb_loaded = True
+        except Exception:
+            pass
+
     def _load_thumbnail(self, url):
+        url = _normalize_thumbnail_url(url, self.media_info.get("page_url"))
         if not url:
+            self._ensure_thumbnail()
             return
         if getattr(self, "_thumb_request_url", "") == url:
             return  # 同一张封面不重复请求（metadata 线程与预览区可能都会触发）
@@ -3512,12 +3635,11 @@ class MediaCard(QFrame):
             if not pixmap.isNull():
                 # 交给预览区做"等比放大 + 居中裁剪"（铺满、不变形、无黑边）
                 self.preview_area.set_thumbnail_pixmap(pixmap)
+                self._thumb_loaded = True
             else:
-                # 图片数据无效，回退到默认占位图
-                self._set_default_thumbnail()
+                self._ensure_thumbnail()
         else:
-            # 加载失败，回退到默认占位图
-            self._set_default_thumbnail()
+            self._ensure_thumbnail()
         self.reply.deleteLater()
 
     def _on_download_audio(self):
@@ -8928,4 +9050,6 @@ if __name__ == "__main__":
     window.show()
     
     sys.exit(app.exec_())
+
+
 
