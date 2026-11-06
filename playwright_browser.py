@@ -3423,7 +3423,7 @@ class MediaCard(QFrame):
         if thumb_url:
             self._load_thumbnail(thumb_url)
         else:
-            self._set_default_thumbnail()
+            self._ensure_thumbnail()
             
         # 显示时长
         duration = data.get('duration_string')
@@ -3528,8 +3528,8 @@ class MediaCard(QFrame):
             if thumbnail_url:
                 self._load_thumbnail(thumbnail_url)
             else:
-                # 没有页面缩略图，使用默认占位图
-                self._set_default_thumbnail()
+                # 没有页面缩略图时从画面抽帧补一张，避免占位图盖掉直链的真实画面
+                self._ensure_thumbnail()
         else:
             # 没有直接链接，显示原有的错误提示
             self.res_combo.addItem(t_format("解析失败：{}", reason))
@@ -3539,7 +3539,9 @@ class MediaCard(QFrame):
         self.res_combo.setEnabled(True)
     
     def _set_default_thumbnail(self):
-        """设置默认的视频占位图 - 现代美化版"""
+        """设置默认的视频占位图 - 现代美化版（已有真实封面时不动它）"""
+        if getattr(self, "_thumb_loaded", False):
+            return
         width = self.thumb_container.width() if hasattr(self, "thumb_container") else 160
         height = self.thumb_container.height() if hasattr(self, "thumb_container") else 90
         # 创建一个渐变背景的占位图

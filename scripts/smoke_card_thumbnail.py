@@ -122,6 +122,18 @@ def main():
               cover2.width() == card2.preview_area.width() and cover2.height() == card2.preview_area.height(),
               f"{cover2.width()}x{cover2.height()}")
 
+    # 路径 2b：抽帧封面已经就绪后，元数据线程失败/返回空封面不能再把封面换回占位图
+    if ok2 and card2.preview_area._cover_pixmap is not None:
+        before = card2.preview_area._cover_pixmap.cacheKey()
+        card2._on_metadata_error("yt-dlp 不支持该直链")
+        pump(app, 0.2)
+        after = card2.preview_area._cover_pixmap.cacheKey()
+        check("元数据失败后保留真实封面", before == after, f"key {before} -> {after}")
+        card2._on_metadata_ready({"title": "t2", "duration_string": "00:04"})
+        pump(app, 0.3)
+        after2 = card2.preview_area._cover_pixmap.cacheKey()
+        check("元数据无封面回调后保留真实封面", after2 == before, f"key {before} -> {after2}")
+
     # 路径 3：_normalize_thumbnail_url
     norm = pb._normalize_thumbnail_url
     check("协议相对 // 补 https", norm("//cdn.x/a.jpg") == "https://cdn.x/a.jpg")
