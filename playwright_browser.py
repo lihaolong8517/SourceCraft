@@ -2272,6 +2272,7 @@ class MediaPreviewThread(QThread):
 
     preview_ready = pyqtSignal(str)
     preview_failed = pyqtSignal(str)
+    thumbnail_ready = pyqtSignal(str)
 
     def __init__(self, spec, cache=None, parent=None):
         super().__init__(parent)
@@ -2287,6 +2288,7 @@ class MediaPreviewThread(QThread):
                 cached = self.cache.get(self.spec)
                 if cached is not None and os.path.isfile(str(cached)):
                     self.preview_ready.emit(str(cached))
+                    self._emit_thumbnail_from_video(str(cached))
                     return
             ffmpeg = resolve_ffmpeg()
             if not ffmpeg:
@@ -2306,8 +2308,29 @@ class MediaPreviewThread(QThread):
             if self.cache is not None:
                 self.cache.put(self.spec, result)
             self.preview_ready.emit(str(result))
+            self._emit_thumbnail_from_video(str(result))
         except Exception as exc:  # noqa: BLE001 - 预览失败不应影响卡片
             self.preview_failed.emit(str(exc))
+
+    def _emit_thumbnail_from_video(self, video_path):
+        """从本地预览mp4里抽一帧当缩略图，不需要重新下载。"""
+        try:
+            ffmpeg = resolve_ffmpeg()
+            if not ffmpeg or not os.path.isfile(video_path):
+                return
+            thumb_path = video_path.rsplit(".", 1)[0] + ".jpg"
+            cmd = [
+                ffmpeg, "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+                "-ss", "00:00:01", "-i", video_path,
+                "-frames:v", "1", "-vf", "scale=320:-2", "-q:v", "5",
+                "-f", "image2", thumb_path,
+            ]
+            import subprocess
+            subprocess.run(cmd, timeout=10, check=False, capture_output=True)
+            if os.path.isfile(thumb_path) and os.path.getsize(thumb_path) > 1024:
+                self.thumbnail_ready.emit(thumb_path)
+        except Exception:
+            pass
 
 
 class PreviewArea(QFrame):
@@ -2434,8 +2457,20 @@ class PreviewArea(QFrame):
         self._thread = MediaPreviewThread(self._spec, _preview_cache(), self)
         self._thread.preview_ready.connect(self._on_ready)
         self._thread.preview_failed.connect(self._on_failed)
+        self._thread.thumbnail_ready.connect(self._on_thumbnail_ready)
         self._thread.finished.connect(self._on_thread_finished)
         self._thread.start()
+
+    def _on_thumbnail_ready(self, path):
+        """缩略图生成完成，显示在卡片左侧。"""
+        try:
+            if not path or not os.path.isfile(path):
+                return
+            pixmap = QPixmap(path)
+            if not pixmap.isNull():
+                self.set_thumbnail_pixmap(pixmap)
+        except Exception:
+            pass
 
     def _on_thread_finished(self):
         self._busy = False
