@@ -172,8 +172,11 @@ def extract_preview(
     cmd = build_preview_command(ffmpeg_path, spec, str(target), clip_seconds=clip_seconds)
     run = runner or _default_runner
     try:
-        run(cmd, timeout)
-    except Exception:
+        result = run(cmd, timeout)
+        if result.returncode != 0:
+            print(f"[PREVIEW] ffmpeg失败 rc={result.returncode}, stderr={result.stderr.decode('utf-8', errors='replace')[:500]}")
+    except Exception as exc:
+        print(f"[PREVIEW] ffmpeg异常: {exc}")
         _safe_unlink(target)
         return None
     try:
