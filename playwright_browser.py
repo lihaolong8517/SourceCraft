@@ -2548,6 +2548,7 @@ class PreviewArea(QFrame):
         self._video.raise_()
         self.play_overlay.hide()
         try:
+            self._player.stop()
             self._player.setMedia(QMediaContent(QUrl.fromLocalFile(self._built_path)))
             self._player.play()
         except Exception as exc:  # noqa: BLE001
