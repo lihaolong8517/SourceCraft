@@ -135,9 +135,11 @@ def parse_m3u8(text: str, base_url: str = "") -> dict:
             return
         keyformat = attrs.get("KEYFORMAT", "") or ""
         uri = attrs.get("URI", "") or ""
+        iv = attrs.get("IV", "") or ""
         system = _normalize_drm(keyformat) or _normalize_drm(uri)
         result["encryption"].append({"method": method, "uri": uri,
-                                     "keyformat": keyformat, "system": system})
+                                     "keyformat": keyformat, "system": system,
+                                     "iv": iv})
         if system:
             if system not in result["drm_systems"]:
                 result["drm_systems"].append(system)

@@ -267,3 +267,54 @@ def resolve_ffmpeg() -> Optional[str]:
 
 def default_cache_dir() -> Path:
     return Path(tempfile.gettempdir()) / "sourcecraft_vdh_preview"
+
+
+def extract_thumbnail(
+    ffmpeg_path: str,
+    spec: PreviewSpec,
+    out_path: str | Path,
+    *,
+    at_seconds: float = 1.0,
+    timeout: float = 15.0,
+    runner=None,
+) -> Optional[Path]:
+    """从视频/流里抽一帧当缩略图，输出 JPG。
+
+    对齐 VDH：用网站现成封面图，没有的话就自己抽一帧。
+    这里走 ffmpeg 直接抓第 at_seconds 秒的一帧，-frames:v 1 只取一帧。
+    """
+    target = Path(out_path)
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return None
+
+    cmd: list[str] = [ffmpeg_path, "-hide_banner", "-loglevel", "error", "-nostdin", "-y"]
+    if at_seconds > 0:
+        cmd += ["-ss", f"{at_seconds:.3f}"]
+    cmd += ["-rw_timeout", "15000000", "-i", spec.url, "-frames:v", "1"]
+    cmd += ["-vf", "scale=320:-2", "-q:v", "5", "-f", "image2", out_path]
+
+    headers = _clean_headers(spec.headers)
+    if headers:
+        cmd += ["-headers", "".join(f"{k}: {v}\r\n" for k, v in headers.items())]
+    agent = headers.get("User-Agent")
+    if agent:
+        cmd += ["-user_agent", agent]
+    referer = headers.get("Referer") or spec.page_url
+    if referer:
+        cmd += ["-referer", referer]
+
+    run = runner or _default_runner
+    try:
+        run(cmd, timeout)
+    except Exception:
+        _safe_unlink(target)
+        return None
+    try:
+        if target.is_file() and target.stat().st_size >= 1024:
+            return target
+    except OSError:
+        pass
+    _safe_unlink(target)
+    return None
