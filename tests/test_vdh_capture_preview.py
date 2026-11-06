@@ -12,6 +12,8 @@ from vdh_capture.preview import (  # noqa: E402
     PreviewCache,
     PreviewSpec,
     build_preview_command,
+    build_frames_command,
+    extract_frames,
     extract_preview,
     preview_start_seconds,
 )
@@ -152,3 +154,49 @@ class TestCacheKeyAndCache:
             paths.append(target)
         assert len(cache._entries) == 2
         assert not paths[0].exists()
+
+
+class TestFrames:
+    def test_command_uses_crop_and_rawvideo(self):
+        cmd = build_frames_command(FFMPEG, "clip.mp4", width=176, height=99, fps=12, max_frames=72)
+        joined = " ".join(cmd)
+        assert "fps=12" in joined
+        assert "scale=176:99:force_original_aspect_ratio=increase" in joined
+        assert "crop=176:99" in joined
+        assert "-f rawvideo" in joined
+        assert "-pix_fmt rgb24" in joined
+        assert cmd[-1] == "-"
+
+    def test_extract_frames_splits_raw_bytes(self, tmp_path):
+        clip = tmp_path / "clip.mp4"
+        clip.write_bytes(b"x" * (MIN_PREVIEW_BYTES + 10))
+        frame_size = 4 * 3 * 3
+        data = bytes(range(frame_size)) * 2
+
+        class _Result:
+            returncode = 0
+            stdout = data
+            stderr = b""
+
+        width, height, fps, frames = extract_frames(
+            FFMPEG, clip, width=4, height=3, fps=10, runner=lambda cmd, timeout: _Result()
+        )
+        assert (width, height, fps) == (4, 3, 10)
+        assert len(frames) == 2
+        assert len(frames[0]) == frame_size
+
+    def test_extract_frames_ffmpeg_failure(self, tmp_path):
+        clip = tmp_path / "clip.mp4"
+        clip.write_bytes(b"x" * (MIN_PREVIEW_BYTES + 10))
+
+        class _Result:
+            returncode = 1
+            stdout = b""
+            stderr = b"boom"
+
+        assert extract_frames(FFMPEG, clip, runner=lambda cmd, timeout: _Result()) is None
+
+    def test_extract_frames_short_clip(self, tmp_path):
+        clip = tmp_path / "clip.mp4"
+        clip.write_bytes(b"x" * 10)
+        assert extract_frames(FFMPEG, clip, runner=lambda cmd, timeout: None) is None

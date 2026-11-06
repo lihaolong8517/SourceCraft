@@ -21,7 +21,12 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+_platform = os.environ.get("HOVER_SMOKE_PLATFORM", "")
+if _platform:
+    # 例如 HOVER_SMOKE_PLATFORM=windows：在有桌面会话时验证真实渲染
+    os.environ["QT_QPA_PLATFORM"] = _platform
+else:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer  # noqa: E402
 
@@ -173,15 +178,16 @@ def main():
     ok = pump_until(lambda: area.has_preview(), 60)
     check("hover 触发预览生成", ok, f"built={area._built_path}")
     pump(800)
-    headless = bool(getattr(area, "_render_error", False))
+    frames_ok = pump_until(lambda: bool(area._frame_pixmaps), 40)
+    headless = not frames_ok
     if headless:
-        print("[SKIP] 无头环境 DirectShow 无法建立渲染面，跳过真实像素播放断言")
+        print("[SKIP] 帧序列不可用，退回播放器断言")
         check("播放面已创建（无头）", area._player is not None and area._video is not None)
         check("已给播放器设置预览文件", area._media_path == area._built_path)
     else:
-        check("hover 后开始播放", area.is_playing(), f"state={area._player.state() if area._player else None}")
-        check("播放时封面隐藏", area.thumb_label.isHidden())
-        check("生成了播放面", area._video is not None and area._player is not None)
+        check("hover 后帧动画播放", area.is_playing() and area._frame_timer.isActive())
+        check("播放时显示帧而不是封面", area.thumb_label.isVisible() and area.thumb_label.pixmap() is not None)
+        check("帧序列已就绪", len(area._frame_pixmaps) >= 5, f"frames={len(area._frame_pixmaps)}")
 
     # 4) leave → 暂停 + 封面回来
     area.leaveEvent(QEvent(QEvent.Leave))

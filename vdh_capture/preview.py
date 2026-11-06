@@ -258,6 +258,91 @@ def extract_preview(
     return None
 
 
+FRAME_FPS = 12
+FRAME_WIDTH = 176
+FRAME_HEIGHT = 99
+MAX_FRAMES = 96
+
+
+def build_frames_command(
+    ffmpeg_path: str,
+    clip_path: str | Path,
+    *,
+    width: int = FRAME_WIDTH,
+    height: int = FRAME_HEIGHT,
+    fps: int = FRAME_FPS,
+    max_frames: int = MAX_FRAMES,
+) -> list[str]:
+    """把预览片段解码成固定尺寸的 raw RGB 帧（stdout 输出，便于 UI 帧动画播放）。"""
+    vf = (
+        f"fps={int(fps)},"
+        f"scale={int(width)}:{int(height)}:force_original_aspect_ratio=increase,"
+        f"crop={int(width)}:{int(height)}"
+    )
+    return [
+        ffmpeg_path,
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-nostdin",
+        "-y",
+        "-i",
+        str(clip_path),
+        "-vf",
+        vf,
+        "-frames:v",
+        str(int(max_frames)),
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgb24",
+        "-",
+    ]
+
+
+def extract_frames(
+    ffmpeg_path: str,
+    clip_path: str | Path,
+    *,
+    width: int = FRAME_WIDTH,
+    height: int = FRAME_HEIGHT,
+    fps: int = FRAME_FPS,
+    max_frames: int = MAX_FRAMES,
+    timeout: float = DEFAULT_TIMEOUT_S,
+    runner: Optional[Callable[[list[str], float], "subprocess.CompletedProcess[bytes]"]] = None,
+) -> Optional[tuple[int, int, int, list[bytes]]]:
+    """从预览片段提取帧序列；返回 (width, height, fps, frames)，失败返回 None。"""
+    if not clip_path:
+        return None
+    clip = Path(clip_path)
+    try:
+        if not clip.is_file() or clip.stat().st_size < MIN_PREVIEW_BYTES:
+            return None
+    except OSError:
+        return None
+    run = runner or _default_runner
+    cmd = build_frames_command(
+        ffmpeg_path, clip, width=width, height=height, fps=fps, max_frames=max_frames
+    )
+    try:
+        result = run(cmd, timeout)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[PREVIEW] 帧提取异常: {exc}")
+        return None
+    if getattr(result, "returncode", 1) != 0:
+        stderr = getattr(result, "stderr", b"") or b""
+        print(f"[PREVIEW] 帧提取失败: {stderr.decode('utf-8', errors='replace')[:300]}")
+        return None
+    data = getattr(result, "stdout", b"") or b""
+    frame_size = int(width) * int(height) * 3
+    if frame_size <= 0 or len(data) < frame_size:
+        return None
+    frames = [data[i : i + frame_size] for i in range(0, len(data) - frame_size + 1, frame_size)]
+    if not frames:
+        return None
+    return int(width), int(height), int(fps), frames
+
+
 def _safe_unlink(path: Path) -> None:
     try:
         if path.exists():

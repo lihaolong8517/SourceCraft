@@ -59,7 +59,7 @@ from PyQt5.QtWidgets import (
     QButtonGroup, QDialog, QSplitter, QScrollArea, QProgressBar
 )
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QSize, QUrl, QRect, QPoint
-from PyQt5.QtGui import QCursor, QColor, QFont, QPainter, QPainterPath, QConicalGradient, QPixmap, QIcon, QLinearGradient, QRadialGradient, QPolygon
+from PyQt5.QtGui import QCursor, QColor, QFont, QPainter, QPainterPath, QConicalGradient, QPixmap, QIcon, QLinearGradient, QRadialGradient, QPolygon, QImage
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
 # QtMultimedia 用于卡片内联预览播放（VDH 的 com-media-preview 等价物）。
@@ -133,7 +133,9 @@ import auth_utils
 
 # VDH 风格内联预览：抓"中间一小段"分片并 remux 成小 mp4（见 docs/VDH-UI-预览规格.md）
 try:
-    from vdh_capture.preview import PreviewCache, PreviewSpec, extract_preview, resolve_ffmpeg, default_cache_dir
+    from vdh_capture.preview import (
+        PreviewCache, PreviewSpec, extract_frames, extract_preview, resolve_ffmpeg, default_cache_dir,
+    )
 
     _HAS_VDH_PREVIEW = True
 except Exception:  # pragma: no cover - 打包环境兜底
@@ -2273,6 +2275,7 @@ class MediaPreviewThread(QThread):
     preview_ready = pyqtSignal(str)
     preview_failed = pyqtSignal(str)
     thumbnail_ready = pyqtSignal(str)
+    frames_ready = pyqtSignal(str, int, int, int, object)
 
     def __init__(self, spec, cache=None, parent=None):
         super().__init__(parent)
@@ -2289,6 +2292,7 @@ class MediaPreviewThread(QThread):
                 if cached is not None and os.path.isfile(str(cached)):
                     self.preview_ready.emit(str(cached))
                     self._emit_thumbnail_from_video(str(cached))
+                    self._emit_frames(str(cached))
                     return
             ffmpeg = resolve_ffmpeg()
             if not ffmpeg:
@@ -2309,8 +2313,24 @@ class MediaPreviewThread(QThread):
                 self.cache.put(self.spec, result)
             self.preview_ready.emit(str(result))
             self._emit_thumbnail_from_video(str(result))
+            self._emit_frames(str(result))
         except Exception as exc:  # noqa: BLE001 - 预览失败不应影响卡片
             self.preview_failed.emit(str(exc))
+
+    def _emit_frames(self, video_path):
+        """把预览片段解码成帧序列，交给 UI 用 QTimer 做帧动画（绕开 DirectShow）。"""
+        try:
+            ffmpeg = resolve_ffmpeg()
+            if not ffmpeg or not os.path.isfile(video_path):
+                return
+            result = extract_frames(ffmpeg, video_path)
+            if not result:
+                return
+            width, height, fps, frames = result
+            if frames:
+                self.frames_ready.emit(video_path, int(width), int(height), int(fps), frames)
+        except Exception:
+            pass
 
     def _emit_thumbnail_from_video(self, video_path):
         """从本地预览mp4里抽一帧当缩略图，不需要重新下载。"""
@@ -2379,6 +2399,16 @@ class PreviewArea(QFrame):
         self._thumb_loaded = False
         self._overlays = []
         self._render_error = False
+        self._error_retries = 0
+
+        # 帧动画播放（VDH 的 <video> 在 Qt 里用 DirectShow 渲染不稳定，改用帧序列轮播）
+        self._cover_pixmap = QPixmap()
+        self._frames = []
+        self._frame_pixmaps = []
+        self._frame_index = 0
+        self._frame_timer = QTimer(self)
+        self._frame_timer.setTimerType(Qt.PreciseTimer)
+        self._frame_timer.timeout.connect(self._next_frame)
 
         self.setFixedSize(self._width, self._height)
         self.setStyleSheet("background: #1c2030; border-radius: 6px;")
@@ -2449,7 +2479,10 @@ class PreviewArea(QFrame):
         if pixmap is None or pixmap.isNull():
             return
         # 对齐"缩略图铺满预览区、不变形、无黑边"
-        self.thumb_label.setPixmap(_cover_pixmap(pixmap, self._width, self._height))
+        cover = _cover_pixmap(pixmap, self._width, self._height)
+        if cover is not None and not cover.isNull():
+            self._cover_pixmap = cover
+        self.thumb_label.setPixmap(cover)
         self.thumb_label.setScaledContents(True)
         self._thumb_loaded = True
         if not self.is_playing():
@@ -2474,6 +2507,8 @@ class PreviewArea(QFrame):
 
     def is_playing(self):
         try:
+            if self._frame_timer.isActive():
+                return True
             return self._player is not None and self._player.state() == QMediaPlayer.PlayingState
         except Exception:
             return False
@@ -2503,6 +2538,10 @@ class PreviewArea(QFrame):
         self._hover = False
         try:
             self._hover_timer.stop()
+        except Exception:
+            pass
+        try:
+            self._frame_timer.stop()
         except Exception:
             pass
         if self._player is not None:
@@ -2564,6 +2603,7 @@ class PreviewArea(QFrame):
     def _activate_hover(self):
         if not self._hover:
             return
+        self._error_retries = 0
         if self.has_preview():
             self._play_media()
             return
@@ -2585,7 +2625,9 @@ class PreviewArea(QFrame):
         try:
             self._video = QVideoWidget(self)
             self._video.setGeometry(0, 0, self._width, self._height)
-            self._video.setStyleSheet("background: black; border-radius: 6px;")
+            # 注意：不要给 QVideoWidget 设置样式表，否则它可能退化为非原生窗口，
+            # DirectShow 无法建立渲染面（doRender 0x80040266）。
+            self._video.setAttribute(Qt.WA_StyledBackground, False)
             # 不拦截鼠标事件，hover/click 仍然落在 PreviewArea 上
             self._video.setAttribute(Qt.WA_TransparentForMouseEvents, True)
             self._video.show()
@@ -2610,7 +2652,13 @@ class PreviewArea(QFrame):
             return False
 
     def _play_media(self):
-        if not self.has_preview() or not self._ensure_player():
+        if not self.has_preview():
+            return
+        # 优先帧动画（不依赖 DirectShow，任何环境都能稳定播放）
+        if self._frame_pixmaps:
+            self._play_frames()
+            return
+        if not self._ensure_player():
             return
         try:
             if self._media_path != self._built_path:
@@ -2627,12 +2675,67 @@ class PreviewArea(QFrame):
             self._show_cover()
 
     def _show_cover(self):
-        if self._thumb_loaded:
+        try:
+            if self._cover_pixmap is not None and not self._cover_pixmap.isNull():
+                self.thumb_label.setPixmap(self._cover_pixmap)
+                self.thumb_label.setScaledContents(True)
+        except Exception:
+            pass
+        self.thumb_label.show()
+        self.thumb_label.raise_()
+        self._raise_overlays()
+
+    # ---------- 帧动画播放 ----------
+    def _on_frames(self, path, width, height, fps, frames):
+        """接收后台线程解码好的帧序列（raw RGB），构建 QPixmap 供 hover 播放。"""
+        try:
+            if path != self._built_path:
+                return
+            size = int(width) * int(height)
+            pixmaps = []
+            for raw in frames or []:
+                data = bytes(raw)
+                if len(data) < size * 3:
+                    continue
+                image = QImage(data, int(width), int(height), int(width) * 3, QImage.Format_RGB888)
+                if image.isNull():
+                    continue
+                pixmaps.append(QPixmap.fromImage(image.copy()))
+            if not pixmaps:
+                return
+            self._frame_pixmaps = pixmaps
+            self._frame_index = 0
+            interval = max(30, int(1000 / max(1, int(fps))))
+            self._frame_timer.setInterval(interval)
+            if self._hover:
+                self._play_frames()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[PREVIEW] 帧动画初始化失败: {exc}")
+
+    def _play_frames(self):
+        try:
+            if not self._frame_pixmaps:
+                return
+            self._render_error = False
             self.thumb_label.show()
             self.thumb_label.raise_()
-        else:
-            self.thumb_label.show()
-        self._raise_overlays()
+            self._raise_overlays()
+            self._hide_status()
+            if not self._frame_timer.isActive():
+                self._frame_timer.start()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[PREVIEW] 帧动画播放失败: {exc}")
+            self._show_cover()
+
+    def _next_frame(self):
+        try:
+            if not self._frame_pixmaps:
+                return
+            self._frame_index = (self._frame_index + 1) % len(self._frame_pixmaps)
+            self.thumb_label.setPixmap(self._frame_pixmaps[self._frame_index])
+            self.thumb_label.setScaledContents(True)
+        except Exception:
+            pass
 
     def _raise_overlays(self):
         for widget in self._overlays:
@@ -2660,9 +2763,25 @@ class PreviewArea(QFrame):
             pass
 
     def _on_player_error(self, *_args):
+        # DirectShow 在窗口尚未真正暴露时首次 play 可能报 0x80040266，
+        # 稍后重试一次即可正常工作（VDH 里 <video> 元素也会自动恢复）。
+        if self._hover and self._error_retries < 2:
+            self._error_retries += 1
+            QTimer.singleShot(150, self._retry_play)
+            return
         self._render_error = True
         self._flash_status(t("播放失败（编码不受支持）"))
         self._show_cover()
+
+    def _retry_play(self):
+        if not self._hover:
+            return
+        self._render_error = False
+        try:
+            if self._player is not None:
+                self._player.play()
+        except Exception:
+            pass
 
     def _start_build(self):
         if self._busy:
@@ -2677,6 +2796,10 @@ class PreviewArea(QFrame):
             self._thread.preview_ready.connect(self._on_ready)
             self._thread.preview_failed.connect(self._on_failed)
             self._thread.thumbnail_ready.connect(self._on_thumbnail_ready)
+            try:
+                self._thread.frames_ready.connect(self._on_frames)
+            except Exception:
+                pass
             self._thread.finished.connect(self._on_thread_finished)
             self._thread.start()
         except Exception as exc:  # noqa: BLE001
@@ -8805,3 +8928,4 @@ if __name__ == "__main__":
     window.show()
     
     sys.exit(app.exec_())
+
