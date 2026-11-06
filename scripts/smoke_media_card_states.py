@@ -103,6 +103,11 @@ card2.stop_requested.connect(lambda u: stopped.append(u))
 card2._on_stop_clicked()
 check("停止信号携带 URL", bool(stopped) and "index.m3u8" in stopped[0], str(stopped))
 
+# 更多操作菜单（仅音频 / 复制链接 / 下载为…）
+menus = [a for a in card.more_btn.menu().actions()]
+check("更多菜单有 3 项", len(menus) == 3, f"count={len(menus)}")
+check("菜单含仅音频", any("仅音频" in a.text() for a in menus), str([a.text() for a in menus]))
+check("菜单含下载为", any("下载为" in a.text() for a in menus), str([a.text() for a in menus]))
 card.cleanup()
 window.close()
 
@@ -110,5 +115,6 @@ if failures:
     print("[CARD] FAIL " + " | ".join(failures))
     sys.exit(1)
 print("[CARD] PASS")
+
 
 

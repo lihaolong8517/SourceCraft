@@ -19521,6 +19521,10 @@ class VideoDownloaderApp(QMainWindow):
             
             # 连接媒体捕获信号：当用户选择下载媒体时，自动填入URL
             self.browser_window.media_url_selected.connect(self._on_media_url_received)
+            try:
+                self.browser_window.media_download_as_requested.connect(self._on_media_download_as)
+            except Exception:
+                pass
             
             self.browser_window.show()
             
@@ -19565,6 +19569,24 @@ class VideoDownloaderApp(QMainWindow):
         # 自动开始下载
         QTimer.singleShot(500, self.start_download)
     
+    def _on_media_download_as(self, url: str, title: str = ""):
+        """「下载为…」：先选保存目录，再走媒体捕获下载流程。"""
+        try:
+            start_dir = self.output_path.text().strip() if hasattr(self, "output_path") else ""
+            directory = QFileDialog.getExistingDirectory(self, t("选择下载保存目录"), start_dir or "")
+            if not directory:
+                return
+            directory = os.path.abspath(directory)
+            if hasattr(self, "output_path"):
+                self.output_path.setText(directory)
+            try:
+                self.settings.setValue("output_path", directory)
+            except Exception:
+                pass
+            self._on_media_url_received(url, title)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[MEDIA] 下载为失败: {exc}")
+
     def _navigate_browser_to_url(self, url):
         """在Playwright浏览器中导航到URL"""
         if hasattr(self, 'browser_window') and self.browser_window:

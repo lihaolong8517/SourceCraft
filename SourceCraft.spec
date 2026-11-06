@@ -242,6 +242,33 @@ for module_name in required_py_files:
 
 print('[打包] [OK] 跳过 Real-ESRGAN 运行时文件')
 
+# ========== VDH 式媒体捕获包（vdh_capture）==========
+# playwright_browser（子进程 launcher）与下载线程都会导入，必须编译进 PYZ。
+_vdh_capture_modules = [
+    'vdh_capture',
+    'vdh_capture.store',
+    'vdh_capture.bridge',
+    'vdh_capture.manifest',
+    'vdh_capture.sniffer',
+    'vdh_capture.runner',
+    'vdh_capture.preview',
+    'vdh_capture.adapters',
+    'vdh_capture.adapters.base',
+    'vdh_capture.adapters.vimeo',
+]
+for module_name in _vdh_capture_modules:
+    if os.path.exists(module_name.replace('.', os.sep) + '.py') and module_name not in hiddenimports:
+        hiddenimports.append(module_name)
+
+try:
+    _vdh_extra = collect_submodules('vdh_capture')
+    for module_name in _vdh_extra:
+        if module_name not in hiddenimports:
+            hiddenimports.append(module_name)
+    print(f'[打包] [OK] 已收集 vdh_capture ({len(_vdh_extra)} 个子模块)')
+except Exception as exc:  # noqa: BLE001
+    print(f'[打包] [WARN] 收集 vdh_capture 失败: {exc}')
+
 print('[打包] Playwright 配置完成')
 
 

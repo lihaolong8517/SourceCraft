@@ -2517,6 +2517,7 @@ class MediaCard(QFrame):
     send_to_downloader = pyqtSignal(str, str)
     remove_requested = pyqtSignal(QWidget)
     stop_requested = pyqtSignal(str)
+    send_download_as = pyqtSignal(str, str)  # 「下载为…」：URL + 标题
     _stopping_threads = []  # 保存正在停止的线程，防止被垃圾回收
 
     def __init__(self, media_info: dict, parent=None):
@@ -2750,14 +2751,28 @@ class MediaCard(QFrame):
         self.duration_badge.hide()
         tags_layout.addWidget(self.duration_badge)
         
-        # 质量标签 (如果有)
+        # 质量标签 (如果有)，配色对齐 VDH 的 meh / good / very_good 三档
         quality_info = self.media_info.get('quality', {})
         if quality_info and quality_info.get('resolution'):
+            height = 0
+            if isinstance(quality_info.get('height'), int):
+                height = int(quality_info.get('height'))
+            else:
+                import re as _re
+                match = _re.search(r"(\d{3,4})\s*[pP]|(\d{3,4})\s*[xX*]\s*(\d{3,4})",
+                                   str(quality_info.get('resolution') or ""))
+                if match:
+                    height = int(match.group(1) or match.group(3) or 0)
+            if height > 1080:
+                badge_style = ("background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9;")
+            elif height == 1080:
+                badge_style = ("background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb;")
+            else:
+                badge_style = ("background: #f5f5f5; color: #757575; border: 1px solid #e0e0e0;")
             self.quality_tag = QLabel(quality_info['resolution'])
-            self.quality_tag.setStyleSheet("""
-                background: #e3f2fd; color: #1976d2; padding: 1px 6px; 
-                border-radius: 3px; font-size: 10px; border: 1px solid #bbdefb;
-            """)
+            self.quality_tag.setStyleSheet(
+                f"{badge_style} padding: 1px 6px; border-radius: 3px; font-size: 10px;"
+            )
             tags_layout.addWidget(self.quality_tag)
         
         # 播放状态标签
@@ -2842,6 +2857,27 @@ class MediaCard(QFrame):
         """)
         self.copy_btn.clicked.connect(self._on_copy_clicked)
         actions_layout.addWidget(self.copy_btn)
+
+        # 下拉菜单：仅音频 / 复制链接 / 下载为…（对齐 VDH 的 action_download_audio / _copy / _download_as）
+        self.more_btn = QPushButton("▾")
+        self.more_btn.setToolTip(t("更多操作"))
+        self.more_btn.setCursor(Qt.PointingHandCursor)
+        self.more_btn.setFixedSize(22, 28)
+        self.more_btn.setStyleSheet(
+            "QPushButton { background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px;"
+            " font-size: 11px; color: #666; }"
+            "QPushButton:hover { background: #e8e8e8; border-color: #ccc; }"
+            "QPushButton::menu-indicator { image: none; width: 0px; }"
+        )
+        more_menu = QMenu(self.more_btn)
+        audio_action = more_menu.addAction(t("🎵 仅音频"))
+        audio_action.triggered.connect(self._on_download_audio)
+        copy_action = more_menu.addAction(t("📋 复制链接"))
+        copy_action.triggered.connect(self._on_copy_clicked)
+        as_action = more_menu.addAction(t("📁 下载为…"))
+        as_action.triggered.connect(self._on_download_as)
+        self.more_btn.setMenu(more_menu)
+        actions_layout.addWidget(self.more_btn)
         
         actions_layout.addStretch()
         info_layout.addLayout(actions_layout)
@@ -3108,6 +3144,20 @@ class MediaCard(QFrame):
             self._set_default_thumbnail()
         self.reply.deleteLater()
 
+    def _on_download_audio(self):
+        """仅音频：用页面 URL + bestaudio（主窗口媒体捕获路径会把该值当 -f 传给 yt-dlp）。"""
+        url = str(self.media_info.get("url") or "")
+        page_url = str(self.media_info.get("page_url") or "")
+        if not page_url or page_url == url:
+            ModernToast.show_message(t("该条目只有直链，无法仅提取音频"), self, is_error=True)
+            return
+        self.send_to_downloader.emit(page_url, f"{self.title_label.text()} [Format:bestaudio]")
+        self.set_download_state("downloading", t("仅音频"))
+
+    def _on_download_as(self):
+        """下载为…：交给主窗口选择目录后开始下载。"""
+        self.send_download_as.emit(str(self.media_info.get("url") or ""), self.title_label.text())
+
     def _on_stop_clicked(self):
         """停止按钮：请求主窗口取消当前下载（按 URL 定位）。"""
         url = str(self.media_info.get("url") or "")
@@ -3242,6 +3292,7 @@ class MediaCaptureWindow(QMainWindow):
     
     send_to_downloader = pyqtSignal(str, str)  # 发送 URL 和标题到下载器
     stop_requested = pyqtSignal(str)  # 请求停止下载（携带媒体 URL）
+    download_as_requested = pyqtSignal(str, str)  # 「下载为…」
     closed = pyqtSignal()  # 窗口关闭信号
     
     def __init__(self, controller=None):
@@ -3548,6 +3599,7 @@ class MediaCaptureWindow(QMainWindow):
         card.send_to_downloader.connect(self.send_to_downloader.emit)
         card.remove_requested.connect(self._remove_media_card)
         card.stop_requested.connect(self.stop_requested.emit)
+        card.send_download_as.connect(self.download_as_requested.emit)
         self._media_cards[key] = card
         
         # 智能排序插入：播放中优先
@@ -6795,6 +6847,7 @@ class PlaywrightBrowserController(QMainWindow):
     
     browser_output = pyqtSignal(str)
     media_url_selected = pyqtSignal(str, str)  # 发送选中的媒体 URL 和标题到主程序
+    media_download_as_requested = pyqtSignal(str, str)  # 「下载为…」：URL + 标题
     
     def __init__(self, parent=None, initial_url=""):
         super().__init__(parent)
@@ -6844,6 +6897,7 @@ class PlaywrightBrowserController(QMainWindow):
         self._media_window = MediaCaptureWindow(controller=self)
         self._media_window.send_to_downloader.connect(self._on_media_selected)
         self._media_window.stop_requested.connect(self._on_media_stop_requested)
+        self._media_window.download_as_requested.connect(self.media_download_as_requested.emit)
         self._media_window.closed.connect(self._on_media_window_closed)
         
         # 信号连接
