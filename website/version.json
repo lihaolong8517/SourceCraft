@@ -1,0 +1,12 @@
+{
+  "version": "1.1.159",
+  "download_url": "https://github.com/lihaolong8517/SourceCraft/releases/download/v1.1.159/SourceCraft_Installer_v1.1.159.exe",
+  "file_size": "≈ 583 MB",
+  "file_size_bytes": 611722275,
+  "published_at": "2026-11-09",
+  "notes": [
+    "发布 SourceCraft v1.1.159",
+    "优化：内置浏览器媒体捕捉hover预览体验改进",
+    "修复：媒体捕捉缩略图显示与预览稳定性问题"
+  ]
+}

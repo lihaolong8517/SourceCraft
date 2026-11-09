@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hundunxiazaiqi.cn/sitemap.xml
+
+# SEO: Welcome all major search engine crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: bingbot
+Allow: /
+
+User-agent: Sogou web spider
+Allow: /
+
+User-agent: 360Spider
+Allow: /
